@@ -3,10 +3,29 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, X, User } from "lucide-react";
+import { useUserRole } from "@/hooks/useUserRole";
+import { logout } from "@/lib/auth-helpers";
+import { useRouter } from "next/navigation";
 
 export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
+    const { user, role } = useUserRole();
+    const router = useRouter();
+
+    const handleLogout = async () => {
+        await logout();
+        router.push("/");
+        setIsOpen(false);
+    };
+
+    const getDashboardLink = () => {
+        if (!role) return "/";
+        if (role === 'ADMIN') return "/admin";
+        if (role === 'TUTOR') return "/tutor";
+        if (role === 'PARENT') return "/parent";
+        return "/";
+    };
 
     const navLinks = [
         { name: "About", href: "#about" },
@@ -37,12 +56,30 @@ export default function Navbar() {
                             </Link>
                         ))}
                         <div className="flex items-center space-x-4">
-                            <Link
-                                href="/login"
-                                className="text-primary font-semibold hover:text-accent transition-colors"
-                            >
-                                Login
-                            </Link>
+                            {user ? (
+                                <>
+                                    <Link
+                                        href={getDashboardLink()}
+                                        className="text-gray-700 hover:text-primary transition-colors font-medium flex items-center gap-1"
+                                    >
+                                        <User size={18} />
+                                        Dashboard
+                                    </Link>
+                                    <button
+                                        onClick={handleLogout}
+                                        className="text-gray-500 hover:text-red-500 transition-colors font-medium text-sm"
+                                    >
+                                        Logout
+                                    </button>
+                                </>
+                            ) : (
+                                <Link
+                                    href="/login"
+                                    className="text-primary font-semibold hover:text-accent transition-colors"
+                                >
+                                    Login
+                                </Link>
+                            )}
                             <Link
                                 href="#contact"
                                 className="bg-primary text-primary-foreground px-5 py-2 rounded-full font-semibold hover:bg-accent transition-colors shadow-sm hover:shadow-md"
@@ -78,13 +115,31 @@ export default function Navbar() {
                             </Link>
                         ))}
                         <div className="pt-4 space-y-3">
-                            <Link
-                                href="/login"
-                                className="block w-full text-center px-3 py-2 text-primary font-semibold border border-primary/20 rounded-md hover:bg-primary/5"
-                                onClick={() => setIsOpen(false)}
-                            >
-                                Login
-                            </Link>
+                            {user ? (
+                                <>
+                                    <Link
+                                        href={getDashboardLink()}
+                                        className="block w-full text-center px-3 py-2 text-gray-700 font-semibold border border-gray-200 rounded-md hover:bg-gray-50"
+                                        onClick={() => setIsOpen(false)}
+                                    >
+                                        Dashboard
+                                    </Link>
+                                    <button
+                                        onClick={handleLogout}
+                                        className="block w-full text-center px-3 py-2 text-red-600 font-semibold hover:bg-red-50 rounded-md"
+                                    >
+                                        Logout
+                                    </button>
+                                </>
+                            ) : (
+                                <Link
+                                    href="/login"
+                                    className="block w-full text-center px-3 py-2 text-primary font-semibold border border-primary/20 rounded-md hover:bg-primary/5"
+                                    onClick={() => setIsOpen(false)}
+                                >
+                                    Login
+                                </Link>
+                            )}
                             <Link
                                 href="#contact"
                                 className="block w-full text-center px-3 py-2 bg-primary text-primary-foreground font-semibold rounded-md hover:bg-accent"

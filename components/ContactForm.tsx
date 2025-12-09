@@ -11,15 +11,44 @@ export default function ContactForm() {
         schedule: "",
     });
 
+    const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        alert("This is a demo. Your inquiry would be sent here.");
-        console.log(formData);
+        setStatus("loading");
+
+        try {
+            const res = await fetch("/api/contact", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData),
+            });
+
+            if (res.ok) {
+                setStatus("success");
+                setFormData({
+                    parentName: "",
+                    contactInfo: "",
+                    grade: "8",
+                    subject: "Math",
+                    schedule: "",
+                });
+                alert("Inquiry sent successfully! We will contact you shortly.");
+            } else {
+                throw new Error("Failed to send");
+            }
+        } catch (error) {
+            console.error(error);
+            setStatus("error");
+            alert("Error sending inquiry. Please try again or email us directly at tutoring.amk@gmail.com");
+        } finally {
+            setStatus("idle");
+        }
     };
 
     return (
@@ -116,9 +145,10 @@ export default function ContactForm() {
 
                     <button
                         type="submit"
-                        className="w-full bg-primary text-white font-bold py-4 rounded-lg hover:bg-blue-700 transition-colors shadow-lg text-lg"
+                        disabled={status === "loading"}
+                        className="w-full bg-primary text-white font-bold py-4 rounded-lg hover:bg-blue-700 transition-colors shadow-lg text-lg disabled:opacity-70 disabled:cursor-not-allowed"
                     >
-                        Submit Inquiry
+                        {status === "loading" ? "Sending..." : "Submit Inquiry"}
                     </button>
                 </form>
             </div>

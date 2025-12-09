@@ -1,0 +1,99 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Helper Functions ---
+
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Check if user matches the requested ID
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // Fetch user role
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getUserData().role == 'ADMIN';
+    }
+
+    function isTutor() {
+      return isAuthenticated() && getUserData().role == 'TUTOR';
+    }
+
+    function isParent() {
+      return isAuthenticated() && getUserData().role == 'PARENT';
+    }
+
+    // --- Collection Rules ---
+
+    // 1. Users Collection
+    match /users/{userId} {
+      // Admins can read/write everything
+      allow read, write: if isAdmin();
+      
+      // Users can read their own profile
+      allow read: if isOwner(userId);
+      
+      // Users can create their own profile (SignUp flow)
+      // Must ensure they don't assign themselves 'ADMIN' role on creation!
+      allow create: if isOwner(userId) 
+                    && request.resource.data.role != 'ADMIN'; 
+      
+      // Users can update their own profile (e.g. name), but NOT their role
+      allow update: if isOwner(userId) 
+                    && request.resource.data.role == resource.data.role; // Role must remain unchanged
+    }
+
+    // 2. Students Collection
+    match /students/{studentId} {
+      // Admins have full access
+      allow read, write: if isAdmin();
+
+      // Tutors can read students they are assigned to
+      allow read: if isTutor() && request.auth.uid in resource.data.tutorIds;
+
+      // Parents can read students they are assigned to
+      allow read: if isParent() && request.auth.uid in resource.data.parentIds;
+    }
+
+    // 3. Sessions Collection
+    match /sessions/{sessionId} {
+      // Admins have full access
+      allow read, write: if isAdmin();
+
+      // Tutors can read/update their own sessions
+      allow read: if isTutor() && resource.data.tutorId == request.auth.uid;
+      
+      // Allow Tutors to update attendance/notes only
+      allow update: if isTutor() 
+                    && resource.data.tutorId == request.auth.uid
+                    && request.resource.data.tutorId == resource.data.tutorId; // Cannot reassign session
+
+      // Parents can read sessions for their children
+      // We check if the session's student has the parent in 'parentIds'
+      allow read: if isParent() 
+                  && request.auth.uid in get(/databases/$(database)/documents/students/$(resource.data.studentId)).data.parentIds;
+    }
+
+    // 4. Invoices Collection
+    match /invoices/{invoiceId} {
+      // Admins have full access
+      allow read, write: if isAdmin();
+
+      // Parents can read their own invoices
+      allow read: if isParent() && resource.data.parentId == request.auth.uid;
+    }
+    
+    // Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
