@@ -21,7 +21,7 @@ export function normalizeOptionalString(value: string | undefined | null): strin
     return trimmed.length > 0 ? trimmed : null;
 }
 
-export function getInviteLink(email: string): string {
+export function getInviteLink(token: string): string {
     if (typeof window === 'undefined') return "";
-    return `${window.location.origin}/login?mode=signup&email=${encodeURIComponent(email)}`;
+    return `${window.location.origin}/invite/${token}`;
 }

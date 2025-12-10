@@ -23,8 +23,10 @@ export default function AddParentPage() {
         setLoading(true);
         try {
             // Create Parent Profile with placeholder ID
-            // In real flow, we'd trigger an Auth invite or createAuthUser via Admin SDK.
             const uid = generateId();
+            const inviteToken = generateId(); // Use same random gen for token
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
 
             await setDoc(doc(db, "users", uid), {
                 uid: uid,
@@ -33,6 +35,10 @@ export default function AddParentPage() {
                 phone,
                 address,
                 role: 'PARENT',
+                status: 'invited',
+                inviteToken: inviteToken,
+                inviteExpiresAt: expiresAt.toISOString(),
+                authUid: null,
                 createdAt: new Date().toISOString()
             });
 

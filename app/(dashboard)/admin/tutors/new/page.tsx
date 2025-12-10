@@ -31,10 +31,12 @@ export default function AddTutorPage() {
             // Better: Use random ID, and when they sign up, we might need to migrate/merge?
             // OR: Just tell Admin: "Have the tutor sign up first, then find them here."
 
-            // Simpler Approach for this MVP:
             // Create a doc with a generated placeholder ID. 
             // NOTE: This won't link to their real Auth UID unless we update it later (like we do in Seed tool).
             const placeholderUid = `tutor-${Date.now()}`;
+            const inviteToken = uuidv4();
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + 7);
 
             await setDoc(doc(db, "users", placeholderUid), {
                 uid: placeholderUid,
@@ -46,6 +48,10 @@ export default function AddTutorPage() {
                 adminNotes,
                 hourlyPayRate: hourlyPayRate ? parseFloat(hourlyPayRate) : null,
                 isActive: true,
+                status: 'invited',
+                inviteToken: inviteToken,
+                inviteExpiresAt: expiresAt.toISOString(),
+                authUid: null,
                 createdAt: new Date().toISOString()
             });
 

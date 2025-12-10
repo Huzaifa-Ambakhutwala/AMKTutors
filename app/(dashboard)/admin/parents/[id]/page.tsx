@@ -89,8 +89,11 @@ export default function ParentDetailPage() {
     }, [parentId]);
 
     const handleCopyInvite = () => {
-        if (!parent) return;
-        const link = getInviteLink(parent.email);
+        if (!parent || !parent.inviteToken) {
+            alert("No invite token available.");
+            return;
+        }
+        const link = getInviteLink(parent.inviteToken);
         navigator.clipboard.writeText(link);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
@@ -116,13 +119,15 @@ export default function ParentDetailPage() {
                         {parent.address && <div className="mt-2 text-sm text-gray-500 flex items-center gap-1"><MapPin size={14} /> {parent.address}</div>}
                     </div>
                     <div className="flex gap-2">
-                        <button
-                            onClick={handleCopyInvite}
-                            className="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded transition hover:bg-gray-50 text-sm font-medium flex items-center gap-2"
-                        >
-                            {copied ? <Check size={14} className="text-green-600" /> : <LinkIcon size={14} />}
-                            {copied ? "Copied Link" : "Invite Link"}
-                        </button>
+                        {parent.status !== 'registered' && (
+                            <button
+                                onClick={handleCopyInvite}
+                                className="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded transition hover:bg-gray-50 text-sm font-medium flex items-center gap-2"
+                            >
+                                {copied ? <Check size={14} className="text-green-600" /> : <LinkIcon size={14} />}
+                                {copied ? "Copied Link" : "Invite Link"}
+                            </button>
+                        )}
                         <button className="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded transition hover:bg-gray-50 text-sm font-medium">
                             Edit Profile
                         </button>

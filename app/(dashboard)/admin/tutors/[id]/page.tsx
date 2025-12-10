@@ -87,8 +87,11 @@ export default function TutorDetailPage() {
     }, [tutorId]);
 
     const handleCopyInvite = () => {
-        if (!tutor) return;
-        const link = getInviteLink(tutor.email);
+        if (!tutor || !tutor.inviteToken) {
+            alert("No invite token available.");
+            return;
+        }
+        const link = getInviteLink(tutor.inviteToken);
         navigator.clipboard.writeText(link);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
@@ -121,13 +124,15 @@ export default function TutorDetailPage() {
                         )}
                     </div>
                     <div className="flex gap-2">
-                        <button
-                            onClick={handleCopyInvite}
-                            className="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded transition hover:bg-gray-50 text-sm font-medium flex items-center gap-2"
-                        >
-                            {copied ? <Check size={14} className="text-green-600" /> : <LinkIcon size={14} />}
-                            {copied ? "Copied Link" : "Invite Link"}
-                        </button>
+                        {tutor.status !== 'registered' && (
+                            <button
+                                onClick={handleCopyInvite}
+                                className="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded transition hover:bg-gray-50 text-sm font-medium flex items-center gap-2"
+                            >
+                                {copied ? <Check size={14} className="text-green-600" /> : <LinkIcon size={14} />}
+                                {copied ? "Copied Link" : "Invite Link"}
+                            </button>
+                        )}
                         <Link href={`/admin/tutors/${tutorId}/edit`} className="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded transition hover:bg-gray-50 text-sm font-medium">
                             Edit Profile
                         </Link>

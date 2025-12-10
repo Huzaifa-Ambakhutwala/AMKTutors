@@ -14,6 +14,14 @@ export interface UserProfile {
     subjects?: string[]; // For Tutors
     isActive?: boolean;
     students?: string[]; // For Parents (studentIds)
+
+    // Invite Flow
+    status?: 'invited' | 'registered';
+    authUid?: string | null;
+    inviteToken?: string | null;
+    inviteExpiresAt?: string | null; // ISO String
+    registeredAt?: string | null; // ISO String
+
     createdAt: string;
 }
 

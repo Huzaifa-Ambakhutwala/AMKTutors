@@ -7,6 +7,7 @@ import { auth, db } from "@/lib/firebase";
 import { UserProfile } from "@/lib/types";
 import { Loader2, Shield, Key, Trash2, Mail, Edit, Plus, Link as LinkIcon, Check } from "lucide-react";
 import { getInviteLink } from "@/lib/utils";
+import { v4 as uuidv4 } from "uuid";
 
 export default function ManageLoginsPage() {
     const [users, setUsers] = useState<UserProfile[]>([]);
@@ -48,37 +49,45 @@ export default function ManageLoginsPage() {
                 return;
             }
 
-            // Create placeholder doc
-            const tempId = "ADMIN_" + Date.now(); // Temporary ID until they claim it or we use proper Invite system
-            // Actually, for consistency with 'SignUpWithEmail', we need a placeholder.
-            // But if they sign up with Google/Auth, UID will change. The system handles linking by EMAIL.
-            // So ID doesn't matter much as long as it's unique.
-
-            // Standard approach: Use email as temporary ID or random
-            // Better: random ID
-            const { v4: uuidv4 } = require('uuid'); // If installed, or just random string
-            const newId = Math.random().toString(36).substring(2, 15);
+            // Random ID
+            const newId = uuidv4();
+            const inviteToken = uuidv4();
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + 7);
 
             await setDoc(doc(db, "users", newId), {
+                uid: newId,
                 name,
                 email,
                 role: 'ADMIN',
+                status: 'invited',
+                inviteToken: inviteToken,
+                inviteExpiresAt: expiresAt.toISOString(),
+                authUid: null,
                 createdAt: new Date().toISOString(),
                 isActive: true
             });
 
             fetchUsers();
-            alert("Admin profile created! Sends them the invite link to register.");
+            alert("Admin profile created! You can now copy their invite link.");
         } catch (e) {
             console.error(e);
             alert("Error creating admin");
         }
     };
 
-    const handleCopyInvite = (email: string) => {
-        const link = getInviteLink(email);
+    const handleCopyInvite = (user: UserProfile) => {
+        if (user.status === 'registered') return;
+
+        let token = user.inviteToken;
+        if (!token) {
+            alert("No invite token found. Please regenerate it.");
+            return;
+        }
+
+        const link = `${window.location.origin}/invite/${token}`;
         navigator.clipboard.writeText(link);
-        setCopiedEmail(email);
+        setCopiedEmail(user.email);
         setTimeout(() => setCopiedEmail(null), 2000);
     };
 
@@ -270,7 +279,7 @@ export default function ManageLoginsPage() {
                                     </td>
                                     <td className="px-6 py-4 text-gray-600">{user.email}</td>
                                     <td className="px-6 py-4">
-                                        {user.uid.length > 20 ? (
+                                        {user.status === 'registered' ? (
                                             <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-fit">
                                                 <Shield size={12} /> Registered
                                             </span>
@@ -281,14 +290,16 @@ export default function ManageLoginsPage() {
                                         )}
                                     </td>
                                     <td className="px-6 py-4 flex items-center gap-3">
-                                        <button
-                                            onClick={() => handleCopyInvite(user.email)}
-                                            className="text-gray-500 hover:text-green-600 tooltip flex items-center gap-1 text-sm font-medium"
-                                            title="Copy Invite Link"
-                                        >
-                                            {copiedEmail === user.email ? <Check size={16} className="text-green-600" /> : <LinkIcon size={16} />}
-                                            {copiedEmail === user.email ? "Copied" : "Invite"}
-                                        </button>
+                                        {user.status !== 'registered' && (
+                                            <button
+                                                onClick={() => handleCopyInvite(user)}
+                                                className="text-gray-500 hover:text-green-600 tooltip flex items-center gap-1 text-sm font-medium"
+                                                title="Copy Invite Link"
+                                            >
+                                                {copiedEmail === user.email ? <Check size={16} className="text-green-600" /> : <LinkIcon size={16} />}
+                                                {copiedEmail === user.email ? "Copied" : "Invite"}
+                                            </button>
+                                        )}
                                         <button
                                             onClick={() => handleResetPassword(user.email)}
                                             className="text-gray-500 hover:text-blue-600 tooltip flex items-center gap-1 text-sm font-medium"
