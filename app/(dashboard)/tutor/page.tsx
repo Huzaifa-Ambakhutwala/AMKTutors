@@ -7,28 +7,26 @@ import { db, auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { Session } from "@/lib/types";
-import { Loader2, ArrowLeft, MessageSquare, X, LogOut } from "lucide-react";
+import { Loader2, ArrowLeft, MessageSquare, X, LogOut, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import SessionFeedback from "@/components/SessionFeedback";
+import ManageSessionModal from "@/components/ManageSessionModal";
 
 export default function TutorDashboard() {
     const { user } = useCurrentUser();
     const router = useRouter();
     const [sessions, setSessions] = useState<Session[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+    const [managingSession, setManagingSession] = useState<Session | null>(null);
 
     useEffect(() => {
         async function fetchSessions() {
             if (!user) return;
             try {
-                // Fetch sessions for this tutor
                 const q = query(collection(db, "sessions"), where("tutorId", "==", user.uid));
                 const snap = await getDocs(q);
 
                 if (snap.empty) {
-                    // Fallback for demo/mismatched IDs
                     const allSnap = await getDocs(collection(db, "sessions"));
                     const list = allSnap.docs.map(d => ({ id: d.id, ...d.data() } as Session));
                     setSessions(list);
@@ -52,7 +50,7 @@ export default function TutorDashboard() {
 
     const handleSessionUpdate = (updatedSession: Session) => {
         setSessions(prev => prev.map(s => s.id === updatedSession.id ? updatedSession : s));
-        setSelectedSession(updatedSession); // Keep modal open with fresh data
+        if (managingSession?.id === updatedSession.id) setManagingSession(updatedSession);
     };
 
     return (
@@ -101,10 +99,14 @@ export default function TutorDashboard() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <button
-                                                onClick={() => setSelectedSession(s)}
-                                                className="text-blue-600 hover:bg-blue-50 px-3 py-1 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                                                onClick={() => setManagingSession(s)}
+                                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors shadow-sm flex items-center gap-2 ${s.status === 'Completed'
+                                                    ? 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                                                    : 'bg-green-600 text-white hover:bg-green-700'
+                                                    }`}
                                             >
-                                                <MessageSquare size={16} /> Notes
+                                                {s.status === 'Completed' ? <MessageSquare size={16} /> : <CheckCircle size={16} />}
+                                                {s.status === 'Completed' ? "Edit Details" : "Mark Complete"}
                                             </button>
                                         </td>
                                     </tr>
@@ -114,30 +116,13 @@ export default function TutorDashboard() {
                     </div>
                 )}
 
-                {/* Feedback Modal */}
-                {selectedSession && (
-                    <div className="fixed inset-0 bg-black/50 z-50 flex justify-end">
-                        <div className="w-full max-w-md bg-white h-full shadow-2xl p-6 overflow-y-auto animate-in slide-in-from-right duration-200">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-xl font-bold text-gray-900">Session Notes</h3>
-                                <button onClick={() => setSelectedSession(null)} className="p-2 hover:bg-gray-100 rounded-full">
-                                    <X size={24} className="text-gray-500" />
-                                </button>
-                            </div>
-
-                            <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-100">
-                                <p className="font-bold text-gray-900">{selectedSession.studentName}</p>
-                                <p className="text-sm text-gray-500">{new Date(selectedSession.startTime).toLocaleString()}</p>
-                                <p className="text-sm text-gray-500">{selectedSession.subject}</p>
-                            </div>
-
-                            <SessionFeedback
-                                session={selectedSession}
-                                onUpdate={handleSessionUpdate}
-                                userRole="TUTOR"
-                            />
-                        </div>
-                    </div>
+                {/* Unified Manage Session Modal */}
+                {managingSession && (
+                    <ManageSessionModal
+                        session={managingSession}
+                        onClose={() => setManagingSession(null)}
+                        onUpdate={handleSessionUpdate}
+                    />
                 )}
             </div>
         </RoleGuard>

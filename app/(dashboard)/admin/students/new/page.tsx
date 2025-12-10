@@ -43,7 +43,7 @@ export default function AddStudentPage() {
                 const snap = await getDocs(collection(db, "users"));
                 const users = snap.docs.map(d => d.data() as UserProfile);
                 setParents(users.filter(u => u.role === 'PARENT'));
-                setTutors(users.filter(u => u.role === 'TUTOR'));
+                setTutors(users.filter(u => u.role === 'TUTOR' || u.role === 'ADMIN'));
             } catch (e) {
                 console.error(e);
             } finally {

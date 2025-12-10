@@ -126,15 +126,15 @@ export interface PayStub {
 export interface Assessment {
     id: string;
     studentName: string;
-    studentGrade?: string;
+    studentGrade?: string | null;
 
     parentName: string;
     parentEmail: string;
-    parentPhone?: string;
+    parentPhone?: string | null;
 
     subjects: string[];
-    score?: number;
-    notes?: string;
+    score?: number | null;
+    notes?: string | null;
 
     tutorId: string;
     tutorName?: string;

@@ -42,7 +42,7 @@ export default function NewSessionPage() {
                 // Fetch Tutors
                 const uSnap = await getDocs(collection(db, "users"));
                 const uList = uSnap.docs.map(d => ({ uid: d.id, ...d.data() } as UserProfile));
-                setTutors(uList.filter(u => u.role === 'TUTOR'));
+                setTutors(uList.filter(u => u.role === 'TUTOR' || u.role === 'ADMIN'));
 
             } catch (e) {
                 console.error(e);

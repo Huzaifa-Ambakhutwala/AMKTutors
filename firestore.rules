@@ -38,8 +38,8 @@ service cloud.firestore {
       // Admins can read/write everything
       allow read, write: if isAdmin();
       
-      // Users can read their own profile
-      allow read: if isOwner(userId);
+      // Users can read their own profile (ID match or Email match for invites)
+      allow read: if isOwner(userId) || resource.data.email == request.auth.token.email;
       
       // Users can create their own profile (SignUp flow)
       // Must ensure they don't assign themselves 'ADMIN' role on creation!
@@ -95,6 +95,15 @@ service cloud.firestore {
     match /assessments/{assessmentId} {
       // Admins have full access
       allow read, write: if isAdmin();
+    }
+
+    // 6. PayStubs Collection
+    match /payStubs/{stubId} {
+      // Admins have full access
+      allow read, write: if isAdmin();
+
+      // Tutors can read their own pay stubs
+      allow read: if isTutor() && resource.data.tutorId == request.auth.uid;
     }
     
     // Default Deny

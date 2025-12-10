@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { UserProfile, Student, Session } from "@/lib/types";
-import { Loader2, ArrowLeft, Mail, Phone, MapPin } from "lucide-react";
+import { Loader2, ArrowLeft, Mail, Phone, MapPin, Link as LinkIcon, Check } from "lucide-react";
+import { getInviteLink } from "@/lib/utils";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
 // Utility to categorize sessions
 const categorizeSessions = (sessions: Session[]) => {
+    // ... same as before
     const now = new Date();
     const todayStr = now.toDateString();
 
@@ -44,6 +46,7 @@ export default function ParentDetailPage() {
     const [parent, setParent] = useState<UserProfile | null>(null);
     const [students, setStudents] = useState<Student[]>([]);
     const [sessions, setSessions] = useState<{ upcoming: Session[], today: Session[], past: Session[] }>({ upcoming: [], today: [], past: [] });
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
         async function fetchData() {
@@ -85,6 +88,14 @@ export default function ParentDetailPage() {
         fetchData();
     }, [parentId]);
 
+    const handleCopyInvite = () => {
+        if (!parent) return;
+        const link = getInviteLink(parent.email);
+        navigator.clipboard.writeText(link);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
     if (loading) return <div className="p-12 flex justify-center"><Loader2 className="animate-spin" /></div>;
     if (!parent) return <div className="p-12 text-center text-red-500">Parent not found</div>;
 
@@ -104,9 +115,18 @@ export default function ParentDetailPage() {
                         </div>
                         {parent.address && <div className="mt-2 text-sm text-gray-500 flex items-center gap-1"><MapPin size={14} /> {parent.address}</div>}
                     </div>
-                    <button className="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded transition hover:bg-gray-50 text-sm font-medium">
-                        Edit Profile
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={handleCopyInvite}
+                            className="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded transition hover:bg-gray-50 text-sm font-medium flex items-center gap-2"
+                        >
+                            {copied ? <Check size={14} className="text-green-600" /> : <LinkIcon size={14} />}
+                            {copied ? "Copied Link" : "Invite Link"}
+                        </button>
+                        <button className="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded transition hover:bg-gray-50 text-sm font-medium">
+                            Edit Profile
+                        </button>
+                    </div>
                 </div>
             </div>
 

@@ -4,12 +4,15 @@ import { useEffect, useState } from "react";
 import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { UserProfile, Student, Session } from "@/lib/types";
-import { Loader2, ArrowLeft, Mail, BookOpen, Clock } from "lucide-react";
+import { Loader2, ArrowLeft, Mail, BookOpen, Clock, Link as LinkIcon, Check } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { getInviteLink } from "@/lib/utils";
 
 // Reuse categorization from Parent Detail (could refactor to utils later)
 const categorizeSessions = (sessions: Session[]) => {
+    // ... same as before (omitting body for brevity in replace, but keeping it if not replacing large blocks)
+    // Actually, I am replacing the top block, so I need to be careful.
     const now = new Date();
     const todayStr = now.toDateString();
 
@@ -43,6 +46,7 @@ export default function TutorDetailPage() {
     const [tutor, setTutor] = useState<UserProfile | null>(null);
     const [students, setStudents] = useState<Student[]>([]);
     const [sessions, setSessions] = useState<{ upcoming: Session[], today: Session[], past: Session[] }>({ upcoming: [], today: [], past: [] });
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
         async function fetchData() {
@@ -82,6 +86,14 @@ export default function TutorDetailPage() {
         fetchData();
     }, [tutorId]);
 
+    const handleCopyInvite = () => {
+        if (!tutor) return;
+        const link = getInviteLink(tutor.email);
+        navigator.clipboard.writeText(link);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
     if (loading) return <div className="p-12 flex justify-center"><Loader2 className="animate-spin" /></div>;
     if (!tutor) return <div className="p-12 text-center text-red-500">Tutor not found</div>;
 
@@ -108,9 +120,18 @@ export default function TutorDetailPage() {
                             </div>
                         )}
                     </div>
-                    <Link href={`/admin/tutors/${tutorId}/edit`} className="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded transition hover:bg-gray-50 text-sm font-medium">
-                        Edit Profile
-                    </Link>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={handleCopyInvite}
+                            className="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded transition hover:bg-gray-50 text-sm font-medium flex items-center gap-2"
+                        >
+                            {copied ? <Check size={14} className="text-green-600" /> : <LinkIcon size={14} />}
+                            {copied ? "Copied Link" : "Invite Link"}
+                        </button>
+                        <Link href={`/admin/tutors/${tutorId}/edit`} className="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded transition hover:bg-gray-50 text-sm font-medium">
+                            Edit Profile
+                        </Link>
+                    </div>
                 </div>
             </div>
 
@@ -214,8 +235,8 @@ function SessionList({ sessions }: { sessions: Session[] }) {
                             )}
                         </div>
                         <span className={`px-2 py-1 rounded text-xs font-bold ${s.status === 'Completed' ? 'bg-green-100 text-green-700' :
-                                s.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
-                                    'bg-blue-100 text-blue-700'
+                            s.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
+                                'bg-blue-100 text-blue-700'
                             }`}>
                             {s.status}
                         </span>

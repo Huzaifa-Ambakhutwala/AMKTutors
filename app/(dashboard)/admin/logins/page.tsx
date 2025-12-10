@@ -2,15 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { collection, getDocs, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, deleteDoc, doc, updateDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { UserProfile } from "@/lib/types";
-import { Loader2, Shield, Key, Trash2, Mail, Edit } from "lucide-react";
+import { Loader2, Shield, Key, Trash2, Mail, Edit, Plus, Link as LinkIcon, Check } from "lucide-react";
+import { getInviteLink } from "@/lib/utils";
 
 export default function ManageLoginsPage() {
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
     const router = useRouter();
 
     // Approval State
@@ -32,10 +34,57 @@ export default function ManageLoginsPage() {
         }
     };
 
+    const handleAddAdmin = async () => {
+        const email = prompt("Enter new Admin's Email:");
+        if (!email) return;
+        const name = prompt("Enter Admin's Name:");
+        if (!name) return;
+
+        try {
+            // Check if exists
+            const existing = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+            if (existing) {
+                alert("User already exists!");
+                return;
+            }
+
+            // Create placeholder doc
+            const tempId = "ADMIN_" + Date.now(); // Temporary ID until they claim it or we use proper Invite system
+            // Actually, for consistency with 'SignUpWithEmail', we need a placeholder.
+            // But if they sign up with Google/Auth, UID will change. The system handles linking by EMAIL.
+            // So ID doesn't matter much as long as it's unique.
+
+            // Standard approach: Use email as temporary ID or random
+            // Better: random ID
+            const { v4: uuidv4 } = require('uuid'); // If installed, or just random string
+            const newId = Math.random().toString(36).substring(2, 15);
+
+            await setDoc(doc(db, "users", newId), {
+                name,
+                email,
+                role: 'ADMIN',
+                createdAt: new Date().toISOString(),
+                isActive: true
+            });
+
+            fetchUsers();
+            alert("Admin profile created! Sends them the invite link to register.");
+        } catch (e) {
+            console.error(e);
+            alert("Error creating admin");
+        }
+    };
+
+    const handleCopyInvite = (email: string) => {
+        const link = getInviteLink(email);
+        navigator.clipboard.writeText(link);
+        setCopiedEmail(email);
+        setTimeout(() => setCopiedEmail(null), 2000);
+    };
+
     const handleResetPassword = async (email: string) => {
         if (!confirm(`Send password reset email to ${email}?`)) return;
         try {
-            // Using custom API route to send via Nodemailer (tutoring.amk@gmail.com)
             const res = await fetch("/api/auth/reset-password", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -44,7 +93,7 @@ export default function ManageLoginsPage() {
             const data = await res.json();
 
             if (res.ok) {
-                alert(`Password reset email sent to ${email} via tutoring.amk@gmail.com`);
+                alert(`Password reset email sent to ${email}`);
             } else {
                 throw new Error(data.error || "Failed to send");
             }
@@ -55,7 +104,7 @@ export default function ManageLoginsPage() {
     };
 
     const handleDelete = async (uid: string) => {
-        if (!confirm("Are you sure? This deletes their profile data. (Note: It does not delete their Firebase Auth account automatically without Admin SDK)")) return;
+        if (!confirm("Are you sure? This deletes their profile data.")) return;
         try {
             await deleteDoc(doc(db, "users", uid));
             setUsers(users.filter(u => u.uid !== uid));
@@ -75,7 +124,6 @@ export default function ManageLoginsPage() {
             await updateDoc(doc(db, "users", uid), {
                 role: roleToSet
             });
-            // Refresh local state
             setUsers(users.map(u => u.uid === uid ? { ...u, role: roleToSet as any } : u));
             alert("User approved!");
         } catch (e) {
@@ -113,9 +161,13 @@ export default function ManageLoginsPage() {
         <div className="p-8">
             <div className="flex justify-between items-center mb-8">
                 <h1 className="text-3xl font-bold font-heading">Manage Logins</h1>
-                <div className="bg-blue-50 text-blue-800 text-sm px-4 py-2 rounded-lg border border-blue-100 max-w-md">
-                    <span className="font-bold block mb-1">Security Note:</span>
-                    Passwords are encrypted and cannot be viewed. Use "Reset Password" to send a recovery link to the user.
+                <div className="flex gap-4 items-center">
+                    <button
+                        onClick={handleAddAdmin}
+                        className="bg-purple-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-purple-700 transition-colors flex items-center gap-2 shadow-sm"
+                    >
+                        <Plus size={18} /> Add Admin
+                    </button>
                 </div>
             </div>
 
@@ -206,7 +258,7 @@ export default function ManageLoginsPage() {
                                 <tr key={user.uid} className="hover:bg-gray-50 transition-colors">
                                     <td className="px-6 py-4 font-medium text-gray-900">
                                         {user.name || "N/A"}
-                                        <div className="text-xs text-gray-400 font-mono mt-0.5">{user.uid}</div>
+                                        <div className="text-xs text-gray-400 font-mono mt-0.5">{user.uid.slice(0, 8)}...</div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={`px-2 py-1 rounded-full text-xs font-bold ${activeUsers.length > 0 && user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' :
@@ -230,11 +282,12 @@ export default function ManageLoginsPage() {
                                     </td>
                                     <td className="px-6 py-4 flex items-center gap-3">
                                         <button
-                                            onClick={() => handleEdit(user)}
-                                            className="text-gray-500 hover:text-blue-600 tooltip flex items-center gap-1 text-sm font-medium"
-                                            title="Edit Profile"
+                                            onClick={() => handleCopyInvite(user.email)}
+                                            className="text-gray-500 hover:text-green-600 tooltip flex items-center gap-1 text-sm font-medium"
+                                            title="Copy Invite Link"
                                         >
-                                            <Edit size={16} /> Edit
+                                            {copiedEmail === user.email ? <Check size={16} className="text-green-600" /> : <LinkIcon size={16} />}
+                                            {copiedEmail === user.email ? "Copied" : "Invite"}
                                         </button>
                                         <button
                                             onClick={() => handleResetPassword(user.email)}
@@ -243,7 +296,13 @@ export default function ManageLoginsPage() {
                                         >
                                             <Key size={16} /> Reset
                                         </button>
-                                        {/* Edit Email could go here if implemented properly with Auth */}
+                                        <button
+                                            onClick={() => handleEdit(user)}
+                                            className="text-gray-500 hover:text-blue-600 tooltip flex items-center gap-1 text-sm font-medium"
+                                            title="Edit Profile"
+                                        >
+                                            <Edit size={16} /> Edit
+                                        </button>
                                         <button onClick={() => handleDelete(user.uid)} className="text-gray-500 hover:text-red-500" title="Delete Account">
                                             <Trash2 size={16} />
                                         </button>
