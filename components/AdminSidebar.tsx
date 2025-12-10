@@ -8,10 +8,12 @@ import {
     GraduationCap,
     School,
     Calendar,
+    CalendarDays,
     CreditCard,
     Lock,
     LogOut,
-    Home // Added Home icon
+    Home,
+    ClipboardList // Added ClipboardList
 } from "lucide-react";
 import Image from "next/image";
 import { logout } from "@/lib/auth-helpers";
@@ -23,10 +25,12 @@ export default function AdminSidebar() {
 
     const links = [
         { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
+        { name: "Calendar", href: "/admin/calendar", icon: CalendarDays },
         { name: "Students", href: "/admin/students", icon: GraduationCap },
         { name: "Parents", href: "/admin/parents", icon: School },
         { name: "Tutors", href: "/admin/tutors", icon: Users },
         { name: "Sessions", href: "/admin/sessions", icon: Calendar },
+        { name: "Assessments", href: "/admin/assessments", icon: ClipboardList }, // Added Assessments
         { name: "Billing", href: "/admin/billing", icon: CreditCard },
         { name: "Manage Logins", href: "/admin/logins", icon: Lock },
         { name: "Back to Home", href: "/", icon: Home }, // Added Home link

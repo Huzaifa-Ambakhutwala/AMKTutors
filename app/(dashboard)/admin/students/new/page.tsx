@@ -6,8 +6,11 @@ import { collection, getDocs, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { UserProfile } from "@/lib/types";
-import { Loader2, Save, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+
+const SUBJECT_OPTIONS = ["Math", "English", "Science", "History", " SAT/ACT", "Spanish", "French", "Other"];
+const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 export default function AddStudentPage() {
     const router = useRouter();
@@ -17,7 +20,16 @@ export default function AddStudentPage() {
     // Form State
     const [name, setName] = useState("");
     const [grade, setGrade] = useState("");
-    const [school, setSchool] = useState("");
+
+
+    // New Fields
+    const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+    const [subjectRates, setSubjectRates] = useState<Record<string, number>>({});
+
+    const [sessionsPerWeek, setSessionsPerWeek] = useState<number>(1);
+    const [selectedDays, setSelectedDays] = useState<string[]>([]);
+    const [preferredTime, setPreferredTime] = useState("");
+
     const [selectedParents, setSelectedParents] = useState<string[]>([]);
     const [selectedTutors, setSelectedTutors] = useState<string[]>([]);
 
@@ -48,10 +60,16 @@ export default function AddStudentPage() {
             await addDoc(collection(db, "students"), {
                 name,
                 grade,
-                school,
+
                 parentIds: selectedParents,
                 tutorIds: selectedTutors,
-                subjects: [], // Default empty, can add later
+                subjects: selectedSubjects,
+                subjectRates: subjectRates,
+                plannedSessions: {
+                    sessionsPerWeek,
+                    daysOfWeek: selectedDays,
+                    preferredTime
+                },
                 status: 'Active',
                 createdAt: new Date().toISOString()
             });
@@ -72,9 +90,29 @@ export default function AddStudentPage() {
         }
     };
 
+    const handleSubjectToggle = (subject: string) => {
+        if (selectedSubjects.includes(subject)) {
+            setSelectedSubjects(selectedSubjects.filter(s => s !== subject));
+            // Optional: Remove rate logic if needed, but keeping it is fine
+            const newRates = { ...subjectRates };
+            delete newRates[subject];
+            setSubjectRates(newRates);
+        } else {
+            setSelectedSubjects([...selectedSubjects, subject]);
+            setSubjectRates({ ...subjectRates, [subject]: 40 }); // Default rate $40
+        }
+    };
+
+    const handleRateChange = (subject: string, rate: string) => {
+        setSubjectRates({
+            ...subjectRates,
+            [subject]: parseFloat(rate) || 0
+        });
+    };
+
     return (
         <RoleGuard allowedRoles={['ADMIN']}>
-            <div className="p-8 max-w-3xl mx-auto">
+            <div className="p-8 max-w-4xl mx-auto">
                 <div className="mb-8 flex items-center gap-4">
                     <Link href="/admin/students" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                         <ArrowLeft size={20} />
@@ -83,7 +121,7 @@ export default function AddStudentPage() {
                 </div>
 
                 {dataLoading ? <Loader2 className="animate-spin" /> : (
-                    <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 space-y-6">
+                    <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 space-y-8">
 
                         {/* Basic Info */}
                         <div className="space-y-4">
@@ -94,6 +132,7 @@ export default function AddStudentPage() {
                                     <input
                                         required type="text" value={name} onChange={e => setName(e.target.value)}
                                         className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                                        placeholder="Student Name"
                                     />
                                 </div>
                                 <div>
@@ -104,18 +143,99 @@ export default function AddStudentPage() {
                                         placeholder="e.g. 10th Grade"
                                     />
                                 </div>
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">School Name</label>
+                            </div>
+                        </div>
+
+                        {/* Subjects & Rates */}
+                        <div className="space-y-4">
+                            <h2 className="text-lg font-semibold border-b pb-2">Subjects & Rates</h2>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-3">Select Subjects</label>
+                                <div className="flex flex-wrap gap-2 mb-4">
+                                    {SUBJECT_OPTIONS.map(subj => (
+                                        <button
+                                            key={subj}
+                                            type="button"
+                                            onClick={() => handleSubjectToggle(subj)}
+                                            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${selectedSubjects.includes(subj)
+                                                ? 'bg-blue-100 text-blue-700 border-blue-200 ring-2 ring-blue-500/20'
+                                                : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
+                                                }`}
+                                        >
+                                            {subj}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {selectedSubjects.length > 0 && (
+                                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                        <h3 className="text-sm font-bold text-gray-700 mb-3">Hourly Rates Per Subject ($)</h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                            {selectedSubjects.map(subj => (
+                                                <div key={subj}>
+                                                    <label className="block text-xs font-semibold text-gray-500 mb-1">{subj}</label>
+                                                    <input
+                                                        type="number"
+                                                        value={subjectRates[subj] || ""}
+                                                        onChange={(e) => handleRateChange(subj, e.target.value)}
+                                                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-primary outline-none"
+                                                        placeholder="Rate"
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Planned Sessions */}
+                        <div className="space-y-4">
+                            <h2 className="text-lg font-semibold border-b pb-2">Planned Sessions (Optional)</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Sessions Per Week</label>
                                     <input
-                                        required type="text" value={school} onChange={e => setSchool(e.target.value)}
+                                        type="number" min="0" max="14"
+                                        value={sessionsPerWeek}
+                                        onChange={(e) => setSessionsPerWeek(parseInt(e.target.value))}
                                         className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
                                     />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Time</label>
+                                    <input
+                                        type="time"
+                                        value={preferredTime}
+                                        onChange={(e) => setPreferredTime(e.target.value)}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                                    />
+                                </div>
+
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Days of Week</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {DAYS_OF_WEEK.map(day => (
+                                            <button
+                                                key={day}
+                                                type="button"
+                                                onClick={() => toggleSelection(day, selectedDays, setSelectedDays)}
+                                                className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-all ${selectedDays.includes(day)
+                                                    ? 'bg-green-100 text-green-700 border-green-200 ring-2 ring-green-500/20'
+                                                    : 'bg-white text-gray-600 border-gray-200 hover:border-green-300'
+                                                    }`}
+                                            >
+                                                {day}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Relationships */}
-                        <div className="space-y-4 pt-4">
+                        <div className="space-y-4">
                             <h2 className="text-lg font-semibold border-b pb-2">Assign Relationships</h2>
 
                             {/* Parents */}
@@ -128,8 +248,8 @@ export default function AddStudentPage() {
                                             type="button"
                                             onClick={() => toggleSelection(p.uid, selectedParents, setSelectedParents)}
                                             className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${selectedParents.includes(p.uid)
-                                                    ? 'bg-blue-100 text-blue-700 border-blue-200 ring-2 ring-blue-500/20'
-                                                    : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
+                                                ? 'bg-purple-100 text-purple-700 border-purple-200 ring-2 ring-purple-500/20'
+                                                : 'bg-white text-gray-600 border-gray-200 hover:border-purple-300'
                                                 }`}
                                         >
                                             {p.name}
@@ -149,8 +269,8 @@ export default function AddStudentPage() {
                                             type="button"
                                             onClick={() => toggleSelection(t.uid, selectedTutors, setSelectedTutors)}
                                             className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${selectedTutors.includes(t.uid)
-                                                    ? 'bg-purple-100 text-purple-700 border-purple-200 ring-2 ring-purple-500/20'
-                                                    : 'bg-white text-gray-600 border-gray-200 hover:border-purple-300'
+                                                ? 'bg-orange-100 text-orange-700 border-orange-200 ring-2 ring-orange-500/20'
+                                                : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300'
                                                 }`}
                                         >
                                             {t.name}
@@ -161,7 +281,7 @@ export default function AddStudentPage() {
                             </div>
                         </div>
 
-                        <div className="pt-6 flex justify-end gap-3">
+                        <div className="pt-6 flex justify-end gap-3 sticky bottom-4 bg-white/95 backdrop-blur py-4 border-t border-gray-100 mt-8">
                             <Link href="/admin/students" className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50">
                                 Cancel
                             </Link>

@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Session } from "@/lib/types";
-import { Loader2, Calendar, Clock, RotateCcw } from "lucide-react";
+import { Loader2, Calendar, Clock, RotateCcw, Edit, Trash2, Eye } from "lucide-react";
 import Link from "next/link";
 
 export default function SessionsListPage() {
@@ -12,6 +12,17 @@ export default function SessionsListPage() {
     const [loading, setLoading] = useState(true);
 
     // Filter states could go here (e.g. by status, tutor, etc.)
+
+    const handleDelete = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this session?")) return;
+        try {
+            await deleteDoc(doc(db, "sessions", id));
+            setSessions(sessions.filter(s => s.id !== id));
+        } catch (e) {
+            console.error(e);
+            alert("Error deleting session");
+        }
+    };
 
     const fetchSessions = async () => {
         setLoading(true);
@@ -47,9 +58,9 @@ export default function SessionsListPage() {
                         <RotateCcw size={18} className="text-gray-500" />
                     </button>
                 </div>
-                {/* <Link href="/admin/sessions/new" className="bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-              + Schedule Session
-          </Link> */}
+                <Link href="/admin/sessions/new" className="bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                    + Schedule Session
+                </Link>
             </div>
 
             {loading ? (
@@ -64,6 +75,7 @@ export default function SessionsListPage() {
                                 <th className="px-6 py-4 font-semibold text-gray-700">Tutor</th>
                                 <th className="px-6 py-4 font-semibold text-gray-700">Subject</th>
                                 <th className="px-6 py-4 font-semibold text-gray-700">Status</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
@@ -89,17 +101,28 @@ export default function SessionsListPage() {
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${s.status === 'Completed' ? 'bg-green-50 text-green-700 border-green-100' :
-                                                s.status === 'Cancelled' ? 'bg-red-50 text-red-700 border-red-100' :
-                                                    s.status === 'NoShow' ? 'bg-orange-50 text-orange-700 border-orange-100' :
-                                                        'bg-blue-50 text-blue-700 border-blue-100'
+                                            s.status === 'Cancelled' ? 'bg-red-50 text-red-700 border-red-100' :
+                                                s.status === 'NoShow' ? 'bg-orange-50 text-orange-700 border-orange-100' :
+                                                    'bg-blue-50 text-blue-700 border-blue-100'
                                             }`}>
                                             {s.status}
                                         </span>
                                     </td>
+                                    <td className="px-6 py-4 flex gap-3">
+                                        <Link href={`/admin/sessions/${s.id}`} className="text-gray-500 hover:text-blue-600" title="View Details">
+                                            <Eye size={18} />
+                                        </Link>
+                                        <Link href={`/admin/sessions/${s.id}/edit`} className="text-gray-500 hover:text-orange-500" title="Edit">
+                                            <Edit size={18} />
+                                        </Link>
+                                        <button onClick={() => handleDelete(s.id)} className="text-gray-500 hover:text-red-500" title="Delete">
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </td>
                                 </tr>
                             ))}
                             {sessions.length === 0 && (
-                                <tr><td colSpan={5} className="px-6 py-12 text-center text-gray-500">No sessions found.</td></tr>
+                                <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-500">No sessions found.</td></tr>
                             )}
                         </tbody>
                     </table>

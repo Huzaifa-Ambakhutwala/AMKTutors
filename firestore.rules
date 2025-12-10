@@ -90,6 +90,12 @@ service cloud.firestore {
       // Parents can read their own invoices
       allow read: if isParent() && resource.data.parentId == request.auth.uid;
     }
+
+    // 5. Assessments Collection
+    match /assessments/{assessmentId} {
+      // Admins have full access
+      allow read, write: if isAdmin();
+    }
     
     // Default Deny
     match /{document=**} {

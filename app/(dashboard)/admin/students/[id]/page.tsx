@@ -101,7 +101,7 @@ export default function StudentDetailPage() {
                         <h1 className="text-3xl font-bold font-heading mb-1">{student.name}</h1>
                         <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
                             <span className="flex items-center gap-1"><GraduationCap size={14} /> {student.grade}</span>
-                            {student.school && <span className="flex items-center gap-1"><School size={14} /> {student.school}</span>}
+
                         </div>
                         <div className="mt-2">
                             <span className={`px-2 py-0.5 rounded text-xs font-bold ${student.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}>
@@ -226,8 +226,8 @@ function SessionList({ sessions }: { sessions: Session[] }) {
                             )}
                         </div>
                         <span className={`px-2 py-1 rounded text-xs font-bold ${s.status === 'Completed' ? 'bg-green-100 text-green-700' :
-                                s.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
-                                    'bg-blue-100 text-blue-700'
+                            s.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
+                                'bg-blue-100 text-blue-700'
                             }`}>
                             {s.status}
                         </span>

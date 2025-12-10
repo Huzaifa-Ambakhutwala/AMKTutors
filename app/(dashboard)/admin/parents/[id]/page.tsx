@@ -123,7 +123,7 @@ export default function ParentDetailPage() {
                                     <li key={s.id} className="p-3 bg-gray-50 rounded-lg border border-gray-100">
                                         <div className="font-semibold text-gray-900">{s.name}</div>
                                         <div className="text-xs text-gray-500 flex justify-between mt-1">
-                                            <span>{s.grade} • {s.school}</span>
+                                            <span>{s.grade}</span>
                                             <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${s.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}>{s.status}</span>
                                         </div>
                                     </li>
@@ -198,9 +198,9 @@ function SessionList({ sessions }: { sessions: Session[] }) {
                             )}
                         </div>
                         <span className={`px-2 py-1 rounded text-xs font-bold ${s.status === 'Completed' ? 'bg-green-100 text-green-700' :
-                                s.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
-                                    s.status === 'NoShow' ? 'bg-orange-100 text-orange-700' :
-                                        'bg-blue-100 text-blue-700'
+                            s.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
+                                s.status === 'NoShow' ? 'bg-orange-100 text-orange-700' :
+                                    'bg-blue-100 text-blue-700'
                             }`}>
                             {s.status}
                         </span>

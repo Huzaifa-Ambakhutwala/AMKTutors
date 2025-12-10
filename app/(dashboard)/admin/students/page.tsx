@@ -58,7 +58,8 @@ export default function AdminStudentsPage() {
                                 <tr>
                                     <th className="px-6 py-4 font-semibold text-gray-700">Name</th>
                                     <th className="px-6 py-4 font-semibold text-gray-700">Grade</th>
-                                    <th className="px-6 py-4 font-semibold text-gray-700">School</th>
+                                    <th className="px-6 py-4 font-semibold text-gray-700">Subjects</th>
+                                    <th className="px-6 py-4 font-semibold text-gray-700">Planned Sessions</th>
                                     <th className="px-6 py-4 font-semibold text-gray-700">Status</th>
                                     <th className="px-6 py-4 font-semibold text-gray-700">Actions</th>
                                 </tr>
@@ -68,7 +69,29 @@ export default function AdminStudentsPage() {
                                     <tr key={s.id} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4 font-medium">{s.name}</td>
                                         <td className="px-6 py-4">{s.grade}</td>
-                                        <td className="px-6 py-4 text-gray-500">{s.school}</td>
+                                        <td className="px-6 py-4">
+                                            {s.subjects && s.subjects.length > 0 ? (
+                                                <div className="flex flex-wrap gap-1">
+                                                    {s.subjects.map(subj => (
+                                                        <span key={subj} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-100">
+                                                            {subj}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <span className="text-gray-400 text-sm italic">None</span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-gray-600">
+                                            {s.plannedSessions ? (
+                                                <div className="flex flex-col gap-0.5">
+                                                    <span><strong>{s.plannedSessions.sessionsPerWeek}</strong>/wk @ {s.plannedSessions.preferredTime || "TBD"}</span>
+                                                    <span className="text-xs text-gray-400">{s.plannedSessions.daysOfWeek.join(", ")}</span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-gray-400 italic">No schedule</span>
+                                            )}
+                                        </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2 py-1 rounded-full text-xs font-bold ${s.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
                                                 {s.status}
