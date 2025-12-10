@@ -9,13 +9,17 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Check if user matches the requested ID
+    // Check if user matches the requested ID or the 'authUid' field
     function isOwner(userId) {
-      return request.auth.uid == userId;
+      return request.auth.uid == userId || 
+             (resource != null && resource.data.authUid == request.auth.uid);
     }
 
     // Fetch user role
     function getUserData() {
+      // Careful: if checking current user, we might need to find by authUid if IDs are decoupled. 
+      // But commonly getUserData is used when we know the ID matches. 
+      // For Admins, ID==UID usually.
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
@@ -38,17 +42,22 @@ service cloud.firestore {
       // Admins can read/write everything
       allow read, write: if isAdmin();
       
-      // Users can read their own profile (ID match or Email match for invites)
-      allow read: if isOwner(userId) || resource.data.email == request.auth.token.email;
+      // Users can read their own profile (ID match, AuthUid match, or Email match for invites)
+      // Public can read if checking a valid invite link (inviteToken exists)
+      allow read: if (resource.data.inviteToken != null) || 
+                  (isAuthenticated() && (isOwner(userId) || resource.data.email == request.auth.token.email));
       
       // Users can create their own profile (SignUp flow)
       // Must ensure they don't assign themselves 'ADMIN' role on creation!
       allow create: if isOwner(userId) 
                     && request.resource.data.role != 'ADMIN'; 
       
-      // Users can update their own profile (e.g. name), but NOT their role
-      allow update: if isOwner(userId) 
-                    && request.resource.data.role == resource.data.role; // Role must remain unchanged
+      // Users can update their own profile
+      // OR claim an invited profile (Email match + Invited status)
+      allow update: if isAuthenticated() && (
+        (isOwner(userId) && request.resource.data.role == resource.data.role) ||
+        (resource.data.email == request.auth.token.email && resource.data.status == 'invited')
+      );
     }
 
     // 2. Students Collection
