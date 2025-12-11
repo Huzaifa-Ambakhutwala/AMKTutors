@@ -78,6 +78,11 @@ export interface Session {
     tutorPaid?: boolean;
     invoiceId?: string | null;
     payStubId?: string | null;
+
+    // Assessment / One-off Billing extensions
+    parentId?: string; // For linking assessments explicitly
+    assessmentId?: string;
+    cost?: number; // Fixed cost override (e.g. for assessments)
 }
 
 export interface InvoiceItem {

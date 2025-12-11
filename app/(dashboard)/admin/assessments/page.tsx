@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, getDocs, query, orderBy, where, doc, writeBatch, arrayUnion } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, where, doc, writeBatch, arrayUnion, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Assessment, UserProfile } from "@/lib/types";
 import Link from "next/link";
-import { Plus, Search, Edit2, UserPlus, CheckCircle } from "lucide-react";
+import { Plus, Search, Edit2, UserPlus, CheckCircle, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { v4 as uuidv4 } from 'uuid';
 
@@ -31,6 +31,18 @@ export default function AssessmentsPage() {
             console.error("Error fetching assessments:", e);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDelete = async (id: string, name: string) => {
+        if (!confirm(`Are you sure you want to delete the assessment for "${name}"? This cannot be undone.`)) return;
+
+        try {
+            await deleteDoc(doc(db, "assessments", id));
+            setAssessments(prev => prev.filter(a => a.id !== id));
+        } catch (e) {
+            console.error("Error deleting assessment:", e);
+            alert("Failed to delete assessment");
         }
     };
 
@@ -208,6 +220,13 @@ export default function AssessmentsPage() {
                                             <Link href={`/admin/assessments/${a.id}/edit`} className="p-1.5 text-gray-500 hover:bg-gray-100 rounded">
                                                 <Edit2 size={18} />
                                             </Link>
+                                            <button
+                                                onClick={() => handleDelete(a.id, a.studentName)}
+                                                className="p-1.5 text-red-500 hover:bg-red-50 rounded"
+                                                title="Delete Assessment"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
                                         </td>
                                     </tr>
                                 ))

@@ -2,7 +2,7 @@
 
 import RoleGuard from "@/components/RoleGuard";
 import { useState, useEffect } from "react";
-import { collection, getDocs, doc, getDoc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, updateDoc, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useRouter, useParams } from "next/navigation";
 import { UserProfile, Student, Session } from "@/lib/types";
@@ -65,11 +65,9 @@ export default function EditSessionPage() {
                 const allStudents = sSnap.docs.map(d => ({ id: d.id, ...d.data() } as Student));
                 setStudents(allStudents);
 
-                const uSnap = await getDocs(collection(db, "users"));
+                const uSnap = await getDocs(query(collection(db, "users"), where("role", "in", ["TUTOR", "ADMIN"])));
                 // Allow both TUTOR and ADMIN to be selected as tutors
-                const allTutors = uSnap.docs
-                    .map(d => ({ uid: d.id, ...d.data() } as UserProfile))
-                    .filter(u => u.role === 'TUTOR' || u.role === 'ADMIN');
+                const allTutors = uSnap.docs.map(d => ({ uid: d.id, ...d.data() } as UserProfile)).filter(u => !u.isShadow);
                 setTutors(allTutors);
 
                 // Debugging consistency
@@ -97,7 +95,7 @@ export default function EditSessionPage() {
             const student = students.find(s => s.id === selectedStudentId);
             const tutor = tutors.find(t => t.uid === selectedTutorId);
 
-            if (!student || !tutor) {
+            if ((!student && subject !== 'Assessment' && !selectedStudentId?.includes('ASSESSMENT')) || !tutor) {
                 console.error("Selection Error:", { selectedStudentId, selectedTutorId, studentFound: !!student, tutorFound: !!tutor });
                 throw new Error("Invalid Student or Tutor selection. Please verify they exist.");
             }
@@ -107,8 +105,8 @@ export default function EditSessionPage() {
             const endDateTime = new Date(startDateTime.getTime() + parseInt(duration) * 60000);
 
             await updateDoc(doc(db, "sessions", sessionId), {
-                studentId: student.id,
-                studentName: student.name,
+                studentId: student?.id || selectedStudentId, // Keep existing ID if special
+                studentName: student?.name || undefined, // Don't overwrite name if using special ID, or let it merge
                 tutorId: tutor.uid,
                 tutorName: tutor.name,
                 subject,
@@ -147,17 +145,28 @@ export default function EditSessionPage() {
                             {/* Student Selection */}
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Student</label>
-                                <select
-                                    required
-                                    value={selectedStudentId}
-                                    onChange={e => setSelectedStudentId(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
-                                >
-                                    <option value="" disabled>Select Student...</option>
-                                    {students.map(s => (
-                                        <option key={s.id} value={s.id}>{s.name}</option>
-                                    ))}
-                                </select>
+                                {subject === 'Assessment' || selectedStudentId?.includes('ASSESSMENT') ? (
+                                    // Read-only view for Assessment sessions to prevent validation errors
+                                    <input
+                                        type="text"
+                                        value={students.find(s => s.id === selectedStudentId)?.name || (status === 'Completed' || status === 'Scheduled' ? "Potential Student (Assessment)" : "")}
+                                        disabled
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500"
+                                        placeholder="Student Name"
+                                    />
+                                ) : (
+                                    <select
+                                        required
+                                        value={selectedStudentId}
+                                        onChange={e => setSelectedStudentId(e.target.value)}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                                    >
+                                        <option value="" disabled>Select Student...</option>
+                                        {students.map(s => (
+                                            <option key={s.id} value={s.id}>{s.name}</option>
+                                        ))}
+                                    </select>
+                                )}
                             </div>
 
                             {/* Tutor Selection */}
@@ -179,18 +188,27 @@ export default function EditSessionPage() {
                             {/* Subject Selection (Dependent on Student) */}
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
-                                <select
-                                    required
-                                    value={subject}
-                                    onChange={e => setSubject(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
-                                >
-                                    <option value="">Select Subject...</option>
-                                    {selectedStudent?.subjects.map(subj => (
-                                        <option key={subj} value={subj}>{subj}</option>
-                                    ))}
-                                    <option value="Other">Other / Assessment</option>
-                                </select>
+                                {subject === 'Assessment' ? (
+                                    <input
+                                        type="text"
+                                        value="Assessment"
+                                        disabled
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500"
+                                    />
+                                ) : (
+                                    <select
+                                        required
+                                        value={subject}
+                                        onChange={e => setSubject(e.target.value)}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                                    >
+                                        <option value="">Select Subject...</option>
+                                        {selectedStudent?.subjects.map(subj => (
+                                            <option key={subj} value={subj}>{subj}</option>
+                                        ))}
+                                        <option value="Other">Other / Assessment</option>
+                                    </select>
+                                )}
                             </div>
 
                             {/* Date & Time */}

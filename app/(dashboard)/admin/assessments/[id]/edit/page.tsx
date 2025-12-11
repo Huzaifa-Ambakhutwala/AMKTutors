@@ -37,16 +37,17 @@ export default function EditAssessmentPage() {
     const [notes, setNotes] = useState("");
     const [tutorId, setTutorId] = useState("");
     const [assessmentDate, setAssessmentDate] = useState("");
+    const [status, setStatus] = useState("Scheduled");
 
     const [isConverted, setIsConverted] = useState(false);
 
     useEffect(() => {
         async function fetchData() {
             try {
-                // Fetch Tutors
-                const qTutors = query(collection(db, "users"), where("role", "==", "TUTOR"));
+                // Fetch Tutors and Admins
+                const qTutors = query(collection(db, "users"), where("role", "in", ["TUTOR", "ADMIN"]));
                 const snapTutors = await getDocs(qTutors);
-                setTutors(snapTutors.docs.map(d => d.data() as UserProfile));
+                setTutors(snapTutors.docs.map(d => d.data() as UserProfile).filter(u => !u.isShadow));
 
                 // Fetch Assessment
                 const docRef = doc(db, "assessments", assessmentId);
@@ -54,6 +55,7 @@ export default function EditAssessmentPage() {
 
                 if (docSnap.exists()) {
                     const data = docSnap.data() as Assessment;
+                    // ... set fields ...
                     setStudentName(data.studentName);
                     setStudentGrade(data.studentGrade || "");
 
@@ -68,6 +70,13 @@ export default function EditAssessmentPage() {
                     setAssessmentDate(data.assessmentDate);
 
                     setIsConverted(data.convertedToStudent);
+
+                    // Fetch Linked Session Status
+                    const sessionsQ = query(collection(db, "sessions"), where("assessmentId", "==", assessmentId));
+                    const sessionsSnap = await getDocs(sessionsQ);
+                    if (!sessionsSnap.empty) {
+                        setStatus(sessionsSnap.docs[0].data().status || "Scheduled");
+                    }
                 } else {
                     setGlobalError("Assessment not found");
                 }
@@ -134,6 +143,16 @@ export default function EditAssessmentPage() {
                 assessmentDate: assessmentDate,
                 updatedAt: new Date().toISOString()
             });
+
+            // Update Linked Session Status if it exists
+            const sessionsQ = query(collection(db, "sessions"), where("assessmentId", "==", assessmentId));
+            const sessionsSnap = await getDocs(sessionsQ);
+            if (!sessionsSnap.empty) {
+                const sessionDoc = sessionsSnap.docs[0];
+                await updateDoc(sessionDoc.ref, {
+                    status: status
+                });
+            }
 
             setSuccessMsg("Assessment updated successfully!");
             // Optional: redirect or stay? Let's redirect after short delay or immediately.
@@ -250,6 +269,18 @@ export default function EditAssessmentPage() {
                                     onChange={e => setAssessmentDate(e.target.value)}
                                 />
                                 <InlineError message={errors.assessmentDate} />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                <select
+                                    className="w-full p-2 border rounded-lg border-gray-300"
+                                    value={status}
+                                    onChange={e => setStatus(e.target.value)}
+                                >
+                                    <option value="Scheduled">Scheduled</option>
+                                    <option value="Completed">Completed</option>
+                                    <option value="Cancelled">Cancelled</option>
+                                </select>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Tutor *</label>

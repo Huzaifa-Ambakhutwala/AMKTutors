@@ -50,18 +50,27 @@ export default function ParentsBillingGrid() {
                     const myStudentIds = new Set(myStudents.map(s => s.id));
 
                     // Find unbilled sessions for these students
+                    // Find unbilled sessions for these students OR linked assessments
                     const unbilledSessions = allSessions.filter(s =>
-                        myStudentIds.has(s.studentId) &&
+                        (
+                            (myStudentIds.has(s.studentId)) ||
+                            (s.parentId === parent.uid && s.subject === "Assessment")
+                        ) &&
                         s.parentBilled !== true
                     );
 
                     // Calculate totals
                     let totalUnbilled = 0;
                     unbilledSessions.forEach(session => {
-                        const student = myStudents.find(s => s.id === session.studentId);
-                        const rate = student?.subjectRates?.[session.subject] || 0;
-                        const hours = session.durationMinutes / 60;
-                        totalUnbilled += (hours * rate);
+                        // If it has a fixed cost (like assessment), use that. Otherwise calculate hourly.
+                        if (session.cost !== undefined) {
+                            totalUnbilled += session.cost;
+                        } else {
+                            const student = myStudents.find(s => s.id === session.studentId);
+                            const rate = student?.subjectRates?.[session.subject] || 0;
+                            const hours = session.durationMinutes / 60;
+                            totalUnbilled += (hours * rate);
+                        }
                     });
 
                     return {

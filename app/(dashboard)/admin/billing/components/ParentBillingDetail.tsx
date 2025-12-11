@@ -46,10 +46,9 @@ export default function ParentBillingDetail({ parentId, onBack }: ParentBillingD
             const studentsList = studentsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Student));
             setStudents(studentsList);
             const studentIds = studentsList.map(s => s.id);
+            let mergedSessions: Session[] = [];
 
-            // 3. Fetch Pending Sessions
-            // We need ALL sessions for these students that are scheduled but NOT billed
-            // Chunking logic if needed, but assuming <10 students (Firestore 'in' limit)
+            // 3a. Fetch Sessions by Student ID (Standard Tutoring)
             if (studentIds.length > 0) {
                 const sessionsQ = query(
                     collection(db, "sessions"),
@@ -57,30 +56,64 @@ export default function ParentBillingDetail({ parentId, onBack }: ParentBillingD
                     where("status", "in", ["Scheduled", "Completed"])
                 );
                 const sessionsSnap = await getDocs(sessionsQ);
-                const allSessions = sessionsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Session));
+                mergedSessions = [...mergedSessions, ...sessionsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Session))];
+            }
 
-                // Filter unbilled
-                const unbilled = allSessions.filter(s => s.parentBilled !== true);
+            // 3b. Fetch Sessions by Parent ID (Assessments, etc.)
+            // We fetch where parentId == parentId. 
+            // Note: We also need to filter by status, but we can do client side or composite index.
+            // Let's do client filter for simplicity and avoiding index issues if possible.
+            const parentSessionsQ = query(
+                collection(db, "sessions"),
+                where("parentId", "==", parentId)
+            );
+            const parentSessionsSnap = await getDocs(parentSessionsQ);
+            const parentSessions = parentSessionsSnap.docs
+                .map(d => ({ id: d.id, ...d.data() } as Session))
+                .filter(s => ["Scheduled", "Completed"].includes(s.status));
 
-                // Calculate Rates
-                const processed = unbilled.map(s => {
-                    const student = studentsList.find(stu => stu.id === s.studentId);
-                    const rate = student?.subjectRates?.[s.subject] || 0;
-                    const durationHours = s.durationMinutes / 60;
+            mergedSessions = [...mergedSessions, ...parentSessions];
+
+            // Deduplicate (in case a session matches both, though unlikely with current schema)
+            const uniqueSessions = Array.from(new Map(mergedSessions.map(s => [s.id, s])).values());
+
+            const allSessions = uniqueSessions;
+
+            // Filter unbilled
+            const unbilled = allSessions.filter(s => s.parentBilled !== true);
+
+            // Calculate Rates
+            const processed = unbilled.map(s => {
+                // 1. Try to find student
+                const student = studentsList.find(stu => stu.id === s.studentId);
+
+                // 2. Determine Rate/Total
+                // If session has fixed 'cost', use that.
+                if (s.cost !== undefined) {
                     return {
                         ...s,
-                        calculatedRate: rate,
-                        lineTotal: durationHours * rate
+                        calculatedRate: s.cost, // effectively flat rate
+                        lineTotal: s.cost
                     };
-                });
+                }
 
-                // Sort by Date Ascending (Oldest first for billing)
-                processed.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-                setPendingSessions(processed);
+                // Fallback to Hourly Rate
+                const rate = student?.subjectRates?.[s.subject] || 0;
+                const durationHours = s.durationMinutes / 60;
 
-                // Auto-select all by default
-                setSelectedSessionIds(new Set(processed.map(s => s.id)));
-            }
+                return {
+                    ...s,
+                    calculatedRate: rate,
+                    lineTotal: durationHours * rate
+                };
+            });
+
+            // Sort by Date Ascending (Oldest first for billing)
+            processed.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+            setPendingSessions(processed);
+
+            // Auto-select all by default
+            setSelectedSessionIds(new Set(processed.map(s => s.id)));
 
             // 4. Fetch Invoice History
             const invoicesQ = query(collection(db, "invoices"), where("parentId", "==", parentId));

@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { collection, doc, getDocs, query, setDoc, where } from "firebase/firestore";
+import { collection, doc, getDocs, query, setDoc, where, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { UserProfile, Assessment } from "@/lib/types";
-import { ArrowLeft, Save, User, UserCheck, BookOpen, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, User, UserCheck, BookOpen, Loader2, DollarSign } from "lucide-react";
 import Link from "next/link";
 import { v4 as uuidv4 } from 'uuid';
 import { normalizeOptionalString } from "@/lib/utils";
@@ -15,6 +15,9 @@ export default function NewAssessmentPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [tutors, setTutors] = useState<UserProfile[]>([]);
+    const [existingParents, setExistingParents] = useState<UserProfile[]>([]);
+    const [parentMode, setParentMode] = useState<'new' | 'existing'>('new');
+    const [selectedParentId, setSelectedParentId] = useState("");
 
     // Form Feedback
     const [globalError, setGlobalError] = useState<string | null>(null);
@@ -35,29 +38,38 @@ export default function NewAssessmentPage() {
     const [assessmentDate, setAssessmentDate] = useState(new Date().toISOString().split("T")[0]);
 
     useEffect(() => {
-        async function fetchTutors() {
+        async function fetchData() {
             try {
-                const q = query(collection(db, "users"), where("role", "==", "TUTOR"));
-                const snap = await getDocs(q);
-                setTutors(snap.docs.map(d => d.data() as UserProfile));
+                // Fetch Tutors and Admins
+                const tutorsQ = query(collection(db, "users"), where("role", "in", ["TUTOR", "ADMIN"]));
+                const tutorsSnap = await getDocs(tutorsQ);
+                setTutors(tutorsSnap.docs.map(d => d.data() as UserProfile).filter(u => !u.isShadow));
+
+                // Fetch Parents
+                const parentsQ = query(collection(db, "users"), where("role", "==", "PARENT"));
+                const parentsSnap = await getDocs(parentsQ);
+                setExistingParents(parentsSnap.docs.map(d => d.data() as UserProfile).filter(u => !u.isShadow));
             } catch (e) {
-                console.error("Error fetching tutors:", e);
-                setGlobalError("Failed to load tutors list.");
+                console.error("Error fetching data:", e);
+                setGlobalError("Failed to load form data.");
             }
         }
-        fetchTutors();
+        fetchData();
     }, []);
 
     const validate = () => {
         const newErrors: Record<string, string> = {};
 
         if (!studentName.trim()) newErrors.studentName = "Student Name is required";
-        if (!parentName.trim()) newErrors.parentName = "Parent Name is required";
-
-        if (!parentEmail.trim()) {
-            newErrors.parentEmail = "Email is required";
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parentEmail)) {
-            newErrors.parentEmail = "Invalid email format";
+        if (parentMode === 'existing') {
+            if (!selectedParentId) newErrors.selectedParentId = "Please select a parent";
+        } else {
+            if (!parentName.trim()) newErrors.parentName = "Parent Name is required";
+            if (!parentEmail.trim()) {
+                newErrors.parentEmail = "Email is required";
+            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parentEmail)) {
+                newErrors.parentEmail = "Invalid email format";
+            }
         }
 
         if (!tutorId) newErrors.tutorId = "Please assign a tutor";
@@ -70,6 +82,10 @@ export default function NewAssessmentPage() {
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
+
+    const [assessmentCharge, setAssessmentCharge] = useState("");
+
+    // ... (existing useEffect) ...
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -107,16 +123,36 @@ export default function NewAssessmentPage() {
                 updatedAt: new Date().toISOString()
             };
 
-            // Sanitize undefined values just in case
-            // A helper strictly for this:
             const payload = JSON.parse(JSON.stringify(assessment));
-            // JSON.stringify removes undefined keys automatically! This is a cheap way to ensure "Omit entirely".
-            // But it converts Dates to strings (which they already are here).
-
             await setDoc(doc(db, "assessments", id), payload);
 
-            // alert("Assessment created successfully!"); 
-            // Use Toast/Banner instead? We'll redirect with parameter or just redirect.
+            // Create Assessment Session for Calendar & Billing
+            // Defaulting to 1 hour duration. Using 12:00 PM if time not specified? 
+            // Better to just use the date and a default time.
+            const sessionStart = new Date(`${assessmentDate}T12:00:00`);
+            const sessionEnd = new Date(sessionStart.getTime() + 60 * 60000);
+
+            await addDoc(collection(db, "sessions"), {
+                studentId: parentMode === 'existing' ? "ASSESSMENT-PLACEHOLDER" : "NEW-ASSESSMENT",
+                studentName: studentName.trim(),
+                tutorId: tutor?.uid || "",
+                tutorName: tutor?.name || "Unknown",
+                subject: "Assessment",
+                startTime: sessionStart.toISOString(),
+                endTime: sessionEnd.toISOString(),
+                durationMinutes: 60,
+                status: 'Completed', // Default to Completed so it's billable?
+                location: "Online",
+                attendance: 'Present',
+                createdAt: new Date().toISOString(),
+
+                // Fields for Billing linking
+                parentId: parentMode === 'existing' ? selectedParentId : undefined,
+                assessmentId: id,
+                // We use 'cost' to override the calculated rate in billing
+                cost: assessmentCharge ? parseFloat(assessmentCharge) : 0
+            });
+
             router.push("/admin/assessments");
 
         } catch (e: any) {
@@ -159,6 +195,18 @@ export default function NewAssessmentPage() {
                                 <InlineError message={errors.studentName} />
                             </div>
                             <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Score / Level</label>
+                                <input
+                                    type="number"
+                                    step="any"
+                                    className="w-full p-2 border rounded-lg border-gray-300"
+                                    value={score}
+                                    onChange={e => setScore(e.target.value)}
+                                    placeholder="Optional numeric score"
+                                />
+                            </div>
+
+                            <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Grade</label>
                                 <input
                                     type="text"
@@ -173,40 +221,102 @@ export default function NewAssessmentPage() {
 
                     {/* Parent Info */}
                     <div className="space-y-4">
-                        <div className="flex items-center gap-2 text-lg font-semibold text-gray-800 border-b pb-2">
-                            <UserCheck size={20} /> Parent / Guardian
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Parent Name *</label>
-                                <input
-                                    type="text"
-                                    className={`w-full p-2 border rounded-lg ${errors.parentName ? 'border-red-500' : 'border-gray-300'}`}
-                                    value={parentName}
-                                    onChange={e => setParentName(e.target.value)}
-                                />
-                                <InlineError message={errors.parentName} />
+                        <div className="flex items-center justify-between border-b pb-2">
+                            <div className="flex items-center gap-2 text-lg font-semibold text-gray-800">
+                                <UserCheck size={20} /> Parent / Guardian
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                                <input
-                                    type="email"
-                                    className={`w-full p-2 border rounded-lg ${errors.parentEmail ? 'border-red-500' : 'border-gray-300'}`}
-                                    value={parentEmail}
-                                    onChange={e => setParentEmail(e.target.value)}
-                                />
-                                <InlineError message={errors.parentEmail} />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                                <input
-                                    type="tel"
-                                    className="w-full p-2 border rounded-lg border-gray-300"
-                                    value={parentPhone}
-                                    onChange={e => setParentPhone(e.target.value)}
-                                />
+                            <div className="flex bg-gray-100 p-1 rounded-lg">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setParentMode('existing');
+                                        setParentName("");
+                                        setParentEmail("");
+                                        setParentPhone("");
+                                    }}
+                                    className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${parentMode === 'existing' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                >
+                                    Existing Parent
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setParentMode('new');
+                                        setSelectedParentId("");
+                                        setParentName("");
+                                        setParentEmail("");
+                                        setParentPhone("");
+                                    }}
+                                    className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${parentMode === 'new' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                >
+                                    New Parent
+                                </button>
                             </div>
                         </div>
+
+                        {parentMode === 'existing' ? (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Select Parent *</label>
+                                <select
+                                    className={`w-full p-2 border rounded-lg ${errors.selectedParentId ? 'border-red-500' : 'border-gray-300'}`}
+                                    value={selectedParentId}
+                                    onChange={(e) => {
+                                        const pid = e.target.value;
+                                        setSelectedParentId(pid);
+                                        const p = existingParents.find(x => x.uid === pid);
+                                        if (p) {
+                                            setParentName(p.name);
+                                            setParentEmail(p.email);
+                                            setParentPhone(p.phone || "");
+                                        } else {
+                                            setParentName("");
+                                            setParentEmail("");
+                                            setParentPhone("");
+                                        }
+                                    }}
+                                >
+                                    <option value="">-- Choose Existing Parent --</option>
+                                    {existingParents.map(p => (
+                                        <option key={p.uid} value={p.uid}>
+                                            {p.name} ({p.email})
+                                        </option>
+                                    ))}
+                                </select>
+                                <InlineError message={errors.selectedParentId} />
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Parent Name *</label>
+                                    <input
+                                        type="text"
+                                        className={`w-full p-2 border rounded-lg ${errors.parentName ? 'border-red-500' : 'border-gray-300'}`}
+                                        value={parentName}
+                                        onChange={e => setParentName(e.target.value)}
+                                    />
+                                    <InlineError message={errors.parentName} />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                                    <input
+                                        type="email"
+                                        className={`w-full p-2 border rounded-lg ${errors.parentEmail ? 'border-red-500' : 'border-gray-300'}`}
+                                        value={parentEmail}
+                                        onChange={e => setParentEmail(e.target.value)}
+                                    />
+                                    <InlineError message={errors.parentEmail} />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                                    <input
+                                        type="tel"
+                                        className="w-full p-2 border rounded-lg border-gray-300"
+                                        value={parentPhone}
+                                        onChange={e => setParentPhone(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Assessment Details */}
@@ -250,16 +360,24 @@ export default function NewAssessmentPage() {
                                 />
                                 <InlineError message={errors.subjects} />
                             </div>
+
+
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Score / Level</label>
-                                <input
-                                    type="number"
-                                    step="any"
-                                    className="w-full p-2 border rounded-lg border-gray-300"
-                                    value={score}
-                                    onChange={e => setScore(e.target.value)}
-                                    placeholder="Optional numeric score"
-                                />
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Assessment Charge ($)</label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span className="text-gray-500 sm:text-sm">$</span>
+                                    </div>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        className="w-full pl-7 p-2 border rounded-lg border-gray-300"
+                                        value={assessmentCharge}
+                                        onChange={e => setAssessmentCharge(e.target.value)}
+                                        placeholder="0.00"
+                                    />
+                                </div>
                             </div>
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Notes / Observations *</label>
