@@ -6,18 +6,12 @@ export default function About() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                     <div className="relative h-64 lg:h-96 w-full rounded-2xl overflow-hidden shadow-xl">
-                        {/* Using a placeholder image since we don't have the original assets yet. */}
-                        <div className="absolute inset-0 bg-gray-300 flex items-center justify-center text-gray-500 font-medium">
-                            About Us Image Placeholder
-                        </div>
-                        {/* 
-            <Image
-              src="/path-to-about-image.jpg"
-              alt="Student learning"
-              fill
-              className="object-cover"
-            />
-            */}
+                        <Image
+                            src="/images/about-success-v2.png"
+                            alt="Student success"
+                            fill
+                            className="object-cover"
+                        />
                     </div>
                     <div>
                         <h2 className="text-3xl font-bold text-gray-900 mb-6 font-heading">

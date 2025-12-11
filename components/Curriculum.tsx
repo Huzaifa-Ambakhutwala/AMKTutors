@@ -1,4 +1,5 @@
 import { CheckCircle } from "lucide-react";
+import Image from "next/image";
 
 export default function Curriculum() {
     return (
@@ -38,11 +39,12 @@ export default function Curriculum() {
                         </div>
                     </div>
                     <div className="relative h-80 w-full rounded-2xl overflow-hidden shadow-lg bg-white border border-gray-100 flex items-center justify-center">
-                        {/* Placeholder for Curriculum Graphic */}
-                        <div className="text-center p-8">
-                            <div className="text-6xl mb-4">📚</div>
-                            <p className="text-gray-500 font-medium">Curriculum & Standards Graphic</p>
-                        </div>
+                        <Image
+                            src="/images/curriculum.png"
+                            alt="Curriculum Approach"
+                            fill
+                            className="object-cover"
+                        />
                     </div>
                 </div>
             </div>

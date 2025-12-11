@@ -40,7 +40,7 @@ export default function Navbar() {
                 <div className="flex justify-between items-center h-16">
                     <div className="flex-shrink-0 flex items-center">
                         <Link href="/" className="flex items-center gap-2">
-                            <Image src="/logo.png" alt="AMK Tutors Logo" width={50} height={50} className="w-12 h-12 object-contain" />
+                            <Image src="/logo.png" alt="AMK Tutors Logo" width={150} height={50} className="h-14 w-auto object-contain" />
                             {/* <span className="text-2xl font-bold text-primary font-heading">AMK Tutors</span> */}
                         </Link>
                     </div>

@@ -22,7 +22,7 @@ export default function Hero() {
                             href="#contact"
                             className="bg-primary text-primary-foreground px-8 py-4 rounded-full text-lg font-semibold hover:bg-accent transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1"
                         >
-                            Book a Free Consultation
+                            Book a Call Today
                         </Link>
                         <Link
                             href="#about"
