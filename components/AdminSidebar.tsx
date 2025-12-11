@@ -30,10 +30,9 @@ export default function AdminSidebar() {
         { name: "Parents", href: "/admin/parents", icon: School },
         { name: "Tutors", href: "/admin/tutors", icon: Users },
         { name: "Sessions", href: "/admin/sessions", icon: Calendar },
-        { name: "Assessments", href: "/admin/assessments", icon: ClipboardList }, // Added Assessments
+        { name: "Assessments", href: "/admin/assessments", icon: ClipboardList },
         { name: "Billing", href: "/admin/billing", icon: CreditCard },
         { name: "Manage Logins", href: "/admin/logins", icon: Lock },
-        { name: "Back to Home", href: "/", icon: Home }, // Added Home link
     ];
 
     const handleLogout = async () => {
@@ -71,7 +70,15 @@ export default function AdminSidebar() {
                 })}
             </nav>
 
-            <div className="p-4 border-t border-gray-800">
+            <div className="p-4 border-t border-gray-800 space-y-2">
+                <Link
+                    href="/"
+                    className="flex items-center gap-3 px-4 py-3 w-full text-left text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+                >
+                    <Home size={20} />
+                    Back to Website
+                </Link>
+
                 <button
                     onClick={handleLogout}
                     className="flex items-center gap-3 px-4 py-3 w-full text-left text-gray-400 hover:text-red-400 hover:bg-gray-800 rounded-lg transition-colors"

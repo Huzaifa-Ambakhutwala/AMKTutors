@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Session } from "@/lib/types";
 import { Loader2, ArrowLeft, MessageSquare, X, LogOut } from "lucide-react";
 import Link from "next/link";
@@ -13,7 +13,7 @@ import { useRouter } from "next/navigation";
 import SessionFeedback from "@/components/SessionFeedback";
 
 export default function ParentDashboard() {
-    const { user } = useCurrentUser();
+    const { user, profileId, loading: roleLoading } = useUserRole();
     const router = useRouter();
     const [sessions, setSessions] = useState<Session[]>([]);
     const [loading, setLoading] = useState(true);
@@ -21,10 +21,10 @@ export default function ParentDashboard() {
 
     useEffect(() => {
         async function fetchSessions() {
-            if (!user) return;
+            if (!user || !profileId) return;
             try {
-                // 1. Find all students belonging to this parent
-                const studentsQuery = query(collection(db, "students"), where("parentIds", "array-contains", user.uid));
+                // 1. Find all students belonging to this parent (using profileId)
+                const studentsQuery = query(collection(db, "students"), where("parentIds", "array-contains", profileId));
                 const studentsSnap = await getDocs(studentsQuery);
 
                 if (studentsSnap.empty) {
@@ -78,8 +78,10 @@ export default function ParentDashboard() {
                 setLoading(false);
             }
         }
-        fetchSessions();
-    }, [user]);
+        if (!roleLoading && profileId) {
+            fetchSessions();
+        }
+    }, [user, profileId, roleLoading]);
 
     const handleLogout = async () => {
         await signOut(auth);
