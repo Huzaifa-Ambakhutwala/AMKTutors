@@ -21,6 +21,7 @@ export interface UserProfile {
     inviteToken?: string | null;
     inviteExpiresAt?: string | null; // ISO String
     registeredAt?: string | null; // ISO String
+    isShadow?: boolean;
 
     createdAt: string;
 }

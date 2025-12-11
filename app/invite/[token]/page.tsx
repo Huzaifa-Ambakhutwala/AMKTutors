@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { collection, query, where, getDocs, updateDoc, doc } from "firebase/firestore";
+import { collection, query, where, getDocs, updateDoc, doc, setDoc } from "firebase/firestore";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { db, auth } from "@/lib/firebase"; // Ensure auth is exported from here
 import { UserProfile } from "@/lib/types";
@@ -88,19 +88,32 @@ export default function InvitePage() {
             const credential = await createUserWithEmailAndPassword(auth, userDoc.email, password);
             const authUid = credential.user.uid;
 
-            // 2. Update Firestore Doc
+            // 2. Update Original Firestore Doc (The one with references)
             await updateDoc(doc(db, "users", userDoc.id), {
                 authUid: authUid,
                 status: 'registered',
                 inviteToken: null,
                 inviteExpiresAt: null,
                 registeredAt: new Date().toISOString(),
-                isActive: true // Activate if not already
+                isActive: true
             });
 
-            // 3. Login (Auto-logged in by createUser, but good to be sure)
-            // Redirect based on role
-            if (userDoc.role === 'ADMIN') router.push('/admin/dashboard');
+            // 3. Create "Shadow" Doc at AuthUID for Permissions/Rules
+            // This ensures isAdmin() and isTutor() checks in Security Rules work correctly
+            // because they look for /users/$(request.auth.uid)
+            if (userDoc.id !== authUid) {
+                await setDoc(doc(db, "users", authUid), {
+                    uid: authUid,
+                    role: userDoc.role,
+                    email: userDoc.email,
+                    name: userDoc.name,
+                    pointer: userDoc.id, // Link back to original
+                    isShadow: true
+                });
+            }
+
+            // 4. Redirect based on role
+            if (userDoc.role === 'ADMIN') router.push('/admin');
             else if (userDoc.role === 'TUTOR') router.push('/tutor');
             else if (userDoc.role === 'PARENT') router.push('/parent');
             else router.push('/login'); // Fallback

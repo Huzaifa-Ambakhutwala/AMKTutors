@@ -26,7 +26,10 @@ export default function ManageLoginsPage() {
     const fetchUsers = async () => {
         try {
             const snap = await getDocs(collection(db, "users"));
-            const data = snap.docs.map(doc => ({ ...doc.data(), uid: doc.id } as UserProfile));
+            // Filter out Shadow Docs (Fix for Double Entry)
+            const data = snap.docs
+                .map(doc => ({ ...doc.data(), uid: doc.id } as UserProfile))
+                .filter(u => !(u as any).isShadow);
             setUsers(data);
         } catch (e) {
             console.error(e);

@@ -42,8 +42,8 @@ export default function AddStudentPage() {
             try {
                 const snap = await getDocs(collection(db, "users"));
                 const users = snap.docs.map(d => d.data() as UserProfile);
-                setParents(users.filter(u => u.role === 'PARENT'));
-                setTutors(users.filter(u => u.role === 'TUTOR' || u.role === 'ADMIN'));
+                setParents(users.filter(u => u.role === 'PARENT' && !u.isShadow));
+                setTutors(users.filter(u => (u.role === 'TUTOR' || u.role === 'ADMIN') && !u.isShadow));
             } catch (e) {
                 console.error(e);
             } finally {

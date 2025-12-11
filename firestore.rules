@@ -9,33 +9,48 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Resolve the "Logical User ID" (Pointer or AuthUID)
+    function getUserId() {
+      let doc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      return (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && doc.data.pointer != null)
+             ? doc.data.pointer 
+             : request.auth.uid;
+    }
+
     // Check if user matches the requested ID or the 'authUid' field
     function isOwner(userId) {
-      return request.auth.uid == userId || 
+      return request.auth.uid == userId || getUserId() == userId ||
              (resource != null && resource.data.authUid == request.auth.uid);
     }
 
-    // Fetch user role
-    function getUserData() {
-      // Careful: if checking current user, we might need to find by authUid if IDs are decoupled. 
-      // But commonly getUserData is used when we know the ID matches. 
-      // For Admins, ID==UID usually.
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    // Fetch user role safely
+    function getRole() {
+      let path = /databases/$(database)/documents/users/$(request.auth.uid);
+      return exists(path) ? get(path).data.role : 'None';
     }
 
     function isAdmin() {
-      return isAuthenticated() && getUserData().role == 'ADMIN';
+      return isAuthenticated() && getRole() == 'ADMIN';
     }
 
     function isTutor() {
-      return isAuthenticated() && getUserData().role == 'TUTOR';
+      return isAuthenticated() && getRole() == 'TUTOR';
     }
 
     function isParent() {
-      return isAuthenticated() && getUserData().role == 'PARENT';
+      return isAuthenticated() && getRole() == 'PARENT';
     }
 
     // --- Collection Rules ---
+
+    // Verify if a claim (pointer) is valid
+    function isValidClaim() {
+      let pointer = request.resource.data.pointer;
+      return pointer != null 
+             && exists(/databases/$(database)/documents/users/$(pointer))
+             && get(/databases/$(database)/documents/users/$(pointer)).data.authUid == request.auth.uid
+             && get(/databases/$(database)/documents/users/$(pointer)).data.role == request.resource.data.role;
+    }
 
     // 1. Users Collection
     match /users/{userId} {
@@ -48,9 +63,10 @@ service cloud.firestore {
                   (isAuthenticated() && (isOwner(userId) || resource.data.email == request.auth.token.email));
       
       // Users can create their own profile (SignUp flow)
-      // Must ensure they don't assign themselves 'ADMIN' role on creation!
+      // Standard: No ADMIN role allowed
+      // Exception: Valid Claim via Pointer (Invite Flow)
       allow create: if isOwner(userId) 
-                    && request.resource.data.role != 'ADMIN'; 
+                    && (request.resource.data.role != 'ADMIN' || isValidClaim()); 
       
       // Users can update their own profile
       // OR claim an invited profile (Email match + Invited status)
@@ -66,10 +82,10 @@ service cloud.firestore {
       allow read, write: if isAdmin();
 
       // Tutors can read students they are assigned to
-      allow read: if isTutor() && request.auth.uid in resource.data.tutorIds;
+      allow read: if isTutor() && getUserId() in resource.data.tutorIds; // Updated
 
       // Parents can read students they are assigned to
-      allow read: if isParent() && request.auth.uid in resource.data.parentIds;
+      allow read: if isParent() && getUserId() in resource.data.parentIds; // Updated
     }
 
     // 3. Sessions Collection
@@ -78,17 +94,17 @@ service cloud.firestore {
       allow read, write: if isAdmin();
 
       // Tutors can read/update their own sessions
-      allow read: if isTutor() && resource.data.tutorId == request.auth.uid;
+      allow read: if isTutor() && resource.data.tutorId == getUserId(); // Updated
       
       // Allow Tutors to update attendance/notes only
       allow update: if isTutor() 
-                    && resource.data.tutorId == request.auth.uid
+                    && resource.data.tutorId == getUserId() // Updated
                     && request.resource.data.tutorId == resource.data.tutorId; // Cannot reassign session
 
       // Parents can read sessions for their children
       // We check if the session's student has the parent in 'parentIds'
       allow read: if isParent() 
-                  && request.auth.uid in get(/databases/$(database)/documents/students/$(resource.data.studentId)).data.parentIds;
+                  && getUserId() in get(/databases/$(database)/documents/students/$(resource.data.studentId)).data.parentIds; // Updated
     }
 
     // 4. Invoices Collection
@@ -97,7 +113,7 @@ service cloud.firestore {
       allow read, write: if isAdmin();
 
       // Parents can read their own invoices
-      allow read: if isParent() && resource.data.parentId == request.auth.uid;
+      allow read: if isParent() && resource.data.parentId == getUserId(); // Updated
     }
 
     // 5. Assessments Collection
@@ -112,7 +128,7 @@ service cloud.firestore {
       allow read, write: if isAdmin();
 
       // Tutors can read their own pay stubs
-      allow read: if isTutor() && resource.data.tutorId == request.auth.uid;
+      allow read: if isTutor() && resource.data.tutorId == getUserId(); // Updated
     }
     
     // Default Deny

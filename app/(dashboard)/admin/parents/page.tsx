@@ -18,12 +18,17 @@ export default function ParentsListPage() {
                 const usersSnap = await getDocs(collection(db, "users"));
                 const parentList = usersSnap.docs
                     .map(d => d.data() as UserProfile)
-                    .filter(u => u.role === 'PARENT');
+                    .filter(u => u.role === 'PARENT' && !u.isShadow);
 
-                // 2. Fetch all students to count children
-                // Optimization: In a real app, store parentIds array on the Parent doc or use a count field
-                const studentsSnap = await getDocs(collection(db, "students"));
-                const students = studentsSnap.docs.map(d => d.data() as Student);
+                // 2. Fetch all students to count children (Safely)
+                let students: Student[] = [];
+                try {
+                    const studentsSnap = await getDocs(collection(db, "students"));
+                    students = studentsSnap.docs.map(d => d.data() as Student);
+                } catch (err) {
+                    console.error("Error fetching students for count:", err);
+                    // Continue without student counts
+                }
 
                 // 3. Merge counts
                 const merged = parentList.map(p => ({

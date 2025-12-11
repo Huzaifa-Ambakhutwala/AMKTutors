@@ -5,7 +5,7 @@ import RoleGuard from "@/components/RoleGuard";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Session } from "@/lib/types";
 import { Loader2, ArrowLeft, MessageSquare, X, LogOut, CheckCircle } from "lucide-react";
 import Link from "next/link";
@@ -13,7 +13,7 @@ import { useRouter } from "next/navigation";
 import ManageSessionModal from "@/components/ManageSessionModal";
 
 export default function TutorDashboard() {
-    const { user } = useCurrentUser();
+    const { user, profileId } = useUserRole();
     const router = useRouter();
     const [sessions, setSessions] = useState<Session[]>([]);
     const [loading, setLoading] = useState(true);
@@ -21,15 +21,16 @@ export default function TutorDashboard() {
 
     useEffect(() => {
         async function fetchSessions() {
-            if (!user) return;
+            // Need both user (auth) and profileId (db id)
+            if (!user || !profileId) return;
             try {
-                const q = query(collection(db, "sessions"), where("tutorId", "==", user.uid));
+                // Query using the correct Profile ID (which matches the Tutor ID in sessions)
+                const q = query(collection(db, "sessions"), where("tutorId", "==", profileId));
                 const snap = await getDocs(q);
 
                 if (snap.empty) {
-                    const allSnap = await getDocs(collection(db, "sessions"));
-                    const list = allSnap.docs.map(d => ({ id: d.id, ...d.data() } as Session));
-                    setSessions(list);
+                    // Optional: Handling empty state
+                    setSessions([]);
                 } else {
                     const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as Session));
                     setSessions(list);
@@ -41,7 +42,7 @@ export default function TutorDashboard() {
             }
         }
         fetchSessions();
-    }, [user]);
+    }, [user, profileId]);
 
     const handleLogout = async () => {
         await signOut(auth);

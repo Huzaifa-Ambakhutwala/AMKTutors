@@ -29,7 +29,9 @@ export default function ParentsBillingGrid() {
                 // 1. Fetch Parents
                 const parentsQuery = query(collection(db, "users"), where("role", "==", "PARENT"));
                 const parentsSnap = await getDocs(parentsQuery);
-                const parents = parentsSnap.docs.map(d => d.data() as UserProfile);
+                const parents = parentsSnap.docs
+                    .map(d => d.data() as UserProfile)
+                    .filter(u => !(u as any).isShadow);
 
                 // 2. Fetch Students
                 const studentsQuery = query(collection(db, "students")); // Optimization: filter locally if too many?

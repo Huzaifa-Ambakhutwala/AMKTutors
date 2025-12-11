@@ -28,7 +28,9 @@ export default function TutorsBillingGrid() {
                 // 1. Fetch Tutors
                 const tutorsQuery = query(collection(db, "users"), where("role", "==", "TUTOR"));
                 const tutorsSnap = await getDocs(tutorsQuery);
-                const tutors = tutorsSnap.docs.map(d => d.data() as UserProfile);
+                const tutors = tutorsSnap.docs
+                    .map(d => d.data() as UserProfile)
+                    .filter(u => !(u as any).isShadow);
 
                 // 2. Fetch Unpaid Sessions (Status=Scheduled OR Completed)
                 const sessionsQuery = query(collection(db, "sessions"), where("status", "in", ["Scheduled", "Completed"]));

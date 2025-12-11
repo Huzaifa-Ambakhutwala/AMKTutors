@@ -17,7 +17,7 @@ export default function AdminTutorsPage() {
             const usersSnap = await getDocs(collection(db, "users"));
             const tutorList = usersSnap.docs
                 .map(d => d.data() as UserProfile)
-                .filter(u => u.role === 'TUTOR');
+                .filter(u => u.role === 'TUTOR' && !u.isShadow);
             setTutors(tutorList);
         } catch (e) {
             console.error("Error fetching tutors:", e);
