@@ -4,9 +4,10 @@ import { useState, useEffect } from "react";
 import { collection, query, where, getDocs, doc, writeBatch, deleteDoc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { UserProfile, Student, Session, Invoice, InvoiceItem } from "@/lib/types";
-import { ArrowLeft, Loader2, FileText, CheckCircle, AlertCircle, Trash2, Calendar, DollarSign, Clock, User } from "lucide-react";
+import { ArrowLeft, Loader2, FileText, CheckCircle, AlertCircle, Trash2, Calendar, DollarSign, Clock, User, Eye } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
 import { FormFeedback } from "@/components/FormFeedback";
+import InvoiceViewer from "./InvoiceViewer";
 
 interface ParentBillingDetailProps {
     parentId: string;
@@ -28,13 +29,14 @@ export default function ParentBillingDetail({ parentId, onBack }: ParentBillingD
 
     // History Data
     const [invoices, setInvoices] = useState<Invoice[]>([]);
+    const [viewInvoice, setViewInvoice] = useState<Invoice | null>(null);
 
     useEffect(() => {
         loadDetailData();
     }, [parentId]);
 
-    const loadDetailData = async () => {
-        setLoading(true);
+    const loadDetailData = async (refresh: boolean = false) => {
+        if (!refresh) setLoading(true);
         try {
             // 1. Fetch Parent
             const parentDoc = await getDoc(doc(db, "users", parentId));
@@ -418,7 +420,14 @@ export default function ParentBillingDetail({ parentId, onBack }: ParentBillingD
                                             <div className="text-xl font-bold text-gray-900">${inv.totalAmount.toFixed(2)}</div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            {/* Actions: View (Later), Void */}
+                                            {/* Actions: View, Void */}
+                                            <button
+                                                onClick={() => setViewInvoice(inv)}
+                                                className="bg-blue-50 text-blue-600 p-2 rounded-lg hover:bg-blue-100 transition-colors"
+                                                title="View/Print/Email Invoice"
+                                            >
+                                                <Eye size={18} />
+                                            </button>
                                             <button
                                                 onClick={() => handleVoidInvoice(inv)}
                                                 className="bg-red-50 text-red-600 p-2 rounded-lg hover:bg-red-100 transition-colors"
@@ -436,6 +445,15 @@ export default function ParentBillingDetail({ parentId, onBack }: ParentBillingD
                 </div>
             )}
 
+            {viewInvoice && (
+                <InvoiceViewer
+                    invoice={viewInvoice}
+                    onClose={() => setViewInvoice(null)}
+                    onUpdate={() => loadDetailData(true)}
+                />
+            )}
+
         </div>
     );
 }
+

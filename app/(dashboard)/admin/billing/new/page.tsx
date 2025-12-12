@@ -87,7 +87,7 @@ export default function CreateInvoicePage() {
                 invoiceNumber,
                 issueDate,
                 dueDate: dueDate || issueDate, // Default same day if empty
-                status: 'Sent', // Auto-mark as sent for now
+                status: 'Pending', // Default to Pending until sent
                 items,
                 totalAmount: calculateGrandTotal(),
                 periodStart: issueDate, // Placeholder

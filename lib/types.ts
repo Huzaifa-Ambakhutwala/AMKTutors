@@ -106,7 +106,7 @@ export interface Invoice {
     periodEnd: string;
     issueDate: string;
     dueDate: string;
-    status: 'Draft' | 'Sent' | 'Paid' | 'Overdue';
+    status: 'Draft' | 'Pending' | 'Sent' | 'Paid' | 'Overdue';
     items: InvoiceItem[];
     totalAmount: number;
     notes?: string;

@@ -131,6 +131,11 @@ service cloud.firestore {
       allow read: if isTutor() && resource.data.tutorId == getUserId(); // Updated
     }
     
+    // 7. Settings Collection
+    match /settings/{settingId} {
+      allow read, write: if isAdmin();
+    }
+    
     // Default Deny
     match /{document=**} {
       allow read, write: if false;

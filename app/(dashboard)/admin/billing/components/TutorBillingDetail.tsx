@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { collection, query, where, getDocs, doc, writeBatch, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { UserProfile, Session, PayStub, PayStubItem } from "@/lib/types";
-import { ArrowLeft, Loader2, FileText, CheckCircle, Trash2, Calendar, Clock, DollarSign, User } from "lucide-react";
+import PayStubViewer from "./PayStubViewer";
+import { ArrowLeft, Loader2, FileText, CheckCircle, Trash2, Calendar, Clock, DollarSign, User, Eye } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
 
 interface TutorBillingDetailProps {
@@ -25,6 +26,7 @@ export default function TutorBillingDetail({ tutorId, onBack }: TutorBillingDeta
 
     // History Data
     const [payStubs, setPayStubs] = useState<PayStub[]>([]);
+    const [viewPayStub, setViewPayStub] = useState<PayStub | null>(null);
 
     useEffect(() => {
         loadDetailData();
@@ -359,6 +361,13 @@ export default function TutorBillingDetail({ tutorId, onBack }: TutorBillingDeta
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <button
+                                                onClick={() => setViewPayStub(stub)}
+                                                className="bg-green-50 text-green-600 p-2 rounded-lg hover:bg-green-100 transition-colors"
+                                                title="View/Print Pay Stub"
+                                            >
+                                                <Eye size={18} />
+                                            </button>
+                                            <button
                                                 onClick={() => handleVoidPayStub(stub)}
                                                 className="bg-red-50 text-red-600 p-2 rounded-lg hover:bg-red-100 transition-colors"
                                                 title="Void Pay Stub & Revert Sessions"
@@ -373,6 +382,13 @@ export default function TutorBillingDetail({ tutorId, onBack }: TutorBillingDeta
                         </div>
                     )}
                 </div>
+            )}
+
+            {viewPayStub && (
+                <PayStubViewer
+                    payStub={viewPayStub}
+                    onClose={() => setViewPayStub(null)}
+                />
             )}
 
         </div>

@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import RoleGuard from "@/components/RoleGuard";
-import { FileText, DollarSign } from "lucide-react";
+import { FileText, DollarSign, Settings } from "lucide-react";
 import ParentsInvoiceTab from "./components/ParentsInvoiceTab";
 import TutorsPayTab from "./components/TutorsPayTab";
+import BillingSettings from "./components/BillingSettings";
 
 export default function BillingPage() {
-    const [activeTab, setActiveTab] = useState<'INVOICE' | 'PAY'>('INVOICE');
+    const [activeTab, setActiveTab] = useState<'INVOICE' | 'PAY' | 'SETTINGS'>('INVOICE');
 
     return (
         <RoleGuard allowedRoles={['ADMIN']}>
@@ -18,8 +19,8 @@ export default function BillingPage() {
                     <button
                         onClick={() => setActiveTab('INVOICE')}
                         className={`pb-3 px-4 flex items-center gap-2 font-medium transition-colors relative ${activeTab === 'INVOICE'
-                                ? "text-blue-600 border-b-2 border-blue-600"
-                                : "text-gray-500 hover:text-gray-700"
+                            ? "text-blue-600 border-b-2 border-blue-600"
+                            : "text-gray-500 hover:text-gray-700"
                             }`}
                     >
                         <FileText size={18} /> Parents Invoice
@@ -27,16 +28,27 @@ export default function BillingPage() {
                     <button
                         onClick={() => setActiveTab('PAY')}
                         className={`pb-3 px-4 flex items-center gap-2 font-medium transition-colors relative ${activeTab === 'PAY'
-                                ? "text-green-600 border-b-2 border-green-600"
-                                : "text-gray-500 hover:text-gray-700"
+                            ? "text-green-600 border-b-2 border-green-600"
+                            : "text-gray-500 hover:text-gray-700"
                             }`}
                     >
                         <DollarSign size={18} /> Tutors Pay
                     </button>
+                    <button
+                        onClick={() => setActiveTab('SETTINGS')}
+                        className={`pb-3 px-4 flex items-center gap-2 font-medium transition-colors relative ${activeTab === 'SETTINGS'
+                            ? "text-gray-900 border-b-2 border-gray-900"
+                            : "text-gray-500 hover:text-gray-700"
+                            }`}
+                    >
+                        <Settings size={18} /> Settings
+                    </button>
                 </div>
 
                 <div className="mt-6">
-                    {activeTab === 'INVOICE' ? <ParentsInvoiceTab /> : <TutorsPayTab />}
+                    {activeTab === 'INVOICE' && <ParentsInvoiceTab />}
+                    {activeTab === 'PAY' && <TutorsPayTab />}
+                    {activeTab === 'SETTINGS' && <BillingSettings />}
                 </div>
             </div>
         </RoleGuard>
