@@ -161,6 +161,7 @@ export interface Assessment {
     convertedParentId?: string;
 
     updatedAt: string;
+    createdAt: string;
 }
 
 // ----------------------------------------------------------------------
