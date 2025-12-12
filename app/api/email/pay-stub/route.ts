@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
-import { adminAuth } from '@/lib/firebase-admin';
+import { adminAuth, adminDb } from '@/lib/firebase-admin';
 
 export async function POST(req: Request) {
     try {
@@ -14,8 +14,8 @@ export async function POST(req: Request) {
         const token = authHeader.split('Bearer ')[1];
         const decodedToken = await adminAuth.verifyIdToken(token);
 
-        // Fetch user from Firestore to confirm role (more robust than checking token claims which might be outdated/missing)
-        const userDoc = await adminAuth.app.firestore().collection('users').doc(decodedToken.uid).get();
+        // Fetch user from Firestore to confirm role
+        const userDoc = await adminDb.collection('users').doc(decodedToken.uid).get();
         const userData = userDoc.data();
 
         if (!userData || userData.role !== 'ADMIN') {

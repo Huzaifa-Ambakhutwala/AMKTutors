@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, query, where, getDocs, doc, writeBatch, getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, writeBatch, getDoc, runTransaction } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { UserProfile, Session, PayStub, PayStubItem } from "@/lib/types";
 import PayStubViewer from "./PayStubViewer";
@@ -94,7 +94,7 @@ export default function TutorBillingDetail({ tutorId, onBack }: TutorBillingDeta
 
         setProcessing(true);
         try {
-            await db.runTransaction(async (transaction) => {
+            await runTransaction(db, async (transaction) => {
                 // 1. Get Settings
                 const settingsRef = doc(db, "settings", "email_templates");
                 const settingsDoc = await transaction.get(settingsRef);

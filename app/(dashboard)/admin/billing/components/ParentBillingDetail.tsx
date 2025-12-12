@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, query, where, getDocs, doc, writeBatch, deleteDoc, getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, writeBatch, deleteDoc, getDoc, runTransaction } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { UserProfile, Student, Session, Invoice, InvoiceItem } from "@/lib/types";
 import { ArrowLeft, Loader2, FileText, CheckCircle, AlertCircle, Trash2, Calendar, DollarSign, Clock, User, Eye } from "lucide-react";
@@ -140,7 +140,7 @@ export default function ParentBillingDetail({ parentId, onBack }: ParentBillingD
 
         setProcessing(true);
         try {
-            await db.runTransaction(async (transaction) => {
+            await runTransaction(db, async (transaction) => {
                 // 1. Get Settings for Next Invoice Number
                 const settingsRef = doc(db, "settings", "email_templates");
                 const settingsDoc = await transaction.get(settingsRef);
