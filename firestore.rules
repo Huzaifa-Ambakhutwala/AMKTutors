@@ -23,9 +23,9 @@ service cloud.firestore {
              (resource != null && resource.data.authUid == request.auth.uid);
     }
 
-    // Fetch user role safely
+    // Fetch user role safely (resolves pointer if needed)
     function getRole() {
-      let path = /databases/$(database)/documents/users/$(request.auth.uid);
+      let path = /databases/$(database)/documents/users/$(getUserId());
       return exists(path) ? get(path).data.role : 'None';
     }
 
@@ -134,6 +134,17 @@ service cloud.firestore {
     // 7. Settings Collection
     match /settings/{settingId} {
       allow read, write: if isAdmin();
+    }
+
+    // 8. Site Pages (CMS)
+    match /sitePages/{slug} {
+      // Public read allowed (contains publishedSections)
+      allow read: if true;
+      allow write: if isAdmin();
+      
+      match /versions/{versionId} {
+        allow read, write: if isAdmin();
+      }
     }
     
     // Default Deny

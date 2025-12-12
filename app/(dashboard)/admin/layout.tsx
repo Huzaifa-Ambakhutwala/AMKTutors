@@ -24,15 +24,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                 {/* Mobile Menu Overlay */}
                 {mobileMenuOpen && (
-                    <div className="fixed inset-0 z-40 bg-gray-900 bg-opacity-95 md:hidden pt-20 p-4">
-                        {/* Re-using simple links for mobile for now, ideally re-use sidebar logic */}
-                        <nav className="space-y-4">
-                            <a href="/admin" className="block text-white text-lg py-2 border-b border-gray-700">Dashboard</a>
-                            <a href="/admin/students" className="block text-white text-lg py-2 border-b border-gray-700">Students</a>
-                            <a href="/admin/parents" className="block text-white text-lg py-2 border-b border-gray-700">Parents</a>
-                            <a href="/admin/tutors" className="block text-white text-lg py-2 border-b border-gray-700">Tutors</a>
-                            <a href="/admin/sessions" className="block text-white text-lg py-2 border-b border-gray-700">Sessions</a>
-                        </nav>
+                    <div className="fixed inset-0 z-40 bg-gray-900 md:hidden pt-16">
+                        <AdminSidebar
+                            className="w-full h-full bg-gray-900 text-white flex flex-col"
+                            onClose={() => setMobileMenuOpen(false)}
+                        />
                     </div>
                 )}
 

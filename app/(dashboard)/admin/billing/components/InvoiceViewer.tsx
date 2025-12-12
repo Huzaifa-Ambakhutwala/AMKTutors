@@ -172,7 +172,7 @@ export default function InvoiceViewer({ invoice, onClose, onUpdate }: InvoiceVie
             <div className="bg-white w-full max-w-4xl h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden print:shadow-none print:h-auto print:w-full print:max-w-none print:rounded-none">
 
                 {/* Header Actions (Hidden in Print) */}
-                <div className="flex justify-between items-center p-4 border-b border-gray-100 bg-gray-50 no-print">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4 p-4 border-b border-gray-100 bg-gray-50 no-print">
                     <div className="flex items-center gap-4">
                         <h2 className="font-bold text-lg text-gray-700">Preview Invoice</h2>
                         <div className="flex items-center gap-2">
@@ -181,9 +181,9 @@ export default function InvoiceViewer({ invoice, onClose, onUpdate }: InvoiceVie
                                 value={status}
                                 onChange={(e) => handleStatusChange(e.target.value)}
                                 className={`text-sm font-bold px-3 py-1 rounded-full border border-gray-300 outline-none cursor-pointer ${status === 'Paid' ? 'bg-green-100 text-green-700' :
-                                        status === 'Sent' ? 'bg-blue-100 text-blue-700' :
-                                            status === 'Overdue' ? 'bg-red-100 text-red-700' :
-                                                'bg-gray-100 text-gray-700'
+                                    status === 'Sent' ? 'bg-blue-100 text-blue-700' :
+                                        status === 'Overdue' ? 'bg-red-100 text-red-700' :
+                                            'bg-gray-100 text-gray-700'
                                     }`}
                             >
                                 <option value="Pending">Pending</option>
@@ -220,7 +220,7 @@ export default function InvoiceViewer({ invoice, onClose, onUpdate }: InvoiceVie
                 </div>
 
                 {/* Printable Content */}
-                <div className="flex-1 overflow-y-auto p-12 print:overflow-visible print:p-0" id="invoice-content">
+                <div className="flex-1 overflow-y-auto p-4 md:p-12 print:overflow-visible print:p-0" id="invoice-content">
                     <div className="max-w-3xl mx-auto print:w-full print:max-w-none">
 
                         {/* Company Header */}
@@ -260,31 +260,33 @@ export default function InvoiceViewer({ invoice, onClose, onUpdate }: InvoiceVie
                         </div>
 
                         {/* Items Table */}
-                        <table className="w-full mb-8">
-                            <thead>
-                                <tr className="border-b-2" style={{ borderColor: '#111827' }}>
-                                    <th className="py-3 text-left font-bold w-1/2" style={{ color: '#111827' }}>Description</th>
-                                    <th className="py-3 text-center font-bold" style={{ color: '#111827' }}>Hrs</th>
-                                    <th className="py-3 text-right font-bold" style={{ color: '#111827' }}>Rate</th>
-                                    <th className="py-3 text-right font-bold" style={{ color: '#111827' }}>Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {invoice.items.map((item, idx) => (
-                                    <tr key={idx} style={{ borderBottom: '1px solid #F3F4F6' }}>
-                                        <td className="py-4">
-                                            <div className="font-bold" style={{ color: '#1F2937' }}>{item.description}</div>
-                                            <div className="text-sm text-xs" style={{ color: '#6B7280' }}>
-                                                {item.studentName ? `Student: ${item.studentName} ` : ""}
-                                            </div>
-                                        </td>
-                                        <td className="py-4 text-center" style={{ color: '#374151' }}>{item.quantity.toFixed(2)}</td>
-                                        <td className="py-4 text-right" style={{ color: '#374151' }}>${item.rate.toFixed(2)}</td>
-                                        <td className="py-4 text-right font-bold" style={{ color: '#111827' }}>${item.total.toFixed(2)}</td>
+                        <div className="overflow-x-auto">
+                            <table className="w-full mb-8 min-w-[500px]">
+                                <thead>
+                                    <tr className="border-b-2" style={{ borderColor: '#111827' }}>
+                                        <th className="py-3 text-left font-bold w-1/2" style={{ color: '#111827' }}>Description</th>
+                                        <th className="py-3 text-center font-bold" style={{ color: '#111827' }}>Hrs</th>
+                                        <th className="py-3 text-right font-bold" style={{ color: '#111827' }}>Rate</th>
+                                        <th className="py-3 text-right font-bold" style={{ color: '#111827' }}>Amount</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {invoice.items.map((item, idx) => (
+                                        <tr key={idx} style={{ borderBottom: '1px solid #F3F4F6' }}>
+                                            <td className="py-4">
+                                                <div className="font-bold" style={{ color: '#1F2937' }}>{item.description}</div>
+                                                <div className="text-sm text-xs" style={{ color: '#6B7280' }}>
+                                                    {item.studentName ? `Student: ${item.studentName} ` : ""}
+                                                </div>
+                                            </td>
+                                            <td className="py-4 text-center" style={{ color: '#374151' }}>{item.quantity.toFixed(2)}</td>
+                                            <td className="py-4 text-right" style={{ color: '#374151' }}>${item.rate.toFixed(2)}</td>
+                                            <td className="py-4 text-right font-bold" style={{ color: '#111827' }}>${item.total.toFixed(2)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
 
                         {/* Totals */}
                         <div className="flex justify-end mb-12">

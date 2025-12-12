@@ -15,7 +15,7 @@ export default function BillingPage() {
             <div className="p-8">
                 <h1 className="text-3xl font-bold font-heading mb-8">Billing & Payroll</h1>
 
-                <div className="flex items-center gap-4 mb-6 border-b border-gray-200">
+                <div className="flex items-center gap-4 mb-6 border-b border-gray-200 overflow-x-auto">
                     <button
                         onClick={() => setActiveTab('INVOICE')}
                         className={`pb-3 px-4 flex items-center gap-2 font-medium transition-colors relative ${activeTab === 'INVOICE'

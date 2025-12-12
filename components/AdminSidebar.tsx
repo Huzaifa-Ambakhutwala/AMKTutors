@@ -13,13 +13,19 @@ import {
     Lock,
     LogOut,
     Home,
-    ClipboardList // Added ClipboardList
+    ClipboardList,
+    Globe // Added Globe
 } from "lucide-react";
 import Image from "next/image";
 import { logout } from "@/lib/auth-helpers";
 import { useRouter } from "next/navigation";
 
-export default function AdminSidebar() {
+interface AdminSidebarProps {
+    onClose?: () => void;
+    className?: string;
+}
+
+export default function AdminSidebar({ onClose, className }: AdminSidebarProps) {
     const pathname = usePathname();
     const router = useRouter();
 
@@ -31,6 +37,7 @@ export default function AdminSidebar() {
         { name: "Tutors", href: "/admin/tutors", icon: Users },
         { name: "Sessions", href: "/admin/sessions", icon: Calendar },
         { name: "Assessments", href: "/admin/assessments", icon: ClipboardList },
+        { name: "Website Builder", href: "/admin/website", icon: Globe },
         { name: "Billing", href: "/admin/billing", icon: CreditCard },
         { name: "Manage Logins", href: "/admin/logins", icon: Lock },
     ];
@@ -41,7 +48,7 @@ export default function AdminSidebar() {
     };
 
     return (
-        <div className="w-64 bg-gray-900 text-white h-screen fixed left-0 top-0 flex flex-col hidden md:flex">
+        <div className={`w-64 bg-gray-900 text-white h-screen flex flex-col ${className || 'hidden md:flex fixed left-0 top-0'}`}>
             <div className="p-6 flex items-center gap-3 border-b border-gray-800">
                 <div className="bg-white p-1 rounded">
                     <Image src="/logo.png" alt="AMK" width={30} height={30} className="w-8 h-8 object-contain" />
@@ -58,6 +65,7 @@ export default function AdminSidebar() {
                         <Link
                             key={link.href}
                             href={link.href}
+                            onClick={onClose}
                             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive
                                 ? "bg-primary text-white font-medium"
                                 : "text-gray-400 hover:bg-gray-800 hover:text-white"
@@ -73,6 +81,7 @@ export default function AdminSidebar() {
             <div className="p-4 border-t border-gray-800 space-y-2">
                 <Link
                     href="/"
+                    onClick={onClose}
                     className="flex items-center gap-3 px-4 py-3 w-full text-left text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
                 >
                     <Home size={20} />

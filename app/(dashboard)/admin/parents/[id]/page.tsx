@@ -128,9 +128,12 @@ export default function ParentDetailPage() {
                                 {copied ? "Copied Link" : "Invite Link"}
                             </button>
                         )}
-                        <button className="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded transition hover:bg-gray-50 text-sm font-medium">
+                        <Link
+                            href={`/admin/parents/${parentId}/edit`}
+                            className="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded transition hover:bg-gray-50 text-sm font-medium"
+                        >
                             Edit Profile
-                        </button>
+                        </Link>
                     </div>
                 </div>
             </div>

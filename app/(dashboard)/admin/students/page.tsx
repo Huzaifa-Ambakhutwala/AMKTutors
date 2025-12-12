@@ -52,7 +52,7 @@ export default function AdminStudentsPage() {
                 {loading ? (
                     <div className="flex justify-center p-12"><Loader2 className="animate-spin" /></div>
                 ) : (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden overflow-x-auto">
                         <table className="w-full text-left">
                             <thead className="bg-gray-50 border-b border-gray-100">
                                 <tr>

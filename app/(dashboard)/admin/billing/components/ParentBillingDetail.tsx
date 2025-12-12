@@ -140,62 +140,71 @@ export default function ParentBillingDetail({ parentId, onBack }: ParentBillingD
 
         setProcessing(true);
         try {
-            const batch = writeBatch(db);
-            const invoiceId = uuidv4();
-            const selectedItems = pendingSessions.filter(s => selectedSessionIds.has(s.id));
-            const totalAmount = selectedItems.reduce((sum, s) => sum + s.lineTotal, 0);
+            await db.runTransaction(async (transaction) => {
+                // 1. Get Settings for Next Invoice Number
+                const settingsRef = doc(db, "settings", "email_templates");
+                const settingsDoc = await transaction.get(settingsRef);
 
-            // Invoice Item
-            const items: InvoiceItem[] = selectedItems.map(s => ({
-                description: `${s.subject} Session - ${new Date(s.startTime).toLocaleDateString()}`,
-                quantity: s.durationMinutes / 60,
-                rate: s.calculatedRate,
-                total: s.lineTotal,
-                sessionId: s.id,
-                studentId: s.studentId,
-                studentName: s.studentName,
-                date: s.startTime
-            }));
+                let nextNum = 1001;
+                if (settingsDoc.exists() && settingsDoc.data().invoice_layout?.nextInvoiceNumber) {
+                    nextNum = settingsDoc.data().invoice_layout.nextInvoiceNumber;
+                }
 
-            const invoice: Invoice = {
-                id: invoiceId,
-                parentId: parentId,
-                parentName: parent?.name || "Unknown",
-                studentIds: Array.from(new Set(selectedItems.map(s => s.studentId))),
-                invoiceNumber: `INV-${Date.now().toString().slice(-6)}`,
-                periodStart: new Date().toISOString(), // Simplified
-                periodEnd: new Date().toISOString(),
-                issueDate: new Date().toISOString(),
-                dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-                status: 'Sent', // Auto-mark as sent? Or Draft? User said "Mark as Paid" is usually manual. Let's say 'Sent' or 'Draft'. 
-                // Let's use 'Sent' as default for now or 'Draft' if you want review.
-                // Re-reading user request: "After clicking create invoice...". 
-                // Let's set status to 'Draft' so they can review, OR just 'Sent' to assume it's done. 
-                // Let's go with 'Sent' for simplicity in this flow, or 'Unpaid'.
-                // Status enum in types: 'Draft' | 'Sent' | 'Paid' | 'Overdue'.
-                items,
-                totalAmount,
-                notes: invoiceNotes
-            };
+                // 2. Prepare Data
+                const invoiceId = uuidv4();
+                const selectedItems = pendingSessions.filter(s => selectedSessionIds.has(s.id));
+                const totalAmount = selectedItems.reduce((sum, s) => sum + s.lineTotal, 0);
+                const items: InvoiceItem[] = selectedItems.map(s => ({
+                    description: `${s.subject} Session - ${new Date(s.startTime).toLocaleDateString()}`,
+                    quantity: s.durationMinutes / 60,
+                    rate: s.calculatedRate,
+                    total: s.lineTotal,
+                    sessionId: s.id,
+                    studentId: s.studentId,
+                    studentName: s.studentName,
+                    date: s.startTime
+                }));
 
-            batch.set(doc(db, "invoices", invoiceId), invoice);
+                const invoiceNumString = `INV-${nextNum}`;
 
-            // Update Sessions
-            selectedItems.forEach(s => {
-                batch.update(doc(db, "sessions", s.id), {
-                    parentBilled: true,
-                    invoiceId: invoiceId
+                const invoice: Invoice = {
+                    id: invoiceId,
+                    parentId: parentId,
+                    parentName: parent?.name || "Unknown",
+                    studentIds: Array.from(new Set(selectedItems.map(s => s.studentId))),
+                    invoiceNumber: invoiceNumString,
+                    periodStart: new Date().toISOString(),
+                    periodEnd: new Date().toISOString(),
+                    issueDate: new Date().toISOString(),
+                    dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                    status: 'Sent',
+                    items,
+                    totalAmount,
+                    notes: invoiceNotes
+                };
+
+                // 3. Batched Writes via Transaction
+                transaction.set(doc(db, "invoices", invoiceId), invoice);
+
+                selectedItems.forEach(s => {
+                    transaction.update(doc(db, "sessions", s.id), {
+                        parentBilled: true,
+                        invoiceId: invoiceId
+                    });
                 });
-            });
 
-            await batch.commit();
+                // 4. Increment Next Invoice Number
+                transaction.set(settingsRef, {
+                    invoice_layout: { nextInvoiceNumber: nextNum + 1 }
+                }, { merge: true });
+            });
 
             // Refresh
             alert("Invoice created!");
             setProcessing(false);
             setInvoiceNotes("");
-            loadDetailData();
-            setActiveTab('HISTORY'); // Switch to history to see it
+            loadDetailData(true); // Force refresh
+            setActiveTab('HISTORY');
 
         } catch (e) {
             console.error("Error creating invoice:", e);

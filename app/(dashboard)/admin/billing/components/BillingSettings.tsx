@@ -21,9 +21,11 @@ export default function BillingSettings() {
     const [contactEmail, setContactEmail] = useState("contact@amktutors.com");
     const [contactPhone, setContactPhone] = useState("(555) 123-4567");
     const [footerNotes, setFooterNotes] = useState("Please make checks payable to \"AMK Tutors\". Payment is due within 7 days.\nThank you for your business!");
+    const [nextInvoiceNumber, setNextInvoiceNumber] = useState(1001);
 
     // Pay Stub State
     const [payStubFooter, setPayStubFooter] = useState("Earnings Statement.\nThank you for your hard work!");
+    const [nextPayStubNumber, setNextPayStubNumber] = useState(1001);
 
     useEffect(() => {
         loadSettings();
@@ -63,10 +65,12 @@ AMK Tutors`;
                 setContactEmail(invData.contactEmail || "contact@amktutors.com");
                 setContactPhone(invData.contactPhone || "(555) 123-4567");
                 setFooterNotes(invData.footerNotes || "Please make checks payable to \"AMK Tutors\". Payment is due within 7 days.\nThank you for your business!");
+                setNextInvoiceNumber(invData.nextInvoiceNumber || 1001);
 
                 // Pay Stub
                 const stubData = data.pay_stub_layout || {};
                 setPayStubFooter(stubData.footerNotes || "Earnings Statement.\nThank you for your hard work!");
+                setNextPayStubNumber(stubData.nextPayStubNumber || 1001);
             }
         } catch (error) {
             console.error("Error loading settings:", error);
@@ -86,10 +90,12 @@ AMK Tutors`;
                     addressLine2,
                     contactEmail,
                     contactPhone,
-                    footerNotes
+                    footerNotes,
+                    nextInvoiceNumber // Save this
                 },
                 pay_stub_layout: {
-                    footerNotes: payStubFooter
+                    footerNotes: payStubFooter,
+                    nextPayStubNumber // Save this
                 }
             }, { merge: true });
             alert("Settings saved successfully!");
@@ -153,6 +159,16 @@ AMK Tutors`;
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Address Line 2</label>
                                 <input type="text" value={addressLine2} onChange={e => setAddressLine2(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg" />
                             </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Next Invoice Number (Auto-Increment)</label>
+                                <input
+                                    type="number"
+                                    value={nextInvoiceNumber}
+                                    onChange={e => setNextInvoiceNumber(parseInt(e.target.value) || 1)}
+                                    className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 from-neutral-50"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Next invoice will be #INV-{nextInvoiceNumber}</p>
+                            </div>
                         </div>
                         <div className="mt-4">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Default Footer / Payment Instructions</label>
@@ -198,6 +214,16 @@ AMK Tutors`;
                         <p className="text-sm text-gray-500 mb-4">
                             Customize the layout for tutor pay stubs. Company details are shared with the Invoice Layout.
                         </p>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Next Pay Stub Number (Auto-Increment)</label>
+                            <input
+                                type="number"
+                                value={nextPayStubNumber}
+                                onChange={e => setNextPayStubNumber(parseInt(e.target.value) || 1)}
+                                className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 md:w-1/2"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">Next pay stub will be #PAY-{nextPayStubNumber}</p>
+                        </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Default Footer / Notes</label>
                             <textarea

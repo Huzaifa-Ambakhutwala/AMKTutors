@@ -94,49 +94,63 @@ export default function TutorBillingDetail({ tutorId, onBack }: TutorBillingDeta
 
         setProcessing(true);
         try {
-            const batch = writeBatch(db);
-            const stubId = uuidv4();
-            const selectedItems = pendingSessions.filter(s => selectedSessionIds.has(s.id));
-            const totalPay = selectedItems.reduce((sum, s) => sum + s.lineTotal, 0);
-            const totalHours = selectedItems.reduce((sum, s) => sum + (s.durationMinutes / 60), 0);
+            await db.runTransaction(async (transaction) => {
+                // 1. Get Settings
+                const settingsRef = doc(db, "settings", "email_templates");
+                const settingsDoc = await transaction.get(settingsRef);
 
-            // PayStub Item
-            const items: PayStubItem[] = selectedItems.map(s => ({
-                sessionId: s.id,
-                studentId: s.studentId,
-                studentName: s.studentName,
-                subject: s.subject,
-                date: s.startTime,
-                durationHours: s.durationMinutes / 60,
-                hourlyRate: s.calculatedRate,
-                total: s.lineTotal
-            }));
+                let nextNum = 1001;
+                if (settingsDoc.exists() && settingsDoc.data().pay_stub_layout?.nextPayStubNumber) {
+                    nextNum = settingsDoc.data().pay_stub_layout.nextPayStubNumber;
+                }
 
-            const stub: PayStub = {
-                id: stubId,
-                tutorId: tutorId,
-                tutorName: tutor?.name || "Unknown",
-                periodStart: new Date().toISOString(),
-                periodEnd: new Date().toISOString(),
-                issueDate: new Date().toISOString(),
-                totalHours,
-                totalPay,
-                items,
-                status: 'Paid', // Assuming creation means we recorded the payment
-                notes: payNotes
-            };
+                // 2. Prepare Data
+                const stubId = uuidv4();
+                const selectedItems = pendingSessions.filter(s => selectedSessionIds.has(s.id));
+                const totalPay = selectedItems.reduce((sum, s) => sum + s.lineTotal, 0);
+                const totalHours = selectedItems.reduce((sum, s) => sum + (s.durationMinutes / 60), 0);
 
-            batch.set(doc(db, "payStubs", stubId), stub);
+                const items: PayStubItem[] = selectedItems.map(s => ({
+                    sessionId: s.id,
+                    studentId: s.studentId,
+                    studentName: s.studentName,
+                    subject: s.subject,
+                    date: s.startTime,
+                    durationHours: s.durationMinutes / 60,
+                    hourlyRate: s.calculatedRate,
+                    total: s.lineTotal
+                }));
 
-            // Update Sessions
-            selectedItems.forEach(s => {
-                batch.update(doc(db, "sessions", s.id), {
-                    tutorPaid: true,
-                    payStubId: stubId
+                const stub: PayStub = {
+                    id: stubId,
+                    tutorId: tutorId,
+                    tutorName: tutor?.name || "Unknown",
+                    payStubNumber: `PAY-${nextNum}`,
+                    periodStart: new Date().toISOString(),
+                    periodEnd: new Date().toISOString(),
+                    issueDate: new Date().toISOString(),
+                    totalHours,
+                    totalPay,
+                    items,
+                    status: 'Paid',
+                    notes: payNotes
+                };
+
+                // 3. Writes
+                transaction.set(doc(db, "payStubs", stubId), stub);
+
+                selectedItems.forEach(s => {
+                    transaction.update(doc(db, "sessions", s.id), {
+                        tutorPaid: true,
+                        payStubId: stubId
+                    });
                 });
-            });
 
-            await batch.commit();
+                // 4. Increment
+                transaction.set(settingsRef, {
+                    pay_stub_layout: { nextPayStubNumber: nextNum + 1 }
+                }, { merge: true });
+            });
 
             // Refresh
             alert("Pay Stub recorded!");
