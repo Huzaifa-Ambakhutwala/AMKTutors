@@ -1,4 +1,9 @@
-import { Star } from "lucide-react";
+"use client";
+
+import { Star, Quote } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { MotionSection, MotionStagger, MotionItem } from "@/lib/motion/Motion";
+import { fadeUp, cardHover, scaleIn } from "@/lib/motion/variants";
 
 const testimonials = [
     {
@@ -19,30 +24,62 @@ const testimonials = [
 ];
 
 export default function Testimonials() {
+    const shouldReduceMotion = useReducedMotion();
+
     return (
-        <section id="testimonials" className="py-20 bg-white">
+        <MotionSection id="testimonials" className="py-20 bg-white" variants={fadeUp}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="text-center mb-16">
+                <motion.div
+                    className="text-center mb-16"
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.3 }}
+                    transition={{ duration: 0.4 }}
+                >
                     <h2 className="text-3xl font-bold text-gray-900 mb-4 font-heading">Parent Testimonials</h2>
                     <p className="text-lg text-gray-600">See what families are saying about AMK Tutors.</p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                </motion.div>
+                <MotionStagger className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {testimonials.map((testimonial, index) => (
-                        <div key={index} className="bg-gray-50 p-8 rounded-xl relative">
-                            <div className="text-yellow-400 flex mb-4">
-                                {[...Array(5)].map((_, i) => (
-                                    <Star key={i} size={20} fill="currentColor" />
-                                ))}
-                            </div>
-                            <p className="text-gray-700 italic mb-6">"{testimonial.quote}"</p>
-                            <div>
-                                <p className="font-bold text-gray-900">{testimonial.author}</p>
-                                <p className="text-sm text-gray-500">{testimonial.role}</p>
-                            </div>
-                        </div>
+                        <MotionItem key={index}>
+                            <motion.div
+                                className="bg-gray-50 p-8 rounded-xl relative"
+                                whileHover={shouldReduceMotion ? undefined : cardHover}
+                                transition={{ duration: 0.2 }}
+                            >
+                                {/* Quote mark animation */}
+                                <motion.div
+                                    className="absolute -top-2 -left-2 text-primary/20"
+                                    initial={{ scale: 0, rotate: -180 }}
+                                    whileInView={{ scale: 1, rotate: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                                >
+                                    <Quote size={40} />
+                                </motion.div>
+                                <div className="text-yellow-400 flex mb-4">
+                                    {[...Array(5)].map((_, i) => (
+                                        <motion.div
+                                            key={i}
+                                            initial={{ opacity: 0, scale: 0 }}
+                                            whileInView={{ opacity: 1, scale: 1 }}
+                                            viewport={{ once: true }}
+                                            transition={{ duration: 0.2, delay: index * 0.1 + i * 0.05 }}
+                                        >
+                                            <Star size={20} fill="currentColor" />
+                                        </motion.div>
+                                    ))}
+                                </div>
+                                <p className="text-gray-700 italic mb-6 relative z-10">"{testimonial.quote}"</p>
+                                <div>
+                                    <p className="font-bold text-gray-900">{testimonial.author}</p>
+                                    <p className="text-sm text-gray-500">{testimonial.role}</p>
+                                </div>
+                            </motion.div>
+                        </MotionItem>
                     ))}
-                </div>
+                </MotionStagger>
             </div>
-        </section>
+        </MotionSection>
     );
 }

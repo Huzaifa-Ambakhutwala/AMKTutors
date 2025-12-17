@@ -8,6 +8,7 @@ import Curriculum from "@/components/Curriculum";
 import Testimonials from "@/components/Testimonials";
 import ContactForm from "@/components/ContactForm";
 import Footer from "@/components/Footer";
+import ScrollToTop from "@/components/ScrollToTop";
 
 // CMS Imports
 export default function Home() {
@@ -23,6 +24,7 @@ export default function Home() {
       <Testimonials />
       <ContactForm />
       <Footer />
+      <ScrollToTop />
     </main>
   );
 }
