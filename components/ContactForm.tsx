@@ -146,14 +146,31 @@ export default function ContactForm() {
     };
 
     return (
-        <MotionSection id="contact" className="py-20 bg-primary text-white" variants={fadeUp}>
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <MotionSection id="contact" className="py-20 bg-secondary text-white relative overflow-hidden" variants={fadeUp}>
+            {/* Top blobs that continue from previous section - positioned at top edge */}
+            <motion.div
+                className="absolute top-0 left-0 -ml-20 -mt-20 w-[500px] h-[500px] bg-red-100 rounded-full blur-3xl opacity-20"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 0.2 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+            />
+            <motion.div
+                className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-red-200 rounded-full blur-3xl opacity-25"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 0.25 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+            />
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                 <MotionDiv
                     className="text-center mb-12"
                     variants={fadeUp}
                     threshold={0.2}
                 >
-                    <h2 className="text-3xl md:text-4xl font-bold mb-4 font-heading">Get Started Today</h2>
+                    <h2 className="text-3xl md:text-4xl font-bold mb-4 font-heading">
+                        Get Started <span className="text-yellow-300">Today</span>
+                    </h2>
                     <p className="text-lg text-gray-100">
                         Ready to see the difference personalized tutoring can make? Fill out the form to schedule your free consultation.
                     </p>
@@ -182,7 +199,7 @@ export default function ContactForm() {
                                         {[...Array(6)].map((_, i) => (
                                             <motion.div
                                                 key={i}
-                                                className="absolute top-0 left-1/2 w-2 h-2 bg-primary rounded-full"
+                                                className="absolute top-0 left-1/2 w-2 h-2 bg-yellow-300 rounded-full"
                                                 variants={confettiBurst}
                                                 initial="hidden"
                                                 animate="visible"
@@ -208,7 +225,7 @@ export default function ContactForm() {
                                 </p>
                                 <motion.button
                                     onClick={() => setStatus("idle")}
-                                    className="px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-accent"
+                                    className="px-6 py-2 bg-yellow-300 text-secondary rounded-lg font-medium hover:bg-yellow-400"
                                     whileHover={shouldReduceMotion ? undefined : { scale: 1.05 }}
                                     whileTap={shouldReduceMotion ? undefined : { scale: 0.95 }}
                                 >
@@ -429,7 +446,7 @@ export default function ContactForm() {
                                 <motion.button
                                     type="submit"
                                     disabled={status === "loading"}
-                                    className="w-full bg-primary text-white font-bold py-4 rounded-xl hover:bg-accent transition-colors shadow-lg text-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    className="w-full bg-yellow-300 text-secondary font-bold py-4 rounded-xl hover:bg-yellow-400 transition-colors shadow-lg text-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                     whileHover={shouldReduceMotion || status === "loading" ? undefined : { scale: 1.02, y: -2 }}
                                     whileTap={shouldReduceMotion || status === "loading" ? undefined : { scale: 0.98 }}
                                 >

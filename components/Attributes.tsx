@@ -27,18 +27,18 @@ export default function Attributes() {
     const shouldReduceMotion = useReducedMotion();
 
     return (
-        <section className="py-16 bg-white">
+        <section className="py-16 bg-white relative overflow-hidden">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <MotionStagger className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {attributes.map((attr, index) => (
                         <MotionItem key={index}>
                             <motion.div
-                                className="flex flex-col items-center text-center p-6 rounded-2xl hover:bg-gray-50 transition-colors"
+                                className="flex flex-col items-center text-center p-6 rounded-2xl hover:bg-gray-50 transition-colors border border-gray-100"
                                 whileHover={shouldReduceMotion ? undefined : cardHover}
                                 transition={{ duration: 0.2 }}
                             >
                                 <motion.div
-                                    className="bg-[#1A2742]/10 p-4 rounded-full mb-4 text-primary"
+                                    className="bg-yellow-300 p-4 rounded-full mb-4 text-secondary"
                                     variants={shouldReduceMotion ? undefined : iconWiggle}
                                     initial="rest"
                                     whileHover="hover"

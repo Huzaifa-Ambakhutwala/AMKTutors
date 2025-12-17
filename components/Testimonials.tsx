@@ -27,8 +27,23 @@ export default function Testimonials() {
     const shouldReduceMotion = useReducedMotion();
 
     return (
-        <MotionSection id="testimonials" className="py-20 bg-white" variants={fadeUp}>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <MotionSection id="testimonials" className="py-20 bg-secondary text-white relative overflow-hidden" variants={fadeUp}>
+            {/* Top blobs that continue from previous section - positioned at top edge */}
+            <motion.div
+                className="absolute top-0 left-0 -ml-20 -mt-20 w-[500px] h-[500px] bg-red-100 rounded-full blur-3xl opacity-20"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 0.2 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+            />
+            <motion.div
+                className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-red-200 rounded-full blur-3xl opacity-25"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 0.25 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+            />
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                 <motion.div
                     className="text-center mb-16"
                     initial={{ opacity: 0, y: 20 }}
@@ -36,20 +51,22 @@ export default function Testimonials() {
                     viewport={{ once: true, amount: 0.3 }}
                     transition={{ duration: 0.4 }}
                 >
-                    <h2 className="text-3xl font-bold text-gray-900 mb-4 font-heading">Parent Testimonials</h2>
-                    <p className="text-lg text-gray-600">See what families are saying about AMK Tutors.</p>
+                    <h2 className="text-3xl font-bold text-white mb-4 font-heading">
+                        Parent <span className="text-yellow-300">Testimonials</span>
+                    </h2>
+                    <p className="text-lg text-gray-100">See what families are saying about AMK Tutors.</p>
                 </motion.div>
                 <MotionStagger className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {testimonials.map((testimonial, index) => (
                         <MotionItem key={index}>
                             <motion.div
-                                className="bg-gray-50 p-8 rounded-xl relative"
+                                className="bg-white/10 backdrop-blur-sm p-8 rounded-xl relative border border-yellow-300/20"
                                 whileHover={shouldReduceMotion ? undefined : cardHover}
                                 transition={{ duration: 0.2 }}
                             >
                                 {/* Quote mark animation */}
                                 <motion.div
-                                    className="absolute -top-2 -left-2 text-primary/20"
+                                    className="absolute -top-2 -left-2 text-yellow-300/30"
                                     initial={{ scale: 0, rotate: -180 }}
                                     whileInView={{ scale: 1, rotate: 0 }}
                                     viewport={{ once: true }}
@@ -57,7 +74,7 @@ export default function Testimonials() {
                                 >
                                     <Quote size={40} />
                                 </motion.div>
-                                <div className="text-yellow-400 flex mb-4">
+                                <div className="text-yellow-300 flex mb-4">
                                     {[...Array(5)].map((_, i) => (
                                         <motion.div
                                             key={i}
@@ -70,16 +87,31 @@ export default function Testimonials() {
                                         </motion.div>
                                     ))}
                                 </div>
-                                <p className="text-gray-700 italic mb-6 relative z-10">"{testimonial.quote}"</p>
+                                <p className="text-gray-100 italic mb-6 relative z-10">"{testimonial.quote}"</p>
                                 <div>
-                                    <p className="font-bold text-gray-900">{testimonial.author}</p>
-                                    <p className="text-sm text-gray-500">{testimonial.role}</p>
+                                    <p className="font-bold text-white">{testimonial.author}</p>
+                                    <p className="text-sm text-gray-200">{testimonial.role}</p>
                                 </div>
                             </motion.div>
                         </MotionItem>
                     ))}
                 </MotionStagger>
             </div>
+            {/* Bottom blobs positioned at edge for seamless transition */}
+            <motion.div
+                className="absolute bottom-0 left-0 -ml-20 -mb-20 w-[500px] h-[500px] bg-red-200 rounded-full blur-3xl opacity-20"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 0.2 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+            />
+            <motion.div
+                className="absolute bottom-0 right-0 -mr-20 -mb-20 w-96 h-96 bg-red-100 rounded-full blur-3xl opacity-25"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 0.25 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+            />
         </MotionSection>
     );
 }

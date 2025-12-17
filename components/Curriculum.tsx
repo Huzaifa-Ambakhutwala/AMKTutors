@@ -29,7 +29,7 @@ export default function Curriculum() {
                     <div>
                         <MotionDiv variants={fadeUp} threshold={0.2}>
                             <h2 className="text-3xl font-bold text-gray-900 mb-6 font-heading">
-                                Our Curriculum Approach
+                                Our <span className="text-secondary">Curriculum</span> Approach
                             </h2>
                         </MotionDiv>
                         <MotionDiv variants={fadeUp} threshold={0.2}>
@@ -58,7 +58,7 @@ export default function Curriculum() {
                                         viewport={{ once: true }}
                                         transition={{ duration: 0.3, delay: index * 0.1 }}
                                     >
-                                        <CheckCircle className="text-primary" size={24} />
+                                        <CheckCircle className="text-yellow-300" size={24} />
                                     </motion.div>
                                     <div>
                                         <h3 className="text-xl font-bold text-gray-900">{point.title}</h3>
@@ -69,7 +69,7 @@ export default function Curriculum() {
                         </motion.div>
                     </div>
                     <motion.div
-                        className="relative h-80 w-full rounded-2xl overflow-hidden shadow-lg bg-white border border-gray-100 flex items-center justify-center"
+                        className="relative h-80 w-full rounded-2xl overflow-hidden shadow-lg bg-white border-2 border-yellow-300/30 flex items-center justify-center"
                         initial={{ opacity: 0, scale: 0.95 }}
                         whileInView={{ opacity: 1, scale: 1 }}
                         viewport={{ once: true, amount: 0.3 }}

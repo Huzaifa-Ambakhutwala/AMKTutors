@@ -19,7 +19,7 @@ export default function Hero() {
 
     return (
         <section id="home" className="relative bg-secondary py-20 lg:py-32 overflow-hidden">
-            {/* Background blobs with subtle parallax */}
+            {/* Background blobs with subtle parallax - extend beyond section */}
             <motion.div
                 className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-red-200 rounded-full blur-3xl opacity-30"
                 style={{ y: blob1Y }}
@@ -27,6 +27,11 @@ export default function Hero() {
             <motion.div
                 className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-red-100 rounded-full blur-3xl opacity-30"
                 style={{ y: blob2Y }}
+            />
+            {/* Bottom blob positioned at edge for seamless transition */}
+            <motion.div
+                className="absolute bottom-0 right-0 -mr-20 -mb-20 w-[500px] h-[500px] bg-red-200 rounded-full blur-3xl opacity-20"
+                style={{ y: shouldReduceMotion ? 0 : useTransform(scrollY, [0, 500], [0, 30]) }}
             />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -85,7 +90,7 @@ export default function Hero() {
                         >
                             <Link
                                 href="#contact"
-                                className="bg-primary text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg hover:shadow-xl transition-shadow block"
+                                className="bg-yellow-300 text-secondary px-8 py-4 rounded-full text-lg font-semibold shadow-lg hover:shadow-xl transition-shadow block hover:bg-yellow-400"
                             >
                                 Book a Call Today
                             </Link>
@@ -96,7 +101,7 @@ export default function Hero() {
                         >
                             <Link
                                 href="#about"
-                                className="bg-white text-gray-800 border border-gray-200 px-8 py-4 rounded-full text-lg font-semibold hover:bg-gray-50 transition-colors shadow-sm hover:shadow-md block"
+                                className="bg-white text-secondary border-2 border-white px-8 py-4 rounded-full text-lg font-semibold hover:bg-gray-50 transition-colors shadow-sm hover:shadow-md block"
                             >
                                 Learn More
                             </Link>

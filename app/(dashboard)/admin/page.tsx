@@ -270,7 +270,7 @@ export default function AdminDashboard() {
                             className="mt-4 inline-block text-sm text-primary hover:text-accent font-medium"
                         >
                             View all invoices →
-                        </Link>
+                            </Link>
                     </div>
 
                     {/* Pending Pay Stubs */}
