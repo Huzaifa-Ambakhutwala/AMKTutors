@@ -23,7 +23,7 @@ export default function HowItWorks() {
                             </div>
                         </div>
                         <div className="p-8 pt-12 text-center">
-                            <div className="mx-auto bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                            <div className="mx-auto bg-[#1A2742]/10 w-20 h-20 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                                 <ClipboardList className="text-primary w-10 h-10" />
                             </div>
                             <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center justify-center gap-2">
@@ -45,7 +45,7 @@ export default function HowItWorks() {
                             </div>
                         </div>
                         <div className="p-8 pt-12 text-center">
-                            <div className="mx-auto bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                            <div className="mx-auto bg-[#1A2742]/10 w-20 h-20 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                                 <Users className="text-primary w-10 h-10" />
                             </div>
                             <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center justify-center gap-2">
@@ -67,7 +67,7 @@ export default function HowItWorks() {
                             </div>
                         </div>
                         <div className="p-8 pt-12 text-center">
-                            <div className="mx-auto bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                            <div className="mx-auto bg-[#1A2742]/10 w-20 h-20 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                                 <TrendingUp className="text-primary w-10 h-10" />
                             </div>
                             <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center justify-center gap-2">

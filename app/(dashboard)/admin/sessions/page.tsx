@@ -58,7 +58,7 @@ export default function SessionsListPage() {
                         <RotateCcw size={18} className="text-gray-500" />
                     </button>
                 </div>
-                <Link href="/admin/sessions/new" className="bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                <Link href="/admin/sessions/new" className="bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-accent transition-colors">
                     + Schedule Session
                 </Link>
             </div>
@@ -103,13 +103,13 @@ export default function SessionsListPage() {
                                         <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${s.status === 'Completed' ? 'bg-green-50 text-green-700 border-green-100' :
                                             s.status === 'Cancelled' ? 'bg-red-50 text-red-700 border-red-100' :
                                                 s.status === 'NoShow' ? 'bg-orange-50 text-orange-700 border-orange-100' :
-                                                    'bg-blue-50 text-blue-700 border-blue-100'
+                                                    'bg-[#1A2742]/10 text-primary border-[#1A2742]/20'
                                             }`}>
                                             {s.status}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 flex gap-3">
-                                        <Link href={`/admin/sessions/${s.id}`} className="text-gray-500 hover:text-blue-600" title="View Details">
+                                        <Link href={`/admin/sessions/${s.id}`} className="text-gray-500 hover:text-primary" title="View Details">
                                             <Eye size={18} />
                                         </Link>
                                         <Link href={`/admin/sessions/${s.id}/edit`} className="text-gray-500 hover:text-orange-500" title="Edit">

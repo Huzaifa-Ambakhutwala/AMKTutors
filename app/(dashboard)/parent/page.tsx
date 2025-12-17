@@ -94,7 +94,7 @@ export default function ParentDashboard() {
                 <div className="flex justify-between items-center mb-8">
                     <h1 className="text-3xl font-bold font-heading">Parent Portal</h1>
                     <div className="flex items-center gap-3">
-                        <Link href="/" className="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors">
+                        <Link href="/" className="flex items-center gap-2 text-gray-600 hover:text-primary font-medium px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors">
                             <ArrowLeft size={20} /> Back to Website
                         </Link>
                         <button

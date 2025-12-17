@@ -37,7 +37,7 @@ export default function Subjects() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                     {subjects.map((subject, index) => (
                         <div key={index} className="bg-white border border-gray-100 p-8 rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-300 group">
-                            <div className="bg-blue-50 w-14 h-14 rounded-lg flex items-center justify-center mb-6 group-hover:bg-primary transition-colors">
+                            <div className="bg-[#1A2742]/10 w-14 h-14 rounded-lg flex items-center justify-center mb-6 group-hover:bg-primary transition-colors">
                                 <subject.icon className="text-primary w-7 h-7 group-hover:text-white transition-colors" />
                             </div>
                             <h3 className="text-xl font-bold text-gray-900 mb-3">{subject.title}</h3>

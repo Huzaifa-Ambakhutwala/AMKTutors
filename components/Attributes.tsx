@@ -25,7 +25,7 @@ export default function Attributes() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {attributes.map((attr, index) => (
                         <div key={index} className="flex flex-col items-center text-center p-6 rounded-2xl hover:bg-gray-50 transition-colors">
-                            <div className="bg-blue-100 p-4 rounded-full mb-4 text-primary">
+                            <div className="bg-[#1A2742]/10 p-4 rounded-full mb-4 text-primary">
                                 <attr.icon size={32} />
                             </div>
                             <h3 className="text-xl font-bold text-gray-900 mb-2">{attr.title}</h3>

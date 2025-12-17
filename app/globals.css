@@ -14,10 +14,10 @@
   --background: #f9fafb;
   --foreground: #111827;
 
-  /* Default Theme Defaults */
-  --theme-primary: #2563EB;
-  --theme-secondary: #F3F4F6;
-  --theme-accent: #1D4ED8;
+  /* Updated Theme Colors */
+  --theme-primary: #1A2742;
+  --theme-secondary: #800000;
+  --theme-accent: #2A3F5F;
   --theme-bg: #f9fafb;
   --theme-fg: #111827;
 }

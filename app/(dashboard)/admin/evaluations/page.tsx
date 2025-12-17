@@ -134,7 +134,7 @@ export default function EvaluationsPage() {
                 <h1 className="text-3xl font-bold font-heading">Evaluations</h1>
                 <Link
                     href="/admin/evaluations/new"
-                    className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                    className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-accent transition"
                 >
                     <Plus size={20} /> New Evaluation
                 </Link>
@@ -186,7 +186,7 @@ export default function EvaluationsPage() {
                                         <td className="px-6 py-4">
                                             <div className="flex flex-wrap gap-1">
                                                 {a.subjects.map(s => (
-                                                    <span key={s} className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs">{s}</span>
+                                                    <span key={s} className="bg-[#1A2742]/10 text-primary px-2 py-0.5 rounded text-xs">{s}</span>
                                                 ))}
                                             </div>
                                         </td>
@@ -198,8 +198,8 @@ export default function EvaluationsPage() {
                                                         <CheckCircle size={12} /> Converted
                                                     </span>
                                                     <div className="flex gap-2 text-xs">
-                                                        {a.convertedStudentId && <Link href={`/admin/students/${a.convertedStudentId}`} className="text-blue-600 hover:underline">Student</Link>}
-                                                        {a.convertedParentId && <Link href={`/admin/parents/${a.convertedParentId}`} className="text-blue-600 hover:underline">Parent</Link>}
+                                                        {a.convertedStudentId && <Link href={`/admin/students/${a.convertedStudentId}`} className="text-primary hover:underline">Student</Link>}
+                                                        {a.convertedParentId && <Link href={`/admin/parents/${a.convertedParentId}`} className="text-primary hover:underline">Parent</Link>}
                                                     </div>
                                                 </div>
                                             ) : (

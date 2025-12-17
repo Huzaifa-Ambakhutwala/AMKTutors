@@ -44,7 +44,7 @@ export default function AdminStudentsPage() {
             <div className="p-8">
                 <div className="flex justify-between items-center mb-8">
                     <h1 className="text-3xl font-bold font-heading">Manage Students</h1>
-                    <a href="/admin/students/new" className="bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                    <a href="/admin/students/new" className="bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-accent transition-colors">
                         + Add Student
                     </a>
                 </div>
@@ -73,7 +73,7 @@ export default function AdminStudentsPage() {
                                             {s.subjects && s.subjects.length > 0 ? (
                                                 <div className="flex flex-wrap gap-1">
                                                     {s.subjects.map(subj => (
-                                                        <span key={subj} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-100">
+                                                        <span key={subj} className="text-xs bg-[#1A2742]/10 text-primary px-2 py-0.5 rounded-full border border-[#1A2742]/20">
                                                             {subj}
                                                         </span>
                                                     ))}
@@ -98,7 +98,7 @@ export default function AdminStudentsPage() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 flex gap-3">
-                                            <Link href={`/admin/students/${s.id}`} className="text-gray-500 hover:text-blue-600 tooltip" title="View Details">
+                                            <Link href={`/admin/students/${s.id}`} className="text-gray-500 hover:text-primary tooltip" title="View Details">
                                                 <Eye size={18} />
                                             </Link>
                                             <Link href={`/admin/students/${s.id}/edit`} className="text-gray-500 hover:text-orange-500" title="Edit">

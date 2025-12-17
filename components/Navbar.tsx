@@ -40,7 +40,7 @@ export default function Navbar() {
                 <div className="flex justify-between items-center h-16">
                     <div className="flex-shrink-0 flex items-center">
                         <Link href="/" className="flex items-center gap-2">
-                            <Image src="/logo.png" alt="AMK Tutors Logo" width={150} height={50} className="h-14 w-auto object-contain" />
+                            <Image src="/logo.png" alt="AMK Tutors Logo" width={150} height={50} className="h-20 w-auto object-contain drop-shadow-sm" />
                             {/* <span className="text-2xl font-bold text-primary font-heading">AMK Tutors</span> */}
                         </Link>
                     </div>
@@ -82,7 +82,7 @@ export default function Navbar() {
                             )}
                             <Link
                                 href="#contact"
-                                className="bg-primary text-primary-foreground px-5 py-2 rounded-full font-semibold hover:bg-accent transition-colors shadow-sm hover:shadow-md"
+                                className="bg-primary text-white px-5 py-2 rounded-full font-semibold hover:bg-accent transition-colors shadow-sm hover:shadow-md"
                             >
                                 Book Consultation
                             </Link>
@@ -142,7 +142,7 @@ export default function Navbar() {
                             )}
                             <Link
                                 href="#contact"
-                                className="block w-full text-center px-3 py-2 bg-primary text-primary-foreground font-semibold rounded-md hover:bg-accent"
+                                className="block w-full text-center px-3 py-2 bg-primary text-white font-semibold rounded-md hover:bg-accent"
                                 onClick={() => setIsOpen(false)}
                             >
                                 Book Consultation

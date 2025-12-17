@@ -316,7 +316,7 @@ export default function EditSessionPage() {
                             <button
                                 type="submit"
                                 disabled={submitting}
-                                className="px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+                                className="px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-accent transition-colors flex items-center gap-2"
                             >
                                 {submitting && <Loader2 className="animate-spin" size={18} />}
                                 Save Changes

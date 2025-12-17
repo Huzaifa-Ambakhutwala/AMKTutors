@@ -180,7 +180,7 @@ export default function EditEvaluationPage() {
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-2xl font-bold font-heading flex items-center gap-2">
-                        <BookOpen className="text-blue-600" /> Edit Evaluation
+                        <BookOpen className="text-primary" /> Edit Evaluation
                     </h1>
                     {isConverted && <span className="text-green-600 bg-green-50 px-3 py-1 rounded-full text-sm font-bold">Converted to Student</span>}
                 </div>
@@ -346,7 +346,7 @@ export default function EditEvaluationPage() {
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="bg-blue-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 shadow-lg hover:shadow-xl transition-all"
+                            className="bg-primary text-white px-8 py-3 rounded-lg font-bold hover:bg-accent disabled:opacity-50 flex items-center gap-2 shadow-lg hover:shadow-xl transition-all"
                         >
                             {submitting ? <Loader2 className="animate-spin" /> : <Save />}
                             Update Evaluation

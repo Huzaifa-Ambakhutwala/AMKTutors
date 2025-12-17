@@ -55,7 +55,7 @@ export default function AdminTutorsPage() {
             <div className="p-8">
                 <div className="flex justify-between items-center mb-8">
                     <h1 className="text-3xl font-bold font-heading">Manage Tutors</h1>
-                    <a href="/admin/tutors/new" className="bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                    <a href="/admin/tutors/new" className="bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-accent transition-colors">
                         + Add Tutor
                     </a>
                 </div>
@@ -82,7 +82,7 @@ export default function AdminTutorsPage() {
                                         <td className="px-6 py-4">
                                             <div className="flex gap-1 flex-wrap">
                                                 {tutor.subjects?.map(s => (
-                                                    <span key={s} className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-semibold">{s}</span>
+                                                    <span key={s} className="bg-[#1A2742]/10 text-primary px-2 py-1 rounded text-xs font-semibold">{s}</span>
                                                 ))}
                                             </div>
                                         </td>
@@ -95,7 +95,7 @@ export default function AdminTutorsPage() {
                                             </button>
                                         </td>
                                         <td className="px-6 py-4 flex gap-3">
-                                            <Link href={`/admin/tutors/${tutor.uid}`} className="text-gray-500 hover:text-blue-600 tooltip" title="View Details">
+                                            <Link href={`/admin/tutors/${tutor.uid}`} className="text-gray-500 hover:text-primary tooltip" title="View Details">
                                                 <Eye size={18} />
                                             </Link>
                                             <Link href={`/admin/tutors/${tutor.uid}/edit`} className="text-gray-500 hover:text-orange-500" title="Edit">

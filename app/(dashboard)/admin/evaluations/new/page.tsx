@@ -183,7 +183,7 @@ export default function NewEvaluationPage() {
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
                 <h1 className="text-2xl font-bold font-heading mb-6 flex items-center gap-2">
-                    <BookOpen className="text-blue-600" /> New Evaluation
+                    <BookOpen className="text-primary" /> New Evaluation
                 </h1>
 
                 <FormFeedback message={globalError} type="error" />
@@ -236,7 +236,7 @@ export default function NewEvaluationPage() {
                                         setParentEmail("");
                                         setParentPhone("");
                                     }}
-                                    className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${parentMode === 'existing' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                    className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${parentMode === 'existing' ? 'bg-white shadow text-primary' : 'text-gray-500 hover:text-gray-700'}`}
                                 >
                                     Existing Parent
                                 </button>
@@ -249,7 +249,7 @@ export default function NewEvaluationPage() {
                                         setParentEmail("");
                                         setParentPhone("");
                                     }}
-                                    className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${parentMode === 'new' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                    className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${parentMode === 'new' ? 'bg-white shadow text-primary' : 'text-gray-500 hover:text-gray-700'}`}
                                 >
                                     New Parent
                                 </button>
@@ -398,7 +398,7 @@ export default function NewEvaluationPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="bg-blue-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 shadow-lg hover:shadow-xl transition-all"
+                            className="bg-primary text-white px-8 py-3 rounded-lg font-bold hover:bg-accent disabled:opacity-50 flex items-center gap-2 shadow-lg hover:shadow-xl transition-all"
                         >
                             {loading ? <Loader2 className="animate-spin" /> : <Save />}
                             Create Evaluation

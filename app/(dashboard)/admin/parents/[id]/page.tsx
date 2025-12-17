@@ -181,8 +181,8 @@ export default function ParentDetailPage() {
 
                     {/* Upcoming */}
                     <div>
-                        <h3 className="text-lg font-bold mb-3 text-blue-700 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-blue-500"></span> Upcoming Sessions
+                        <h3 className="text-lg font-bold mb-3 text-primary flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-primary"></span> Upcoming Sessions
                         </h3>
                         {sessions.upcoming.length === 0 ? (
                             <p className="text-gray-500 text-sm italic mb-4">No upcoming sessions scheduled.</p>
@@ -228,7 +228,7 @@ function SessionList({ sessions }: { sessions: Session[] }) {
                         <span className={`px-2 py-1 rounded text-xs font-bold ${s.status === 'Completed' ? 'bg-green-100 text-green-700' :
                             s.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
                                 s.status === 'NoShow' ? 'bg-orange-100 text-orange-700' :
-                                    'bg-blue-100 text-blue-700'
+                                    'bg-[#1A2742]/10 text-primary'
                             }`}>
                             {s.status}
                         </span>

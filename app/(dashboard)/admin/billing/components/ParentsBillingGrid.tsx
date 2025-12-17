@@ -121,7 +121,7 @@ export default function ParentsBillingGrid() {
         );
     }
 
-    if (loading) return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-blue-600" size={32} /></div>;
+    if (loading) return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary" size={32} /></div>;
 
     return (
         <div className="space-y-6">
@@ -132,7 +132,7 @@ export default function ParentsBillingGrid() {
                     <input
                         type="text"
                         placeholder="Search parents..."
-                        className="w-full pl-10 p-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full pl-10 p-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-primary"
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                     />
@@ -148,19 +148,19 @@ export default function ParentsBillingGrid() {
                     <div
                         key={parent.uid}
                         onClick={() => setSelectedParentId(parent.uid)}
-                        className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md hover:border-blue-200 transition-all cursor-pointer group relative overflow-hidden"
+                        className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md hover:border-primary/30 transition-all cursor-pointer group relative overflow-hidden"
                     >
                         {/* Status Stripe */}
                         <div className={`absolute left-0 top-0 bottom-0 w-1 ${unbilledAmount > 0 ? 'bg-yellow-400' : 'bg-green-400'}`} />
 
                         <div className="flex justify-between items-start mb-4 pl-2">
                             <div>
-                                <h3 className="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors">
+                                <h3 className="font-bold text-lg text-gray-900 group-hover:text-primary transition-colors">
                                     {parent.name}
                                 </h3>
                                 <p className="text-sm text-gray-500">{parent.email}</p>
                             </div>
-                            <div className="bg-gray-50 p-2 rounded-full group-hover:bg-blue-50 text-gray-400 group-hover:text-blue-600 transition-colors">
+                            <div className="bg-gray-50 p-2 rounded-full group-hover:bg-[#1A2742]/10 text-gray-400 group-hover:text-primary transition-colors">
                                 <ChevronRight size={20} />
                             </div>
                         </div>

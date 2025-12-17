@@ -139,11 +139,11 @@ export default function ContactForm() {
     };
 
     return (
-        <section id="contact" className="py-20 bg-blue-600 text-white">
+        <section id="contact" className="py-20 bg-primary text-white">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="text-center mb-12">
                     <h2 className="text-3xl md:text-4xl font-bold mb-4 font-heading">Get Started Today</h2>
-                    <p className="text-lg text-blue-100">
+                    <p className="text-lg text-gray-100">
                         Ready to see the difference personalized tutoring can make? Fill out the form to schedule your free consultation.
                     </p>
                 </div>
@@ -160,7 +160,7 @@ export default function ContactForm() {
                             </p>
                             <button
                                 onClick={() => setStatus("idle")}
-                                className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                                className="px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-accent"
                             >
                                 Send Another Inquiry
                             </button>
@@ -177,7 +177,7 @@ export default function ContactForm() {
                                         name="studentName"
                                         value={formData.studentName}
                                         onChange={handleChange}
-                                        className={`w-full px-4 py-3 rounded-lg border ${errors.studentName ? 'border-red-500' : 'border-gray-300'} focus:ring-2 focus:ring-blue-500 outline-none`}
+                                        className={`w-full px-4 py-3 rounded-lg border ${errors.studentName ? 'border-red-500' : 'border-gray-300'} focus:ring-2 focus:ring-primary outline-none`}
                                         placeholder="Student's Full Name"
                                     />
                                     {errors.studentName && <p className="text-red-500 text-xs mt-1">{errors.studentName}</p>}
@@ -189,7 +189,7 @@ export default function ContactForm() {
                                         name="parentName"
                                         value={formData.parentName}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary outline-none"
                                         placeholder="Parent's Name (Optional)"
                                     />
                                 </div>
@@ -204,7 +204,7 @@ export default function ContactForm() {
                                         name="email"
                                         value={formData.email}
                                         onChange={handleChange}
-                                        className={`w-full px-4 py-3 rounded-lg border ${errors.email ? 'border-red-500' : 'border-gray-300'} focus:ring-2 focus:ring-blue-500 outline-none`}
+                                        className={`w-full px-4 py-3 rounded-lg border ${errors.email ? 'border-red-500' : 'border-gray-300'} focus:ring-2 focus:ring-primary outline-none`}
                                         placeholder="you@example.com"
                                     />
                                     {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
@@ -216,7 +216,7 @@ export default function ContactForm() {
                                         name="phone"
                                         value={formData.phone}
                                         onChange={handleChange}
-                                        className={`w-full px-4 py-3 rounded-lg border ${errors.phone ? 'border-red-500' : 'border-gray-300'} focus:ring-2 focus:ring-blue-500 outline-none`}
+                                        className={`w-full px-4 py-3 rounded-lg border ${errors.phone ? 'border-red-500' : 'border-gray-300'} focus:ring-2 focus:ring-primary outline-none`}
                                         placeholder="(555) 123-4567"
                                     />
                                     {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
@@ -230,7 +230,7 @@ export default function ContactForm() {
                                     name="grade"
                                     value={formData.grade}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary outline-none bg-white"
                                 >
                                     <option value="K-5">K-5 Elementary</option>
                                     <option value="6">6th Grade</option>
@@ -252,7 +252,7 @@ export default function ContactForm() {
                                             type="button"
                                             onClick={() => toggleSubject(subj)}
                                             className={`px-3 py-2 text-sm rounded-lg border transition-all ${selectedSubjects.includes(subj)
-                                                ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                                                ? 'bg-primary text-white border-primary shadow-md'
                                                 : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
                                                 }`}
                                         >
@@ -270,7 +270,7 @@ export default function ContactForm() {
                                             name="otherSubject"
                                             value={formData.otherSubject}
                                             onChange={handleChange}
-                                            className={`w-full px-4 py-2 rounded-lg border ${errors.otherSubject ? 'border-red-500' : 'border-gray-300'} focus:ring-2 focus:ring-blue-500 outline-none text-sm`}
+                                            className={`w-full px-4 py-2 rounded-lg border ${errors.otherSubject ? 'border-red-500' : 'border-gray-300'} focus:ring-2 focus:ring-primary outline-none text-sm`}
                                             placeholder="Please specify subject..."
                                         />
                                         {errors.otherSubject && <p className="text-red-500 text-xs mt-1">{errors.otherSubject}</p>}
@@ -285,7 +285,7 @@ export default function ContactForm() {
                                     name="message"
                                     value={formData.message}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none h-24"
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary outline-none h-24"
                                     placeholder="Tell us about the student's goals or specific needs..."
                                 />
                             </div>
@@ -301,7 +301,7 @@ export default function ContactForm() {
                             <button
                                 type="submit"
                                 disabled={status === "loading"}
-                                className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition-colors shadow-lg text-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                className="w-full bg-primary text-white font-bold py-4 rounded-xl hover:bg-accent transition-colors shadow-lg text-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
                                 {status === "loading" && <Loader2 className="animate-spin" />}
                                 {status === "loading" ? "Sending Inquiry..." : "Submit Inquiry"}
