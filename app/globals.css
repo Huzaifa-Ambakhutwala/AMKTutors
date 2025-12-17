@@ -4,15 +4,22 @@
   --font-sans: var(--font-open-sans), ui-sans-serif, system-ui, sans-serif;
   --font-heading: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
 
-  --color-primary: #2563EB;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #F3F4F6;
-  --color-accent: #1D4ED8;
+  --color-primary: var(--theme-primary);
+  --color-primary-foreground: var(--theme-fg);
+  --color-secondary: var(--theme-secondary);
+  --color-accent: var(--theme-accent);
 }
 
 :root {
   --background: #f9fafb;
   --foreground: #111827;
+
+  /* Default Theme Defaults */
+  --theme-primary: #2563EB;
+  --theme-secondary: #F3F4F6;
+  --theme-accent: #1D4ED8;
+  --theme-bg: #f9fafb;
+  --theme-fg: #111827;
 }
 
 body {

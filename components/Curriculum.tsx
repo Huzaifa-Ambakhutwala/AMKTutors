@@ -26,7 +26,7 @@ export default function Curriculum() {
                                 <CheckCircle className="text-primary mt-1 mr-3 flex-shrink-0" size={24} />
                                 <div>
                                     <h3 className="text-xl font-bold text-gray-900">Personalized Learning Plans</h3>
-                                    <p className="text-gray-600">Every student gets a customized roadmap based on their initial assessment.</p>
+                                    <p className="text-gray-600">Every student gets a customized roadmap based on their initial evaluation.</p>
                                 </div>
                             </div>
                             <div className="flex items-start">

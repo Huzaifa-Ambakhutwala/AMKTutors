@@ -4,14 +4,14 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { collection, doc, getDocs, query, setDoc, where, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { UserProfile, Assessment } from "@/lib/types";
+import { UserProfile, Evaluation } from "@/lib/types";
 import { ArrowLeft, Save, User, UserCheck, BookOpen, Loader2, DollarSign } from "lucide-react";
 import Link from "next/link";
 import { v4 as uuidv4 } from 'uuid';
 import { normalizeOptionalString } from "@/lib/utils";
 import { FormFeedback, InlineError } from "@/components/FormFeedback";
 
-export default function NewAssessmentPage() {
+export default function NewEvaluationPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [tutors, setTutors] = useState<UserProfile[]>([]);
@@ -32,10 +32,10 @@ export default function NewAssessmentPage() {
     const [parentPhone, setParentPhone] = useState("");
 
     const [subjects, setSubjects] = useState("");
-    const [score, setScore] = useState("");
     const [notes, setNotes] = useState("");
     const [tutorId, setTutorId] = useState("");
-    const [assessmentDate, setAssessmentDate] = useState(new Date().toISOString().split("T")[0]);
+    const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+    const [charge, setCharge] = useState("");
 
     useEffect(() => {
         async function fetchData() {
@@ -74,18 +74,13 @@ export default function NewAssessmentPage() {
 
         if (!tutorId) newErrors.tutorId = "Please assign a tutor";
         if (!subjects.trim()) newErrors.subjects = "At least one subject is required";
-        if (!assessmentDate) newErrors.assessmentDate = "Date is required";
+        if (!date) newErrors.date = "Date is required";
 
-        // Optional logic: Require notes for assessments?
-        if (!notes.trim()) newErrors.notes = "Please add some assessment notes/observations";
+        if (!notes.trim()) newErrors.notes = "Please add some evaluation notes/observations";
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
-
-    const [assessmentCharge, setAssessmentCharge] = useState("");
-
-    // ... (existing useEffect) ...
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -99,7 +94,25 @@ export default function NewAssessmentPage() {
             const id = uuidv4();
             const tutor = tutors.find(t => t.uid === tutorId);
 
-            const assessment: Assessment = {
+            let finalParentId = selectedParentId;
+
+            // If New Parent, create Shadow User
+            if (parentMode === 'new') {
+                finalParentId = uuidv4();
+                const shadowParent: UserProfile = {
+                    uid: finalParentId,
+                    name: parentName.trim(),
+                    email: parentEmail.trim(),
+                    phone: normalizeOptionalString(parentPhone),
+                    role: 'PARENT',
+                    isShadow: true, // Mark as shadow/lead
+                    status: 'invited', // or just 'registered' to default? 'invited' implies we sent an invite. Let's say 'invited' but with no auth yet.
+                    createdAt: new Date().toISOString()
+                };
+                await setDoc(doc(db, "users", finalParentId), shadowParent);
+            }
+
+            const evaluation: Evaluation = {
                 id,
                 studentName: studentName.trim(),
                 studentGrade: normalizeOptionalString(studentGrade),
@@ -109,55 +122,54 @@ export default function NewAssessmentPage() {
                 parentPhone: normalizeOptionalString(parentPhone),
 
                 subjects: subjects.split(",").map(s => s.trim()).filter(Boolean),
-                score: score ? parseFloat(score) : undefined,
 
                 notes: normalizeOptionalString(notes),
 
                 tutorId,
                 tutorName: tutor?.name || "Unknown",
 
-                assessmentDate: assessmentDate,
+                date: date,
                 convertedToStudent: false,
+                convertedParentId: finalParentId, // Link early if possible
 
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             };
 
-            const payload = JSON.parse(JSON.stringify(assessment));
-            await setDoc(doc(db, "assessments", id), payload);
+            const payload = JSON.parse(JSON.stringify(evaluation));
+            await setDoc(doc(db, "evaluations", id), payload);
 
-            // Create Assessment Session for Calendar & Billing
-            // Defaulting to 1 hour duration. Using 12:00 PM if time not specified? 
-            // Better to just use the date and a default time.
-            const sessionStart = new Date(`${assessmentDate}T12:00:00`);
+            // Create Evaluation Session for Calendar & Billing
+            // Defaulting to 1 hour duration.
+            const sessionStart = new Date(`${date}T12:00:00`);
             const sessionEnd = new Date(sessionStart.getTime() + 60 * 60000);
 
             await addDoc(collection(db, "sessions"), {
-                studentId: parentMode === 'existing' ? "ASSESSMENT-PLACEHOLDER" : "NEW-ASSESSMENT",
+                studentId: parentMode === 'existing' ? "EVALUATION-PLACEHOLDER" : "NEW-EVALUATION",
                 studentName: studentName.trim(),
                 tutorId: tutor?.uid || "",
                 tutorName: tutor?.name || "Unknown",
-                subject: "Assessment",
+                subject: "Evaluation",
                 startTime: sessionStart.toISOString(),
                 endTime: sessionEnd.toISOString(),
                 durationMinutes: 60,
-                status: 'Completed', // Default to Completed so it's billable?
+                status: 'Completed', // Default to Completed so it's billable
                 location: "Online",
                 attendance: 'Present',
                 createdAt: new Date().toISOString(),
 
                 // Fields for Billing linking
-                parentId: parentMode === 'existing' ? selectedParentId : undefined,
-                assessmentId: id,
+                parentId: finalParentId,
+                evaluationId: id,
                 // We use 'cost' to override the calculated rate in billing
-                cost: assessmentCharge ? parseFloat(assessmentCharge) : 0
+                cost: charge ? parseFloat(charge) : 0
             });
 
-            router.push("/admin/assessments");
+            router.push("/admin/evaluations");
 
         } catch (e: any) {
-            console.error("Error creating assessment:", e);
-            setGlobalError(e.message || "Could not save assessment. Please try again.");
+            console.error("Error creating evaluation:", e);
+            setGlobalError(e.message || "Could not save evaluation. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -165,13 +177,13 @@ export default function NewAssessmentPage() {
 
     return (
         <div className="max-w-4xl mx-auto p-8">
-            <Link href="/admin/assessments" className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6 transition-colors">
+            <Link href="/admin/evaluations" className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6 transition-colors">
                 <ArrowLeft size={20} /> Back to List
             </Link>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
                 <h1 className="text-2xl font-bold font-heading mb-6 flex items-center gap-2">
-                    <BookOpen className="text-blue-600" /> New Assessment
+                    <BookOpen className="text-blue-600" /> New Evaluation
                 </h1>
 
                 <FormFeedback message={globalError} type="error" />
@@ -194,17 +206,7 @@ export default function NewAssessmentPage() {
                                 />
                                 <InlineError message={errors.studentName} />
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Score / Level</label>
-                                <input
-                                    type="number"
-                                    step="any"
-                                    className="w-full p-2 border rounded-lg border-gray-300"
-                                    value={score}
-                                    onChange={e => setScore(e.target.value)}
-                                    placeholder="Optional numeric score"
-                                />
-                            </div>
+
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Grade</label>
@@ -319,21 +321,21 @@ export default function NewAssessmentPage() {
                         )}
                     </div>
 
-                    {/* Assessment Details */}
+                    {/* Evaluation Details */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 text-lg font-semibold text-gray-800 border-b pb-2">
-                            <BookOpen size={20} /> Assessment Details
+                            <BookOpen size={20} /> Evaluation Details
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
                                 <input
                                     type="date"
-                                    className={`w-full p-2 border rounded-lg ${errors.assessmentDate ? 'border-red-500' : 'border-gray-300'}`}
-                                    value={assessmentDate}
-                                    onChange={e => setAssessmentDate(e.target.value)}
+                                    className={`w-full p-2 border rounded-lg ${errors.date ? 'border-red-500' : 'border-gray-300'}`}
+                                    value={date}
+                                    onChange={e => setDate(e.target.value)}
                                 />
-                                <InlineError message={errors.assessmentDate} />
+                                <InlineError message={errors.date} />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Tutor *</label>
@@ -363,7 +365,7 @@ export default function NewAssessmentPage() {
 
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Assessment Charge ($)</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Evaluation Charge ($)</label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <span className="text-gray-500 sm:text-sm">$</span>
@@ -373,8 +375,8 @@ export default function NewAssessmentPage() {
                                         min="0"
                                         step="0.01"
                                         className="w-full pl-7 p-2 border rounded-lg border-gray-300"
-                                        value={assessmentCharge}
-                                        onChange={e => setAssessmentCharge(e.target.value)}
+                                        value={charge}
+                                        onChange={e => setCharge(e.target.value)}
                                         placeholder="0.00"
                                     />
                                 </div>
@@ -399,7 +401,7 @@ export default function NewAssessmentPage() {
                             className="bg-blue-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 shadow-lg hover:shadow-xl transition-all"
                         >
                             {loading ? <Loader2 className="animate-spin" /> : <Save />}
-                            Create Assessment
+                            Create Evaluation
                         </button>
                     </div>
 

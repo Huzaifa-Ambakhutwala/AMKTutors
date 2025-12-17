@@ -7,10 +7,10 @@ export interface UserProfile {
     email: string;
     role: UserRole;
     name: string;
-    phone?: string;
-    adminNotes?: string; // Admin-only private notes
+    phone?: string | null;
+    adminNotes?: string | null; // Admin-only private notes
     hourlyPayRate?: number; // Admin-only pay rate
-    address?: string;
+    address?: string | null;
     subjects?: string[]; // For Tutors
     isActive?: boolean;
     students?: string[]; // For Parents (studentIds)
@@ -57,6 +57,7 @@ export interface Session {
     durationMinutes: number;
     status: 'Scheduled' | 'Completed' | 'Cancelled' | 'NoShow';
     attendance?: 'Present' | 'Absent' | 'Late';
+    minutesLate?: number;
     internalNotes?: {
         text: string;
         updatedByUid: string;
@@ -80,8 +81,8 @@ export interface Session {
     payStubId?: string | null;
 
     // Assessment / One-off Billing extensions
-    parentId?: string; // For linking assessments explicitly
-    assessmentId?: string;
+    parentId?: string | null; // For linking assessments explicitly
+    evaluationId?: string;
     cost?: number; // Fixed cost override (e.g. for assessments)
 }
 
@@ -138,7 +139,7 @@ export interface PayStub {
     notes?: string;
 }
 
-export interface Assessment {
+export interface Evaluation {
     id: string;
     studentName: string;
     studentGrade?: string | null;
@@ -148,13 +149,12 @@ export interface Assessment {
     parentPhone?: string | null;
 
     subjects: string[];
-    score?: number | null;
     notes?: string | null;
 
     tutorId: string;
     tutorName?: string;
 
-    assessmentDate: string; // ISO
+    date: string; // ISO date of evaluation
 
     convertedToStudent: boolean;
     convertedStudentId?: string;
@@ -164,89 +164,5 @@ export interface Assessment {
     createdAt: string;
 }
 
-// ----------------------------------------------------------------------
-// WEBSITE BUILDER / CMS TYPES
-// ----------------------------------------------------------------------
 
-export type SectionType = "hero" | "features" | "testimonials" | "faq" | "cta" | "customHtml";
-
-// Strict Discriminated Union for Section Props
-export type SectionBlock =
-    | {
-        id: string;
-        type: "hero";
-        enabled: boolean;
-        props: {
-            headline: string;
-            subheadline?: string;
-            ctaText?: string;
-            ctaHref?: string;
-            imageUrl?: string;
-        }
-    }
-    | {
-        id: string;
-        type: "features";
-        enabled: boolean;
-        props: {
-            title?: string;
-            items: { title: string; description: string; icon?: string }[];
-        }
-    }
-    | {
-        id: string;
-        type: "testimonials";
-        enabled: boolean;
-        props: {
-            title?: string;
-            items: { name: string; quote: string; rating?: number }[];
-        }
-    }
-    | {
-        id: string;
-        type: "faq";
-        enabled: boolean;
-        props: {
-            title?: string;
-            items: { q: string; a: string }[];
-        }
-    }
-    | {
-        id: string;
-        type: "cta";
-        enabled: boolean;
-        props: {
-            title: string;
-            description?: string;
-            buttonText?: string;
-            buttonHref?: string;
-        }
-    }
-    | {
-        id: string;
-        type: "customHtml";
-        enabled: boolean;
-        props: {
-            html: string;
-        }
-    };
-
-export interface PageData {
-    slug: string;
-    title: string;
-    status: "draft" | "published";
-    publishedVersionId: string | null; // ID of the version doc
-    publishedSections?: SectionBlock[]; // Optimization: Copy of published sections for public read
-    draftSections?: SectionBlock[]; // Current working draft
-    updatedAt: any; // ServerTimestamp or ISO string depending on usage (usually Timestamp in Firestore)
-}
-
-export interface PageVersion {
-    versionId: string;
-    createdAt: any;
-    createdByUid: string;
-    createdByName?: string;
-    note?: string;
-    sections: SectionBlock[];
-}
 

@@ -27,10 +27,10 @@ export default function HowItWorks() {
                                 <ClipboardList className="text-primary w-10 h-10" />
                             </div>
                             <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center justify-center gap-2">
-                                Complete Assessment <ArrowRight size={20} className="text-green-500" />
+                                Complete Evaluation <ArrowRight size={20} className="text-green-500" />
                             </h3>
                             <p className="text-gray-600 leading-relaxed">
-                                Our comprehensive assessment shows where your child stands academically, so we know exactly how to help him or her improve.
+                                Our comprehensive evaluation shows where your child stands academically, so we know exactly how to help him or her improve.
                             </p>
                         </div>
                     </div>

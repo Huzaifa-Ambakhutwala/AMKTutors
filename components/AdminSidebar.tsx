@@ -14,7 +14,7 @@ import {
     LogOut,
     Home,
     ClipboardList,
-    Globe // Added Globe
+
 } from "lucide-react";
 import Image from "next/image";
 import { logout } from "@/lib/auth-helpers";
@@ -36,8 +36,8 @@ export default function AdminSidebar({ onClose, className }: AdminSidebarProps) 
         { name: "Parents", href: "/admin/parents", icon: School },
         { name: "Tutors", href: "/admin/tutors", icon: Users },
         { name: "Sessions", href: "/admin/sessions", icon: Calendar },
-        { name: "Assessments", href: "/admin/assessments", icon: ClipboardList },
-        { name: "Website Builder", href: "/admin/website", icon: Globe },
+        { name: "Evaluations", href: "/admin/evaluations", icon: ClipboardList },
+
         { name: "Billing", href: "/admin/billing", icon: CreditCard },
         { name: "Manage Logins", href: "/admin/logins", icon: Lock },
     ];

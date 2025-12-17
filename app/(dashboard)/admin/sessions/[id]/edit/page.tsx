@@ -30,6 +30,7 @@ export default function EditSessionPage() {
     const [duration, setDuration] = useState("60");
     const [status, setStatus] = useState<any>('Scheduled');
     const [attendance, setAttendance] = useState<any>('Present');
+    const [minutesLate, setMinutesLate] = useState(0);
     const [location, setLocation] = useState("");
 
     // Derived Data
@@ -58,6 +59,7 @@ export default function EditSessionPage() {
                 setDuration(session.durationMinutes.toString());
                 setStatus(session.status);
                 setAttendance(session.attendance || 'Present');
+                setMinutesLate(session.minutesLate || 0);
                 setLocation(session.location || "Online");
 
                 // 2. Fetch Lists
@@ -95,7 +97,7 @@ export default function EditSessionPage() {
             const student = students.find(s => s.id === selectedStudentId);
             const tutor = tutors.find(t => t.uid === selectedTutorId);
 
-            if ((!student && subject !== 'Assessment' && !selectedStudentId?.includes('ASSESSMENT')) || !tutor) {
+            if ((!student && subject !== 'Evaluation' && !selectedStudentId?.includes('EVALUATION')) || !tutor) {
                 console.error("Selection Error:", { selectedStudentId, selectedTutorId, studentFound: !!student, tutorFound: !!tutor });
                 throw new Error("Invalid Student or Tutor selection. Please verify they exist.");
             }
@@ -115,6 +117,7 @@ export default function EditSessionPage() {
                 durationMinutes: parseInt(duration),
                 status,
                 attendance,
+                minutesLate: attendance === 'Late' ? minutesLate : 0,
                 location
             });
 
@@ -145,11 +148,11 @@ export default function EditSessionPage() {
                             {/* Student Selection */}
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Student</label>
-                                {subject === 'Assessment' || selectedStudentId?.includes('ASSESSMENT') ? (
+                                {subject === 'Evaluation' || selectedStudentId?.includes('EVALUATION') ? (
                                     // Read-only view for Assessment sessions to prevent validation errors
                                     <input
                                         type="text"
-                                        value={students.find(s => s.id === selectedStudentId)?.name || (status === 'Completed' || status === 'Scheduled' ? "Potential Student (Assessment)" : "")}
+                                        value={students.find(s => s.id === selectedStudentId)?.name || (status === 'Completed' || status === 'Scheduled' ? "Potential Student (Evaluation)" : "")}
                                         disabled
                                         className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500"
                                         placeholder="Student Name"
@@ -188,10 +191,10 @@ export default function EditSessionPage() {
                             {/* Subject Selection (Dependent on Student) */}
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
-                                {subject === 'Assessment' ? (
+                                {subject === 'Evaluation' ? (
                                     <input
                                         type="text"
-                                        value="Assessment"
+                                        value="Evaluation"
                                         disabled
                                         className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500"
                                     />
@@ -206,7 +209,7 @@ export default function EditSessionPage() {
                                         {selectedStudent?.subjects.map(subj => (
                                             <option key={subj} value={subj}>{subj}</option>
                                         ))}
-                                        <option value="Other">Other / Assessment</option>
+                                        <option value="Other">Other / Evaluation</option>
                                     </select>
                                 )}
                             </div>
@@ -275,6 +278,22 @@ export default function EditSessionPage() {
                                     <option value="Late">Late</option>
                                 </select>
                             </div>
+
+                            {attendance === 'Late' && (
+                                <div className="animate-in fade-in slide-in-from-top-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Minutes Late</label>
+                                    <div className="relative">
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={minutesLate}
+                                            onChange={e => setMinutesLate(parseInt(e.target.value) || 0)}
+                                            className="w-full pl-3 pr-10 py-2 border border-yellow-300 rounded-lg bg-yellow-50 focus:ring-2 focus:ring-yellow-500 outline-none"
+                                        />
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">mins</span>
+                                    </div>
+                                </div>
+                            )}
 
 
                             <div className="md:col-span-2">

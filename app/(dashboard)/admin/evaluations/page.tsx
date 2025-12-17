@@ -3,14 +3,14 @@
 import { useState, useEffect } from "react";
 import { collection, getDocs, query, orderBy, where, doc, writeBatch, arrayUnion, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Assessment, UserProfile } from "@/lib/types";
+import { Evaluation, UserProfile } from "@/lib/types";
 import Link from "next/link";
 import { Plus, Search, Edit2, UserPlus, CheckCircle, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { v4 as uuidv4 } from 'uuid';
 
-export default function AssessmentsPage() {
-    const [assessments, setAssessments] = useState<Assessment[]>([]);
+export default function EvaluationsPage() {
+    const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [convertingId, setConvertingId] = useState<string | null>(null);
@@ -18,47 +18,47 @@ export default function AssessmentsPage() {
     const router = useRouter();
 
     useEffect(() => {
-        fetchAssessments();
+        fetchEvaluations();
     }, []);
 
-    const fetchAssessments = async () => {
+    const fetchEvaluations = async () => {
         try {
-            const q = query(collection(db, "assessments"), orderBy("assessmentDate", "desc"));
+            const q = query(collection(db, "evaluations"), orderBy("date", "desc"));
             const snap = await getDocs(q);
-            const list = snap.docs.map(d => d.data() as Assessment);
-            setAssessments(list);
+            const list = snap.docs.map(d => d.data() as Evaluation);
+            setEvaluations(list);
         } catch (e) {
-            console.error("Error fetching assessments:", e);
+            console.error("Error fetching evaluations:", e);
         } finally {
             setLoading(false);
         }
     };
 
     const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`Are you sure you want to delete the assessment for "${name}"? This cannot be undone.`)) return;
+        if (!confirm(`Are you sure you want to delete the evaluation for "${name}"? This cannot be undone.`)) return;
 
         try {
-            await deleteDoc(doc(db, "assessments", id));
-            setAssessments(prev => prev.filter(a => a.id !== id));
+            await deleteDoc(doc(db, "evaluations", id));
+            setEvaluations(prev => prev.filter(a => a.id !== id));
         } catch (e) {
-            console.error("Error deleting assessment:", e);
-            alert("Failed to delete assessment");
+            console.error("Error deleting evaluation:", e);
+            alert("Failed to delete evaluation");
         }
     };
 
-    const handleConvert = async (assessment: Assessment) => {
-        if (!confirm(`Create Student "${assessment.studentName}" and Parent "${assessment.parentName}" from this assessment?`)) return;
+    const handleConvert = async (evaluation: Evaluation) => {
+        if (!confirm(`Create Student "${evaluation.studentName}" and Parent "${evaluation.parentName}" from this evaluation?`)) return;
 
-        setConvertingId(assessment.id);
+        setConvertingId(evaluation.id);
         try {
             const batch = writeBatch(db);
 
             // 1. Create Parent User Profile
-            const parentQuery = query(collection(db, "users"), where("email", "==", assessment.parentEmail));
+            const parentQuery = query(collection(db, "users"), where("email", "==", evaluation.parentEmail));
             const parentSnap = await getDocs(parentQuery);
 
             let parentUid = "";
-            let parentName = assessment.parentName;
+            let parentName = evaluation.parentName;
 
             if (!parentSnap.empty) {
                 // Parent exists, link to them
@@ -71,10 +71,10 @@ export default function AssessmentsPage() {
                 const parentRef = doc(db, "users", parentUid);
                 const parentData: UserProfile = {
                     uid: parentUid,
-                    email: assessment.parentEmail,
+                    email: evaluation.parentEmail,
                     role: 'PARENT',
-                    name: assessment.parentName,
-                    phone: assessment.parentPhone || undefined,
+                    name: evaluation.parentName,
+                    phone: evaluation.parentPhone || undefined,
                     createdAt: new Date().toISOString(),
                     isActive: true,
                     students: [] // Will add student ID below
@@ -88,11 +88,11 @@ export default function AssessmentsPage() {
 
             batch.set(studentRef, {
                 id: studentId,
-                name: assessment.studentName,
-                grade: assessment.studentGrade || "",
+                name: evaluation.studentName,
+                grade: evaluation.studentGrade || "",
                 parentIds: [parentUid],
-                tutorIds: assessment.tutorId ? [assessment.tutorId] : [],
-                subjects: assessment.subjects,
+                tutorIds: evaluation.tutorId ? [evaluation.tutorId] : [],
+                subjects: evaluation.subjects,
                 status: 'Active',
                 createdAt: new Date().toISOString()
             });
@@ -101,9 +101,9 @@ export default function AssessmentsPage() {
             const parentRef = doc(db, "users", parentUid);
             batch.update(parentRef, { students: arrayUnion(studentId) });
 
-            // 4. Update Assessment
-            const assessmentRef = doc(db, "assessments", assessment.id);
-            batch.update(assessmentRef, {
+            // 4. Update Evaluation
+            const evaluationRef = doc(db, "evaluations", evaluation.id);
+            batch.update(evaluationRef, {
                 convertedToStudent: true,
                 convertedStudentId: studentId,
                 convertedParentId: parentUid,
@@ -112,18 +112,18 @@ export default function AssessmentsPage() {
 
             await batch.commit();
 
-            alert(`Successfully converted! \nCreated Student: ${assessment.studentName}`);
-            fetchAssessments(); // Refresh
+            alert(`Successfully converted! \nCreated Student: ${evaluation.studentName}`);
+            fetchEvaluations(); // Refresh
 
         } catch (e) {
             console.error("Error converting:", e);
-            alert("Error converting assessment");
+            alert("Error converting evaluation");
         } finally {
             setConvertingId(null);
         }
     };
 
-    const filtered = assessments.filter(a =>
+    const filtered = evaluations.filter(a =>
         a.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         a.parentName.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -131,12 +131,12 @@ export default function AssessmentsPage() {
     return (
         <div className="p-8">
             <div className="flex justify-between items-center mb-8">
-                <h1 className="text-3xl font-bold font-heading">Assessments</h1>
+                <h1 className="text-3xl font-bold font-heading">Evaluations</h1>
                 <Link
-                    href="/admin/assessments/new"
+                    href="/admin/evaluations/new"
                     className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
                 >
-                    <Plus size={20} /> New Assessment
+                    <Plus size={20} /> New Evaluation
                 </Link>
             </div>
 
@@ -172,11 +172,11 @@ export default function AssessmentsPage() {
                             {loading ? (
                                 <tr><td colSpan={8} className="text-center py-8">Loading...</td></tr>
                             ) : filtered.length === 0 ? (
-                                <tr><td colSpan={8} className="text-center py-8 text-gray-500">No assessments found.</td></tr>
+                                <tr><td colSpan={8} className="text-center py-8 text-gray-500">No evaluations found.</td></tr>
                             ) : (
                                 filtered.map(a => (
                                     <tr key={a.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4">{new Date(a.assessmentDate).toLocaleDateString()}</td>
+                                        <td className="px-6 py-4">{new Date(a.date + "T12:00:00").toLocaleDateString()}</td>
                                         <td className="px-6 py-4 font-medium">{a.studentName}</td>
                                         <td className="px-6 py-4 text-gray-500">{a.studentGrade || "-"}</td>
                                         <td className="px-6 py-4">
@@ -217,13 +217,13 @@ export default function AssessmentsPage() {
                                                     <UserPlus size={18} />
                                                 </button>
                                             )}
-                                            <Link href={`/admin/assessments/${a.id}/edit`} className="p-1.5 text-gray-500 hover:bg-gray-100 rounded">
+                                            <Link href={`/admin/evaluations/${a.id}/edit`} className="p-1.5 text-gray-500 hover:bg-gray-100 rounded">
                                                 <Edit2 size={18} />
                                             </Link>
                                             <button
                                                 onClick={() => handleDelete(a.id, a.studentName)}
                                                 className="p-1.5 text-red-500 hover:bg-red-50 rounded"
-                                                title="Delete Assessment"
+                                                title="Delete Evaluation"
                                             >
                                                 <Trash2 size={18} />
                                             </button>

@@ -116,9 +116,13 @@ service cloud.firestore {
       allow read: if isParent() && resource.data.parentId == getUserId(); // Updated
     }
 
-    // 5. Assessments Collection
+    // 5. Assessments Collection (Legacy - keeping for migration)
     match /assessments/{assessmentId} {
-      // Admins have full access
+      allow read, write: if isAdmin();
+    }
+
+    // 5.1 Evaluations (New)
+    match /evaluations/{evaluationId} {
       allow read, write: if isAdmin();
     }
 
@@ -145,6 +149,12 @@ service cloud.firestore {
       match /versions/{versionId} {
         allow read, write: if isAdmin();
       }
+    }
+
+    // 9. Inquiries (Public Contact Form)
+    match /inquiries/{inquiryId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
     }
     
     // Default Deny

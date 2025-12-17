@@ -21,6 +21,7 @@ export default function ManageSessionModal({ session, onClose, onUpdate }: Manag
 
     // State
     const [attendance, setAttendance] = useState<'Present' | 'Absent' | 'Late'>(session.attendance || 'Present');
+    const [minutesLate, setMinutesLate] = useState(session.minutesLate || 0);
     const [notes, setNotes] = useState(session.notes || ""); // Public Summary
     const [homework, setHomework] = useState(session.homework || "");
     const [internalNote, setInternalNote] = useState(session.internalNotes?.text || "");
@@ -37,6 +38,7 @@ export default function ManageSessionModal({ session, onClose, onUpdate }: Manag
 
             const updates: any = {
                 attendance,
+                minutesLate: attendance === 'Late' ? minutesLate : 0,
                 notes,
                 homework,
             };
@@ -109,14 +111,32 @@ export default function ManageSessionModal({ session, onClose, onUpdate }: Manag
                                     key={status}
                                     onClick={() => setAttendance(status as any)}
                                     className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-all ${attendance === status
-                                            ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                                            : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
+                                        ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                                        : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
                                         }`}
                                 >
                                     {status}
                                 </button>
                             ))}
                         </div>
+
+                        {attendance === 'Late' && (
+                            <div className="mt-3 animate-in fade-in slide-in-from-top-2">
+                                <label className="text-sm font-medium text-gray-700 block mb-1">
+                                    Minutes Late
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={minutesLate}
+                                        onChange={e => setMinutesLate(parseInt(e.target.value) || 0)}
+                                        className="w-full p-2 pl-3 border border-yellow-300 rounded-lg bg-yellow-50 focus:ring-2 focus:ring-yellow-500 outline-none"
+                                    />
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">mins</span>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

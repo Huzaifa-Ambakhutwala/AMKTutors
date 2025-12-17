@@ -30,8 +30,8 @@ export default function ParentsBillingGrid() {
                 const parentsQuery = query(collection(db, "users"), where("role", "==", "PARENT"));
                 const parentsSnap = await getDocs(parentsQuery);
                 const parents = parentsSnap.docs
-                    .map(d => d.data() as UserProfile)
-                    .filter(u => !(u as any).isShadow);
+                    .map(d => d.data() as UserProfile);
+                // .filter(u => !(u as any).isShadow); // Allow shadow parents to show if they have billings
 
                 // 2. Fetch Students
                 const studentsQuery = query(collection(db, "students")); // Optimization: filter locally if too many?
@@ -54,7 +54,7 @@ export default function ParentsBillingGrid() {
                     const unbilledSessions = allSessions.filter(s =>
                         (
                             (myStudentIds.has(s.studentId)) ||
-                            (s.parentId === parent.uid && s.subject === "Assessment")
+                            (s.parentId === parent.uid && s.subject === "Evaluation")
                         ) &&
                         s.parentBilled !== true
                     );

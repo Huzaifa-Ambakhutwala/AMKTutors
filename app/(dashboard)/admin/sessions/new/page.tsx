@@ -158,7 +158,7 @@ export default function NewSessionPage() {
                                     {selectedStudent?.subjects.map(subj => (
                                         <option key={subj} value={subj}>{subj}</option>
                                     ))}
-                                    <option value="Other">Other / Assessment</option>
+                                    <option value="Other">Other / Evaluation</option>
                                 </select>
                                 {!selectedStudentId && <p className="text-xs text-gray-400 mt-1">Select a student first to see their subjects.</p>}
                             </div>
