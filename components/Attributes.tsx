@@ -4,6 +4,7 @@ import { Calendar, GraduationCap, ClipboardList } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { MotionStagger, MotionItem } from "@/lib/motion/Motion";
 import { iconWiggle, cardHover } from "@/lib/motion/variants";
+import { GlowingEffect } from "@/components/ui/glowing-effect";
 
 const attributes = [
     {
@@ -33,20 +34,28 @@ export default function Attributes() {
                     {attributes.map((attr, index) => (
                         <MotionItem key={index}>
                             <motion.div
-                                className="flex flex-col items-center text-center p-6 rounded-2xl hover:bg-gray-50 transition-colors border border-gray-100"
+                                className="relative flex flex-col items-center text-center p-6 rounded-2xl hover:bg-gray-50 transition-colors border border-gray-100"
                                 whileHover={shouldReduceMotion ? undefined : cardHover}
                                 transition={{ duration: 0.2 }}
                             >
+                                <GlowingEffect
+                                    spread={30}
+                                    glow={true}
+                                    disabled={false}
+                                    proximity={64}
+                                    inactiveZone={0.3}
+                                    borderWidth={2}
+                                />
                                 <motion.div
-                                    className="bg-yellow-300 p-4 rounded-full mb-4 text-secondary"
+                                    className="bg-yellow-300 p-4 rounded-full mb-4 text-secondary relative z-10"
                                     variants={shouldReduceMotion ? undefined : iconWiggle}
                                     initial="rest"
                                     whileHover="hover"
                                 >
                                 <attr.icon size={32} />
                                 </motion.div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">{attr.title}</h3>
-                            <p className="text-gray-600">{attr.description}</p>
+                            <h3 className="text-xl font-bold text-gray-900 mb-2 relative z-10">{attr.title}</h3>
+                            <p className="text-gray-600 relative z-10">{attr.description}</p>
                             </motion.div>
                         </MotionItem>
                     ))}

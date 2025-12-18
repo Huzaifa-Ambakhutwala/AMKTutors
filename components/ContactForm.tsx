@@ -444,14 +444,14 @@ export default function ContactForm() {
                                 </AnimatePresence>
 
                                 <motion.button
-                                type="submit"
-                                disabled={status === "loading"}
+                                    type="submit"
+                                    disabled={status === "loading"}
                                     className="w-full bg-yellow-300 text-secondary font-bold py-4 rounded-xl hover:bg-yellow-400 transition-colors shadow-lg text-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                     whileHover={shouldReduceMotion || status === "loading" ? undefined : { scale: 1.02, y: -2 }}
                                     whileTap={shouldReduceMotion || status === "loading" ? undefined : { scale: 0.98 }}
-                            >
-                                {status === "loading" && <Loader2 className="animate-spin" />}
-                                {status === "loading" ? "Sending Inquiry..." : "Submit Inquiry"}
+                                >
+                                    {status === "loading" && <Loader2 className="animate-spin" />}
+                                    {status === "loading" ? "Sending Inquiry..." : "Submit Inquiry"}
                                 </motion.button>
                             </motion.form>
                     )}

@@ -4,6 +4,7 @@ import { Star, Quote } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { MotionSection, MotionStagger, MotionItem } from "@/lib/motion/Motion";
 import { fadeUp, cardHover, scaleIn } from "@/lib/motion/variants";
+import { GlowingEffect } from "@/components/ui/glowing-effect";
 
 const testimonials = [
     {
@@ -60,10 +61,19 @@ export default function Testimonials() {
                     {testimonials.map((testimonial, index) => (
                         <MotionItem key={index}>
                             <motion.div
-                                className="bg-white/10 backdrop-blur-sm p-8 rounded-xl relative border border-yellow-300/20"
+                                className="relative bg-white/10 backdrop-blur-sm p-8 rounded-xl border border-yellow-300/20"
                                 whileHover={shouldReduceMotion ? undefined : cardHover}
                                 transition={{ duration: 0.2 }}
                             >
+                                <GlowingEffect
+                                    spread={40}
+                                    glow={true}
+                                    disabled={false}
+                                    proximity={64}
+                                    inactiveZone={0.2}
+                                    borderWidth={2}
+                                    variant="white"
+                                />
                                 {/* Quote mark animation */}
                                 <motion.div
                                     className="absolute -top-2 -left-2 text-yellow-300/30"
@@ -74,7 +84,7 @@ export default function Testimonials() {
                                 >
                                     <Quote size={40} />
                                 </motion.div>
-                                <div className="text-yellow-300 flex mb-4">
+                                <div className="text-yellow-300 flex mb-4 relative z-10">
                                 {[...Array(5)].map((_, i) => (
                                         <motion.div
                                             key={i}
@@ -88,7 +98,7 @@ export default function Testimonials() {
                                 ))}
                             </div>
                                 <p className="text-gray-100 italic mb-6 relative z-10">"{testimonial.quote}"</p>
-                            <div>
+                            <div className="relative z-10">
                                     <p className="font-bold text-white">{testimonial.author}</p>
                                     <p className="text-sm text-gray-200">{testimonial.role}</p>
                             </div>

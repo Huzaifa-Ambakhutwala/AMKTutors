@@ -1,21 +1,45 @@
 "use client";
 
 import Link from "next/link";
-import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
+import { motion, useScroll, useTransform, useReducedMotion, AnimatePresence } from "framer-motion";
 import { wordStagger, wordItem, buttonHover, buttonTap } from "@/lib/motion/variants";
 import { MotionDiv } from "@/lib/motion/Motion";
+import { useEffect, useState, useMemo } from "react";
 
 export default function Hero() {
     const shouldReduceMotion = useReducedMotion();
     const { scrollY } = useScroll();
+    const [titleNumber, setTitleNumber] = useState(0);
     
     // Subtle parallax for background blobs (disabled for reduced motion)
     const blob1Y = shouldReduceMotion ? 0 : useTransform(scrollY, [0, 500], [0, 50]);
     const blob2Y = shouldReduceMotion ? 0 : useTransform(scrollY, [0, 500], [0, -30]);
 
+    // Rotating phrases
+    const rotatingTitles = useMemo(
+        () => [
+            "Learning That Fits",
+            "Built Around Your Child",
+            "One Student at a Time",
+            "Tailored for Success",
+            "Instruction That Adapts",
+        ],
+        []
+    );
+
+    useEffect(() => {
+        if (shouldReduceMotion) return;
+        const interval = setInterval(() => {
+            setTitleNumber((prev) => {
+                const next = prev + 1;
+                return next >= rotatingTitles.length ? 0 : next;
+            });
+        }, 2200);
+        return () => clearInterval(interval);
+    }, [rotatingTitles.length, shouldReduceMotion]);
+
     // Split headline into words for stagger animation
     const headline1 = "Personalized Tutoring.";
-    const headline2 = "Trusted Results.";
 
     return (
         <section id="home" className="relative bg-secondary py-20 lg:py-32 overflow-hidden">
@@ -37,28 +61,17 @@ export default function Hero() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                 <div className="text-center max-w-3xl mx-auto">
                     {/* Headline with word stagger */}
-                    <motion.h1
-                        className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight mb-6 font-heading"
+                    <motion.div
+                        className="inline-flex flex-col items-start mb-6"
                         variants={shouldReduceMotion ? undefined : wordStagger}
                         initial="hidden"
                         whileInView="visible"
                         viewport={{ once: true, amount: 0.3 }}
                     >
-                        {headline1.split(" ").map((word, i) => (
-                            <motion.span
-                                key={i}
-                                variants={shouldReduceMotion ? undefined : wordItem}
-                                className="inline-block mr-2"
-                            >
-                                {word}
-                            </motion.span>
-                        ))}
-                        <br className="hidden md:block" />
-                        <motion.span
-                            className="text-yellow-300 inline-block"
-                            variants={shouldReduceMotion ? undefined : wordItem}
+                        <motion.h1
+                            className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight font-heading"
                         >
-                            {headline2.split(" ").map((word, i) => (
+                            {headline1.split(" ").map((word, i) => (
                                 <motion.span
                                     key={i}
                                     variants={shouldReduceMotion ? undefined : wordItem}
@@ -67,8 +80,29 @@ export default function Hero() {
                                     {word}
                                 </motion.span>
                             ))}
-                        </motion.span>
-                    </motion.h1>
+                        </motion.h1>
+                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-yellow-300 tracking-tight font-heading relative h-[1.5em] min-w-[200px] overflow-visible">
+                            {shouldReduceMotion ? (
+                                <span className="inline-block">{rotatingTitles[0]}</span>
+                            ) : (
+                                <AnimatePresence mode="wait">
+                                    <motion.span
+                                        key={titleNumber}
+                                        className="absolute left-0 top-0 inline-block whitespace-nowrap"
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -20 }}
+                                        transition={{ 
+                                            duration: 0.5,
+                                            ease: "easeInOut"
+                                        }}
+                                    >
+                                        {rotatingTitles[titleNumber]}
+                                    </motion.span>
+                                </AnimatePresence>
+                            )}
+                        </h1>
+                    </motion.div>
 
                     {/* Description */}
                     <MotionDiv
@@ -88,23 +122,23 @@ export default function Hero() {
                             whileHover={shouldReduceMotion ? undefined : buttonHover}
                             whileTap={shouldReduceMotion ? undefined : buttonTap}
                         >
-                        <Link
-                            href="#contact"
+                            <Link
+                                href="#contact"
                                 className="bg-yellow-300 text-secondary px-8 py-4 rounded-full text-lg font-semibold shadow-lg hover:shadow-xl transition-shadow block hover:bg-yellow-400"
-                        >
-                            Book a Call Today
-                        </Link>
+                            >
+                                Book a Call Today
+                            </Link>
                         </motion.div>
                         <motion.div
                             whileHover={shouldReduceMotion ? undefined : buttonHover}
                             whileTap={shouldReduceMotion ? undefined : buttonTap}
                         >
-                        <Link
-                            href="#about"
+                            <Link
+                                href="#about"
                                 className="bg-white text-secondary border-2 border-white px-8 py-4 rounded-full text-lg font-semibold hover:bg-gray-50 transition-colors shadow-sm hover:shadow-md block"
-                        >
-                            Learn More
-                        </Link>
+                            >
+                                Learn More
+                            </Link>
                         </motion.div>
                     </MotionDiv>
                 </div>

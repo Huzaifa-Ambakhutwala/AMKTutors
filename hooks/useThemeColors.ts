@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { DEFAULT_THEME_COLORS, LOCAL_STORAGE_KEY } from "@/lib/theme-constants";
 
 interface ThemeColors {
     primary: string;
@@ -12,15 +13,7 @@ interface ThemeColors {
     yellowDark: string;
 }
 
-const defaultColors: ThemeColors = {
-    primary: "#1A2742",
-    secondary: "#800000",
-    accent: "#2A3F5F",
-    yellow: "#FCD34D",
-    yellowDark: "#F59E0B",
-};
-
-const LOCAL_STORAGE_KEY = "amk-theme-colors";
+const defaultColors: ThemeColors = DEFAULT_THEME_COLORS;
 
 export function useThemeColors() {
     const [colors, setColors] = useState<ThemeColors>(defaultColors);
@@ -39,25 +32,29 @@ export function useThemeColors() {
             root.style.setProperty("--theme-yellow-dark", colorSettings.yellowDark);
         };
 
-        // Try to hydrate from localStorage immediately to avoid color flash
+        // Colors are already applied by the pre-hydration script in layout.tsx
+        // This hook just syncs with Firestore and updates localStorage for future loads
+        // We still read from localStorage here to sync the state, but colors are already set
         if (typeof window !== "undefined") {
             try {
                 const stored = window.localStorage.getItem(LOCAL_STORAGE_KEY);
                 if (stored) {
                     const parsed = JSON.parse(stored) as ThemeColors;
                     setColors(parsed);
+                    // Colors should already be applied by the pre-hydration script,
+                    // but apply again to ensure sync (this should be a no-op if already set)
                     applyColors(parsed);
                 } else {
-                    // Fallback to defaults on first load
-                    applyColors(defaultColors);
+                    // Use defaults - pre-hydration script already applied them
+                    setColors(defaultColors);
                 }
             } catch (e) {
                 console.error("Error reading theme colors from localStorage:", e);
-                applyColors(defaultColors);
+                setColors(defaultColors);
             }
         } else {
             // Non-browser environments just use defaults
-            applyColors(defaultColors);
+            setColors(defaultColors);
         }
 
         // Load from Firestore and subscribe for live updates

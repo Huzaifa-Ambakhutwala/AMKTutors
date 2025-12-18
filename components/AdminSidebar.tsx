@@ -19,6 +19,9 @@ import {
 import Image from "next/image";
 import { logout } from "@/lib/auth-helpers";
 import { useRouter } from "next/navigation";
+import { SidebarBody, SidebarLink, useSidebar } from "@/components/ui/sidebar";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 interface AdminSidebarProps {
     onClose?: () => void;
@@ -28,6 +31,7 @@ interface AdminSidebarProps {
 export default function AdminSidebar({ onClose, className }: AdminSidebarProps) {
     const pathname = usePathname();
     const router = useRouter();
+    const { open } = useSidebar();
 
     const links = [
         { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -37,7 +41,6 @@ export default function AdminSidebar({ onClose, className }: AdminSidebarProps) 
         { name: "Tutors", href: "/admin/tutors", icon: Users },
         { name: "Sessions", href: "/admin/sessions", icon: Calendar },
         { name: "Evaluations", href: "/admin/evaluations", icon: ClipboardList },
-
         { name: "Billing", href: "/admin/billing", icon: CreditCard },
         { name: "Settings", href: "/admin/settings", icon: Settings },
         { name: "Manage Logins", href: "/admin/logins", icon: Lock },
@@ -48,55 +51,116 @@ export default function AdminSidebar({ onClose, className }: AdminSidebarProps) 
         router.push("/login");
     };
 
+    const handleLinkClick = () => {
+        if (onClose) {
+            onClose();
+        }
+    };
+
     return (
-        <div className={`w-64 bg-gray-900 text-white h-screen flex flex-col ${className || 'hidden md:flex fixed left-0 top-0'}`}>
-            <div className="p-6 flex items-center gap-3 border-b border-gray-800">
-                <div className="bg-white p-1 rounded">
-                    <Image src="/logo.png" alt="AMK" width={30} height={30} className="w-8 h-8 object-contain" />
-                </div>
-                <span className="font-bold font-heading text-lg tracking-wide">AMK ADMIN</span>
-            </div>
-
-            <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-                {links.map((link) => {
-                    const Icon = link.icon;
-                    const isActive = pathname === link.href || (pathname.startsWith(link.href) && link.href !== "/admin");
-
-                    return (
-                        <Link
-                            key={link.href}
-                            href={link.href}
-                            onClick={onClose}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive
-                                ? "bg-primary text-white font-medium"
-                                : "text-gray-400 hover:bg-gray-800 hover:text-white"
-                                }`}
+        <SidebarBody className={cn(
+            "bg-gray-900 text-white h-screen",
+            className
+        )}>
+                <div className="flex flex-col flex-1 overflow-y-auto h-full">
+                    {/* Logo Section */}
+                    <div className={cn(
+                        "flex items-center border-b border-gray-800 min-h-[80px]",
+                        open ? "px-4 justify-start gap-3" : "px-0 justify-center"
+                    )}>
+                        <div className="bg-white p-1 rounded flex-shrink-0">
+                            <Image src="/logo.png" alt="AMK" width={30} height={30} className="w-8 h-8 object-contain" />
+                        </div>
+                        <motion.span
+                            animate={{
+                                opacity: open ? 1 : 0,
+                                width: open ? "auto" : 0,
+                                display: open ? "block" : "none",
+                            }}
+                            className="font-bold font-heading text-lg tracking-wide whitespace-pre overflow-hidden"
                         >
-                            <Icon size={20} />
-                            {link.name}
-                        </Link>
-                    );
-                })}
-            </nav>
+                            AMK ADMIN
+                        </motion.span>
+                    </div>
 
-            <div className="p-4 border-t border-gray-800 space-y-2">
-                <Link
-                    href="/"
-                    onClick={onClose}
-                    className="flex items-center gap-3 px-4 py-3 w-full text-left text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-                >
-                    <Home size={20} />
-                    Back to Website
-                </Link>
+                    {/* Navigation Links */}
+                    <nav className={cn(
+                        "flex-1 space-y-1",
+                        open ? "px-2" : "px-0"
+                    )}>
+                        {links.map((link) => {
+                            const Icon = link.icon;
+                            const isActive = pathname === link.href || (pathname.startsWith(link.href) && link.href !== "/admin");
 
-                <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-3 px-4 py-3 w-full text-left text-gray-400 hover:text-red-400 hover:bg-gray-800 rounded-lg transition-colors"
-                >
-                    <LogOut size={20} />
-                    Logout
-                </button>
-            </div>
-        </div>
+                            return (
+                                <SidebarLink
+                                    key={link.href}
+                                    link={{
+                                        label: link.name,
+                                        href: link.href,
+                                        icon: (
+                                            <Icon 
+                                                size={24} 
+                                                className="text-white"
+                                            />
+                                        ),
+                                    }}
+                                    className={cn(
+                                        "py-3 rounded-lg transition-colors text-base w-full",
+                                        open ? "px-4" : "px-0 justify-center",
+                                        isActive
+                                            ? "bg-primary text-white font-medium"
+                                            : "text-white hover:bg-gray-800"
+                                    )}
+                                    onClick={handleLinkClick}
+                                />
+                            );
+                        })}
+                    </nav>
+
+                    {/* Footer Links */}
+                    <div className={cn(
+                        "border-t border-gray-800 space-y-1",
+                        open ? "p-2" : "p-0"
+                    )}>
+                        <SidebarLink
+                            link={{
+                                label: "Back to Website",
+                                href: "/",
+                                icon: (
+                                    <Home 
+                                        size={24} 
+                                        className="text-white"
+                                    />
+                                ),
+                            }}
+                            className={cn(
+                                "py-3 w-full text-white hover:bg-gray-800 rounded-lg transition-colors text-base",
+                                open ? "px-4" : "px-0 justify-center"
+                            )}
+                            onClick={handleLinkClick}
+                        />
+                        <button
+                            onClick={handleLogout}
+                            className={cn(
+                                "flex items-center gap-3 py-3 w-full rounded-lg transition-colors text-base text-white hover:text-red-400 hover:bg-gray-800",
+                                open ? "justify-start px-4" : "justify-center px-0"
+                            )}
+                        >
+                            <LogOut size={24} className="flex-shrink-0" />
+                            <motion.span
+                                animate={{
+                                    opacity: open ? 1 : 0,
+                                    display: open ? "inline-block" : "none",
+                                    width: open ? "auto" : 0,
+                                }}
+                                className="whitespace-pre overflow-hidden"
+                            >
+                                Logout
+                            </motion.span>
+                        </button>
+                    </div>
+                </div>
+            </SidebarBody>
     );
 }

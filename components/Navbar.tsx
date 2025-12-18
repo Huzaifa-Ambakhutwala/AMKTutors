@@ -70,7 +70,7 @@ export default function Navbar() {
                                 whileHover={shouldReduceMotion ? undefined : { scale: 1.05 }}
                                 transition={{ duration: 0.2 }}
                             >
-                                <Image src="/logo.png" alt="AMK Tutors Logo" width={150} height={50} className="h-20 w-auto object-contain drop-shadow-sm" />
+                                <Image src="/logo.png" alt="AMK Tutors Logo" width={150} height={50} className="h-20 w-auto object-contain drop-shadow-sm" loading="eager" priority />
                             </motion.div>
                         </Link>
                     </div>

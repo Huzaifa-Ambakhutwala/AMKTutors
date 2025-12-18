@@ -36,6 +36,7 @@ export default function About() {
                             src="/images/about-success-v2.png"
                             alt="Student success"
                             fill
+                            sizes="(max-width: 1024px) 100vw, 50vw"
                             className="object-cover"
                         />
                     </motion.div>

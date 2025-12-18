@@ -4,6 +4,7 @@ import { ClipboardList, Users, TrendingUp, ArrowRight } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { MotionSection, MotionStagger, MotionItem } from "@/lib/motion/Motion";
 import { fadeUp, timelineFill } from "@/lib/motion/variants";
+import { GlowingEffect } from "@/components/ui/glowing-effect";
 
 const steps = [
     {
@@ -74,40 +75,50 @@ export default function HowItWorks() {
                         {steps.map((step, index) => (
                             <MotionItem key={index} className="relative h-full">
                                 <motion.div
-                                    className="bg-white/10 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group border border-yellow-300/20 h-full flex flex-col"
+                                    className="relative bg-white/10 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group border border-yellow-300/20 h-full flex flex-col"
                                     initial={{ opacity: 0, y: 30 }}
                                     whileInView={{ opacity: 1, y: 0 }}
                                     viewport={{ once: true, amount: 0.3 }}
                                     transition={{ duration: 0.4, delay: index * 0.15 }}
+                                    whileHover={shouldReduceMotion ? undefined : { y: -5 }}
                                 >
-                                    <div className="bg-yellow-300 h-2 w-full relative">
+                                    <GlowingEffect
+                                        spread={40}
+                                        glow={true}
+                                        disabled={false}
+                                        proximity={64}
+                                        inactiveZone={0.2}
+                                        borderWidth={2}
+                                        variant="white"
+                                    />
+                                    {/* Card Header with Icon */}
+                                    <div className="p-6 pb-4 relative z-10">
                                         <motion.div
-                                            className="absolute -bottom-3 left-1/2 -translate-x-1/2 text-yellow-300"
-                                            initial={{ scale: 0 }}
-                                            whileInView={{ scale: 1 }}
-                                            viewport={{ once: true }}
-                                            transition={{ duration: 0.3, delay: index * 0.15 + 0.2 }}
-                                        >
-                                <svg width="20" height="12" viewBox="0 0 20 12" fill="currentColor">
-                                    <path d="M0 0L10 12L20 0H0Z" />
-                                </svg>
-                                        </motion.div>
-                            </div>
-                                    <div className="p-8 pt-12 text-center flex flex-col flex-1">
-                                        <motion.div
-                                            className="mx-auto bg-yellow-300 w-20 h-20 rounded-full flex items-center justify-center mb-6"
+                                            className="w-16 h-16 bg-yellow-300 rounded-2xl flex items-center justify-center mb-4 shadow-lg"
                                             whileHover={shouldReduceMotion ? undefined : { scale: 1.1, rotate: 5 }}
                                             transition={{ duration: 0.2 }}
                                         >
-                                            <step.icon className="text-secondary w-10 h-10" />
+                                            <step.icon className="text-secondary w-8 h-8" />
                                         </motion.div>
-                                        <h3 className="text-xl font-bold text-white mb-4 flex items-center justify-center gap-2">
-                                            {step.title} <ArrowRight size={20} className="text-yellow-300" />
-                            </h3>
-                                        <p className="text-gray-100 leading-relaxed flex-1">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <h3 className="text-xl font-bold text-white">
+                                                {step.title}
+                                            </h3>
+                                            <ArrowRight size={18} className="text-yellow-300 flex-shrink-0" />
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Card Content */}
+                                    <div className="px-6 pb-6 flex flex-col flex-1 relative z-10">
+                                        <p className="text-gray-100 leading-relaxed text-sm">
                                             {step.description}
-                            </p>
-                        </div>
+                                        </p>
+                                    </div>
+                                    
+                                    {/* Step Number Badge */}
+                                    <div className="absolute top-4 right-4 w-8 h-8 bg-yellow-300/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-yellow-300/30 relative z-10">
+                                        <span className="text-yellow-300 font-bold text-sm">{index + 1}</span>
+                                    </div>
                                 </motion.div>
                             </MotionItem>
                         ))}
