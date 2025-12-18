@@ -8,13 +8,16 @@
   --color-primary-foreground: var(--theme-fg);
   --color-secondary: var(--theme-secondary);
   --color-accent: var(--theme-accent);
+  /* Map Tailwind yellow utilities to dynamic theme yellows */
+  --color-yellow-300: var(--theme-yellow);
+  --color-yellow-400: var(--theme-yellow-dark);
 }
 
 :root {
   --background: #f9fafb;
   --foreground: #111827;
 
-  /* Updated Theme Colors */
+  /* Theme Colors - Can be dynamically updated via CSS variables */
   --theme-primary: #1A2742;
   --theme-secondary: #800000;
   --theme-accent: #2A3F5F;

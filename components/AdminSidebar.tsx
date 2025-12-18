@@ -14,7 +14,7 @@ import {
     LogOut,
     Home,
     ClipboardList,
-
+    Settings,
 } from "lucide-react";
 import Image from "next/image";
 import { logout } from "@/lib/auth-helpers";
@@ -39,6 +39,7 @@ export default function AdminSidebar({ onClose, className }: AdminSidebarProps) 
         { name: "Evaluations", href: "/admin/evaluations", icon: ClipboardList },
 
         { name: "Billing", href: "/admin/billing", icon: CreditCard },
+        { name: "Settings", href: "/admin/settings", icon: Settings },
         { name: "Manage Logins", href: "/admin/logins", icon: Lock },
     ];
 

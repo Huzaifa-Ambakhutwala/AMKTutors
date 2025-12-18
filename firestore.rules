@@ -136,8 +136,14 @@ service cloud.firestore {
     }
     
     // 7. Settings Collection
+    // Public can READ theme-related settings so the marketing site can style itself.
+    // Only admins can WRITE.
     match /settings/{settingId} {
-      allow read, write: if isAdmin();
+      // Allow read for everyone (safe for non-sensitive config like theme colors)
+      allow read: if true;
+
+      // Restrict writes to admins only
+      allow write: if isAdmin();
     }
 
     // 8. Site Pages (CMS)
