@@ -64,10 +64,10 @@ export default function Subjects() {
                                 >
                                     <subject.icon className="text-secondary w-7 h-7 group-hover:text-yellow-300 transition-colors" />
                                 </motion.div>
-                                <h3 className="text-xl font-bold text-gray-900 mb-3">{subject.title}</h3>
+                            <h3 className="text-xl font-bold text-gray-900 mb-3">{subject.title}</h3>
                                 <p className="text-gray-600 leading-relaxed flex-1">
-                                    {subject.description}
-                                </p>
+                                {subject.description}
+                            </p>
                             </motion.div>
                         </MotionItem>
                     ))}

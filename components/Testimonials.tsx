@@ -75,7 +75,7 @@ export default function Testimonials() {
                                     <Quote size={40} />
                                 </motion.div>
                                 <div className="text-yellow-300 flex mb-4">
-                                    {[...Array(5)].map((_, i) => (
+                                {[...Array(5)].map((_, i) => (
                                         <motion.div
                                             key={i}
                                             initial={{ opacity: 0, scale: 0 }}
@@ -85,13 +85,13 @@ export default function Testimonials() {
                                         >
                                             <Star size={20} fill="currentColor" />
                                         </motion.div>
-                                    ))}
-                                </div>
+                                ))}
+                            </div>
                                 <p className="text-gray-100 italic mb-6 relative z-10">"{testimonial.quote}"</p>
-                                <div>
+                            <div>
                                     <p className="font-bold text-white">{testimonial.author}</p>
                                     <p className="text-sm text-gray-200">{testimonial.role}</p>
-                                </div>
+                            </div>
                             </motion.div>
                         </MotionItem>
                     ))}

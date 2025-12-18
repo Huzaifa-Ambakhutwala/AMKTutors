@@ -28,15 +28,15 @@ export default function Curriculum() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
                     <div>
                         <MotionDiv variants={fadeUp} threshold={0.2}>
-                            <h2 className="text-3xl font-bold text-gray-900 mb-6 font-heading">
+                        <h2 className="text-3xl font-bold text-gray-900 mb-6 font-heading">
                                 Our <span className="text-secondary">Curriculum</span> Approach
-                            </h2>
+                        </h2>
                         </MotionDiv>
                         <MotionDiv variants={fadeUp} threshold={0.2}>
-                            <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-                                We align our tutoring with state and national standards to ensure that students
-                                are not only improving their grades but also mastering the core concepts required for long-term success.
-                            </p>
+                        <p className="text-lg text-gray-600 mb-6 leading-relaxed">
+                            We align our tutoring with state and national standards to ensure that students
+                            are not only improving their grades but also mastering the core concepts required for long-term success.
+                        </p>
                         </MotionDiv>
                         <motion.div
                             className="space-y-4"
@@ -60,10 +60,10 @@ export default function Curriculum() {
                                     >
                                         <CheckCircle className="text-yellow-300" size={24} />
                                     </motion.div>
-                                    <div>
+                                <div>
                                         <h3 className="text-xl font-bold text-gray-900">{point.title}</h3>
                                         <p className="text-gray-600">{point.description}</p>
-                                    </div>
+                                </div>
                                 </motion.div>
                             ))}
                         </motion.div>

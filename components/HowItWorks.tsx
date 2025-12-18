@@ -88,11 +88,11 @@ export default function HowItWorks() {
                                             viewport={{ once: true }}
                                             transition={{ duration: 0.3, delay: index * 0.15 + 0.2 }}
                                         >
-                                            <svg width="20" height="12" viewBox="0 0 20 12" fill="currentColor">
-                                                <path d="M0 0L10 12L20 0H0Z" />
-                                            </svg>
+                                <svg width="20" height="12" viewBox="0 0 20 12" fill="currentColor">
+                                    <path d="M0 0L10 12L20 0H0Z" />
+                                </svg>
                                         </motion.div>
-                                    </div>
+                            </div>
                                     <div className="p-8 pt-12 text-center flex flex-col flex-1">
                                         <motion.div
                                             className="mx-auto bg-yellow-300 w-20 h-20 rounded-full flex items-center justify-center mb-6"
@@ -103,11 +103,11 @@ export default function HowItWorks() {
                                         </motion.div>
                                         <h3 className="text-xl font-bold text-white mb-4 flex items-center justify-center gap-2">
                                             {step.title} <ArrowRight size={20} className="text-yellow-300" />
-                                        </h3>
+                            </h3>
                                         <p className="text-gray-100 leading-relaxed flex-1">
                                             {step.description}
-                                        </p>
-                                    </div>
+                            </p>
+                        </div>
                                 </motion.div>
                             </MotionItem>
                         ))}

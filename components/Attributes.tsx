@@ -43,10 +43,10 @@ export default function Attributes() {
                                     initial="rest"
                                     whileHover="hover"
                                 >
-                                    <attr.icon size={32} />
+                                <attr.icon size={32} />
                                 </motion.div>
-                                <h3 className="text-xl font-bold text-gray-900 mb-2">{attr.title}</h3>
-                                <p className="text-gray-600">{attr.description}</p>
+                            <h3 className="text-xl font-bold text-gray-900 mb-2">{attr.title}</h3>
+                            <p className="text-gray-600">{attr.description}</p>
                             </motion.div>
                         </MotionItem>
                     ))}

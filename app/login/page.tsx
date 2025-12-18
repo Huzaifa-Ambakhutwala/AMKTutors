@@ -89,14 +89,16 @@ export default function LoginPage() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.6 }}
                     >
-                        {/* Logo & brand */}
+                        {/* Logo */}
                         <div className="flex items-center gap-3 mb-8">
-                            <div className="w-12 h-12 bg-yellow-300 rounded-xl flex items-center justify-center shadow-lg">
-                                <GraduationCap className="w-7 h-7 text-secondary" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl font-bold">AMK Tutors</h1>
-                                <p className="text-yellow-100 text-sm">Excellence in Education</p>
+                            <div className="bg-white rounded-xl shadow-lg px-3 py-2">
+                                <Image
+                                    src="/logo.png"
+                                    alt="AMK Tutors Logo"
+                                    width={120}
+                                    height={48}
+                                    className="h-12 w-auto object-contain"
+                                />
                             </div>
                         </div>
 
@@ -163,11 +165,11 @@ export default function LoginPage() {
                         {/* Footer stats */}
                         <div className="grid grid-cols-3 gap-6 pt-6 border-t border-white/20 mt-6">
                             <div>
-                                <div className="text-3xl font-bold text-yellow-300">5000+</div>
+                                <div className="text-3xl font-bold text-yellow-300">14+</div>
                                 <div className="text-yellow-100 text-sm">Students</div>
                             </div>
                             <div>
-                                <div className="text-3xl font-bold text-yellow-300">200+</div>
+                                <div className="text-3xl font-bold text-yellow-300">4+</div>
                                 <div className="text-yellow-100 text-sm">Tutors</div>
                             </div>
                             <div>

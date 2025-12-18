@@ -43,20 +43,20 @@ export default function About() {
                         <MotionDiv variants={fadeUp} threshold={0.2}>
                             <h2 className="text-3xl font-bold text-white mb-6 font-heading">
                                 Dedicated to Your <span className="text-yellow-300">Success</span>
-                            </h2>
+                        </h2>
                         </MotionDiv>
                         <MotionDiv variants={fadeUp} threshold={0.2}>
                             <p className="text-lg text-gray-100 mb-6 leading-relaxed">
-                                At AMK Tutors, we believe that every student has the potential to excel.
-                                Our mission is to provide high-quality, personalized tutoring that builds confidence
-                                and delivers tangible results.
-                            </p>
+                            At AMK Tutors, we believe that every student has the potential to excel.
+                            Our mission is to provide high-quality, personalized tutoring that builds confidence
+                            and delivers tangible results.
+                        </p>
                         </MotionDiv>
                         <MotionDiv variants={fadeUp} threshold={0.2}>
                             <p className="text-lg text-gray-100 mb-8 leading-relaxed">
-                                Whether you need help with foundational math, advanced science, or preparing for
-                                college entrance exams, our expert team is here to guide you every step of the way.
-                            </p>
+                            Whether you need help with foundational math, advanced science, or preparing for
+                            college entrance exams, our expert team is here to guide you every step of the way.
+                        </p>
                         </MotionDiv>
                         <motion.ul
                             className="space-y-3 mb-8"

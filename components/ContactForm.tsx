@@ -184,7 +184,7 @@ export default function ContactForm() {
                     transition={{ duration: 0.4 }}
                 >
                     <AnimatePresence mode="wait">
-                        {status === "success" ? (
+                    {status === "success" ? (
                             <motion.div
                                 key="success"
                                 className="text-center py-12"
@@ -217,22 +217,22 @@ export default function ContactForm() {
                                     animate={{ scale: 1 }}
                                     transition={{ type: "spring", stiffness: 200, damping: 15 }}
                                 >
-                                    <CheckCircle size={32} />
+                                <CheckCircle size={32} />
                                 </motion.div>
-                                <h3 className="text-2xl font-bold text-gray-800 mb-2">Inquiry Received!</h3>
-                                <p className="text-gray-600 mb-6">
-                                    Thank you for contacting AMK Tutors. We have sent a confirmation email to <strong>{formData.email}</strong> and will be in touch shortly.
-                                </p>
+                            <h3 className="text-2xl font-bold text-gray-800 mb-2">Inquiry Received!</h3>
+                            <p className="text-gray-600 mb-6">
+                                Thank you for contacting AMK Tutors. We have sent a confirmation email to <strong>{formData.email}</strong> and will be in touch shortly.
+                            </p>
                                 <motion.button
-                                    onClick={() => setStatus("idle")}
+                                onClick={() => setStatus("idle")}
                                     className="px-6 py-2 bg-yellow-300 text-secondary rounded-lg font-medium hover:bg-yellow-400"
                                     whileHover={shouldReduceMotion ? undefined : { scale: 1.05 }}
                                     whileTap={shouldReduceMotion ? undefined : { scale: 0.95 }}
-                                >
-                                    Send Another Inquiry
+                            >
+                                Send Another Inquiry
                                 </motion.button>
                             </motion.div>
-                        ) : (
+                    ) : (
                             <motion.form
                                 key="form"
                                 onSubmit={handleSubmit}
@@ -241,21 +241,21 @@ export default function ContactForm() {
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
                             >
-                                {/* Student & Parent Name */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Student Name *</label>
+                            {/* Student & Parent Name */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Student Name *</label>
                                         <motion.input
-                                            type="text"
-                                            name="studentName"
-                                            value={formData.studentName}
-                                            onChange={handleChange}
+                                        type="text"
+                                        name="studentName"
+                                        value={formData.studentName}
+                                        onChange={handleChange}
                                             className={`w-full px-4 py-3 rounded-lg border ${errors.studentName ? 'border-red-500' : 'border-gray-300'} focus:ring-2 focus:ring-primary outline-none transition-all`}
-                                            placeholder="Student's Full Name"
+                                        placeholder="Student's Full Name"
                                             variants={shakeField === "studentName" ? shake : undefined}
                                             animate={shakeField === "studentName" ? "shake" : "rest"}
                                             whileFocus={shouldReduceMotion ? undefined : { scale: 1.02 }}
-                                        />
+                                    />
                                         {errors.studentName && (
                                             <motion.p
                                                 className="text-red-500 text-xs mt-1"
@@ -265,36 +265,36 @@ export default function ContactForm() {
                                                 {errors.studentName}
                                             </motion.p>
                                         )}
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Parent Name</label>
-                                        <motion.input
-                                            type="text"
-                                            name="parentName"
-                                            value={formData.parentName}
-                                            onChange={handleChange}
-                                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary outline-none transition-all"
-                                            placeholder="Parent's Name (Optional)"
-                                            whileFocus={shouldReduceMotion ? undefined : { scale: 1.02 }}
-                                        />
-                                    </div>
                                 </div>
-
-                                {/* Contact Info */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Email Address *</label>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Parent Name</label>
                                         <motion.input
-                                            type="email"
-                                            name="email"
-                                            value={formData.email}
-                                            onChange={handleChange}
+                                        type="text"
+                                        name="parentName"
+                                        value={formData.parentName}
+                                        onChange={handleChange}
+                                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary outline-none transition-all"
+                                        placeholder="Parent's Name (Optional)"
+                                            whileFocus={shouldReduceMotion ? undefined : { scale: 1.02 }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Contact Info */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Email Address *</label>
+                                        <motion.input
+                                        type="email"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleChange}
                                             className={`w-full px-4 py-3 rounded-lg border ${errors.email ? 'border-red-500' : 'border-gray-300'} focus:ring-2 focus:ring-primary outline-none transition-all`}
-                                            placeholder="you@example.com"
+                                        placeholder="you@example.com"
                                             variants={shakeField === "email" ? shake : undefined}
                                             animate={shakeField === "email" ? "shake" : "rest"}
                                             whileFocus={shouldReduceMotion ? undefined : { scale: 1.02 }}
-                                        />
+                                    />
                                         {errors.email && (
                                             <motion.p
                                                 className="text-red-500 text-xs mt-1"
@@ -304,20 +304,20 @@ export default function ContactForm() {
                                                 {errors.email}
                                             </motion.p>
                                         )}
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number *</label>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number *</label>
                                         <motion.input
-                                            type="tel"
-                                            name="phone"
-                                            value={formData.phone}
-                                            onChange={handleChange}
+                                        type="tel"
+                                        name="phone"
+                                        value={formData.phone}
+                                        onChange={handleChange}
                                             className={`w-full px-4 py-3 rounded-lg border ${errors.phone ? 'border-red-500' : 'border-gray-300'} focus:ring-2 focus:ring-primary outline-none transition-all`}
-                                            placeholder="(555) 123-4567"
+                                        placeholder="(555) 123-4567"
                                             variants={shakeField === "phone" ? shake : undefined}
                                             animate={shakeField === "phone" ? "shake" : "rest"}
                                             whileFocus={shouldReduceMotion ? undefined : { scale: 1.02 }}
-                                        />
+                                    />
                                         {errors.phone && (
                                             <motion.p
                                                 className="text-red-500 text-xs mt-1"
@@ -327,49 +327,49 @@ export default function ContactForm() {
                                                 {errors.phone}
                                             </motion.p>
                                         )}
-                                    </div>
                                 </div>
+                            </div>
 
-                                {/* Grade & Subjects */}
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Student Grade</label>
+                            {/* Grade & Subjects */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Student Grade</label>
                                     <motion.select
-                                        name="grade"
-                                        value={formData.grade}
-                                        onChange={handleChange}
+                                    name="grade"
+                                    value={formData.grade}
+                                    onChange={handleChange}
                                         className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary outline-none bg-white transition-all"
                                         whileFocus={shouldReduceMotion ? undefined : { scale: 1.02 }}
-                                    >
-                                        <option value="K-5">K-5 Elementary</option>
-                                        <option value="6">6th Grade</option>
-                                        <option value="7">7th Grade</option>
-                                        <option value="8">8th Grade</option>
-                                        <option value="9">9th Grade</option>
-                                        <option value="10">10th Grade</option>
-                                        <option value="11">11th Grade</option>
-                                        <option value="12">12th Grade</option>
+                                >
+                                    <option value="K-5">K-5 Elementary</option>
+                                    <option value="6">6th Grade</option>
+                                    <option value="7">7th Grade</option>
+                                    <option value="8">8th Grade</option>
+                                    <option value="9">9th Grade</option>
+                                    <option value="10">10th Grade</option>
+                                    <option value="11">11th Grade</option>
+                                    <option value="12">12th Grade</option>
                                     </motion.select>
-                                </div>
+                            </div>
 
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-3">Subjects of Interest *</label>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                        {SUBJECT_OPTIONS.map(subj => (
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-3">Subjects of Interest *</label>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    {SUBJECT_OPTIONS.map(subj => (
                                             <motion.button
-                                                key={subj}
-                                                type="button"
-                                                onClick={() => toggleSubject(subj)}
-                                                className={`px-3 py-2 text-sm rounded-lg border transition-all ${selectedSubjects.includes(subj)
+                                            key={subj}
+                                            type="button"
+                                            onClick={() => toggleSubject(subj)}
+                                            className={`px-3 py-2 text-sm rounded-lg border transition-all ${selectedSubjects.includes(subj)
                                                     ? 'bg-primary text-white border-primary shadow-md'
-                                                    : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
-                                                    }`}
+                                                : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                                                }`}
                                                 whileHover={shouldReduceMotion ? undefined : { scale: 1.05 }}
                                                 whileTap={shouldReduceMotion ? undefined : { scale: 0.95 }}
-                                            >
-                                                {subj}
+                                        >
+                                            {subj}
                                             </motion.button>
-                                        ))}
-                                    </div>
+                                    ))}
+                                </div>
                                     {errors.subjects && (
                                         <motion.p
                                             className="text-red-500 text-xs mt-1"
@@ -380,9 +380,9 @@ export default function ContactForm() {
                                         </motion.p>
                                     )}
 
-                                    {/* Other Input */}
+                                {/* Other Input */}
                                     <AnimatePresence>
-                                        {selectedSubjects.includes("Other") && (
+                                {selectedSubjects.includes("Other") && (
                                             <motion.div
                                                 className="mt-3"
                                                 initial={{ opacity: 0, height: 0 }}
@@ -391,16 +391,16 @@ export default function ContactForm() {
                                                 transition={{ duration: 0.2 }}
                                             >
                                                 <motion.input
-                                                    type="text"
-                                                    name="otherSubject"
-                                                    value={formData.otherSubject}
-                                                    onChange={handleChange}
+                                            type="text"
+                                            name="otherSubject"
+                                            value={formData.otherSubject}
+                                            onChange={handleChange}
                                                     className={`w-full px-4 py-2 rounded-lg border ${errors.otherSubject ? 'border-red-500' : 'border-gray-300'} focus:ring-2 focus:ring-primary outline-none text-sm transition-all`}
-                                                    placeholder="Please specify subject..."
+                                            placeholder="Please specify subject..."
                                                     variants={shakeField === "otherSubject" ? shake : undefined}
                                                     animate={shakeField === "otherSubject" ? "shake" : "rest"}
                                                     whileFocus={shouldReduceMotion ? undefined : { scale: 1.02 }}
-                                                />
+                                        />
                                                 {errors.otherSubject && (
                                                     <motion.p
                                                         className="text-red-500 text-xs mt-1"
@@ -411,50 +411,50 @@ export default function ContactForm() {
                                                     </motion.p>
                                                 )}
                                             </motion.div>
-                                        )}
+                                )}
                                     </AnimatePresence>
-                                </div>
+                            </div>
 
-                                {/* Message */}
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Additional Message (Optional)</label>
+                            {/* Message */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Additional Message (Optional)</label>
                                     <motion.textarea
-                                        name="message"
-                                        value={formData.message}
-                                        onChange={handleChange}
+                                    name="message"
+                                    value={formData.message}
+                                    onChange={handleChange}
                                         className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary outline-none h-24 transition-all"
-                                        placeholder="Tell us about the student's goals or specific needs..."
+                                    placeholder="Tell us about the student's goals or specific needs..."
                                         whileFocus={shouldReduceMotion ? undefined : { scale: 1.01 }}
-                                    />
-                                </div>
+                                />
+                            </div>
 
-                                {/* Global Error */}
+                            {/* Global Error */}
                                 <AnimatePresence>
-                                    {status === "error" && (
+                            {status === "error" && (
                                         <motion.div
                                             className="bg-red-50 text-red-600 p-3 rounded-lg flex items-center gap-2 text-sm"
                                             initial={{ opacity: 0, y: -10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, y: -10 }}
                                         >
-                                            <AlertCircle size={16} />
-                                            {errorMessage}
+                                    <AlertCircle size={16} />
+                                    {errorMessage}
                                         </motion.div>
-                                    )}
+                            )}
                                 </AnimatePresence>
 
                                 <motion.button
-                                    type="submit"
-                                    disabled={status === "loading"}
+                                type="submit"
+                                disabled={status === "loading"}
                                     className="w-full bg-yellow-300 text-secondary font-bold py-4 rounded-xl hover:bg-yellow-400 transition-colors shadow-lg text-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                     whileHover={shouldReduceMotion || status === "loading" ? undefined : { scale: 1.02, y: -2 }}
                                     whileTap={shouldReduceMotion || status === "loading" ? undefined : { scale: 0.98 }}
-                                >
-                                    {status === "loading" && <Loader2 className="animate-spin" />}
-                                    {status === "loading" ? "Sending Inquiry..." : "Submit Inquiry"}
+                            >
+                                {status === "loading" && <Loader2 className="animate-spin" />}
+                                {status === "loading" ? "Sending Inquiry..." : "Submit Inquiry"}
                                 </motion.button>
                             </motion.form>
-                        )}
+                    )}
                     </AnimatePresence>
                 </motion.div>
             </div>

@@ -88,23 +88,23 @@ export default function Hero() {
                             whileHover={shouldReduceMotion ? undefined : buttonHover}
                             whileTap={shouldReduceMotion ? undefined : buttonTap}
                         >
-                            <Link
-                                href="#contact"
+                        <Link
+                            href="#contact"
                                 className="bg-yellow-300 text-secondary px-8 py-4 rounded-full text-lg font-semibold shadow-lg hover:shadow-xl transition-shadow block hover:bg-yellow-400"
-                            >
-                                Book a Call Today
-                            </Link>
+                        >
+                            Book a Call Today
+                        </Link>
                         </motion.div>
                         <motion.div
                             whileHover={shouldReduceMotion ? undefined : buttonHover}
                             whileTap={shouldReduceMotion ? undefined : buttonTap}
                         >
-                            <Link
-                                href="#about"
+                        <Link
+                            href="#about"
                                 className="bg-white text-secondary border-2 border-white px-8 py-4 rounded-full text-lg font-semibold hover:bg-gray-50 transition-colors shadow-sm hover:shadow-md block"
-                            >
-                                Learn More
-                            </Link>
+                        >
+                            Learn More
+                        </Link>
                         </motion.div>
                     </MotionDiv>
                 </div>
