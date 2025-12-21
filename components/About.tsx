@@ -8,21 +8,6 @@ import { motion } from "framer-motion";
 export default function About() {
     return (
         <MotionSection id="about" className="py-20 bg-secondary text-white relative overflow-hidden" variants={fadeUp}>
-            {/* Top blobs that continue from Attributes section */}
-            <motion.div
-                className="absolute top-0 left-0 -ml-20 -mt-20 w-[500px] h-[500px] bg-red-100 rounded-full blur-3xl opacity-20"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 0.2 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-            />
-            <motion.div
-                className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-red-200 rounded-full blur-3xl opacity-25"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 0.25 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-            />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                     <motion.div
@@ -80,21 +65,6 @@ export default function About() {
                     </div>
                 </div>
             </div>
-            {/* Bottom blobs positioned at edge for seamless transition */}
-            <motion.div
-                className="absolute bottom-0 left-0 -ml-20 -mb-20 w-[500px] h-[500px] bg-red-200 rounded-full blur-3xl opacity-20"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 0.2 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-            />
-            <motion.div
-                className="absolute bottom-0 right-0 -mr-20 -mb-20 w-96 h-96 bg-red-100 rounded-full blur-3xl opacity-25"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 0.25 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-            />
         </MotionSection>
     );
 }

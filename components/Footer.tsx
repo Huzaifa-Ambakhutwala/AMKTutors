@@ -13,21 +13,6 @@ export default function Footer() {
             viewport={{ once: true, amount: 0.2 }}
             variants={fadeIn}
         >
-            {/* Decorative gradient blobs */}
-            <motion.div
-                className="absolute bottom-0 left-0 -ml-20 -mb-20 w-96 h-96 bg-red-100 rounded-full blur-3xl opacity-20"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 0.2 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-            />
-            <motion.div
-                className="absolute bottom-0 right-0 -mr-20 -mb-20 w-80 h-80 bg-yellow-200 rounded-full blur-3xl opacity-15"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 0.15 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-            />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
                 <motion.div

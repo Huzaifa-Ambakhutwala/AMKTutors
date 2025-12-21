@@ -147,21 +147,6 @@ export default function ContactForm() {
 
     return (
         <MotionSection id="contact" className="py-20 bg-secondary text-white relative overflow-hidden" variants={fadeUp}>
-            {/* Top blobs that continue from previous section - positioned at top edge */}
-            <motion.div
-                className="absolute top-0 left-0 -ml-20 -mt-20 w-[500px] h-[500px] bg-red-100 rounded-full blur-3xl opacity-20"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 0.2 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-            />
-            <motion.div
-                className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-red-200 rounded-full blur-3xl opacity-25"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 0.25 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-            />
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                 <MotionDiv
                     className="text-center mb-12"

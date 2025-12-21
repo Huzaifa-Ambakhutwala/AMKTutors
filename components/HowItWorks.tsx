@@ -29,21 +29,6 @@ export default function HowItWorks() {
 
     return (
         <MotionSection className="py-20 bg-secondary text-white relative overflow-hidden" variants={fadeUp}>
-            {/* Top blobs that continue from previous section - positioned at top edge */}
-            <motion.div
-                className="absolute top-0 left-0 -ml-20 -mt-20 w-[500px] h-[500px] bg-red-100 rounded-full blur-3xl opacity-20"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 0.2 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-            />
-            <motion.div
-                className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-red-200 rounded-full blur-3xl opacity-25"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 0.25 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-            />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                 <motion.div
                     className="text-center mb-16"
@@ -75,7 +60,7 @@ export default function HowItWorks() {
                         {steps.map((step, index) => (
                             <MotionItem key={index} className="relative h-full">
                                 <motion.div
-                                    className="relative bg-white/10 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group border border-yellow-300/20 h-full flex flex-col"
+                                    className="relative bg-secondary/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group border border-yellow-300/20 h-full flex flex-col"
                                     initial={{ opacity: 0, y: 30 }}
                                     whileInView={{ opacity: 1, y: 0 }}
                                     viewport={{ once: true, amount: 0.3 }}
@@ -125,21 +110,6 @@ export default function HowItWorks() {
                     </MotionStagger>
                 </div>
             </div>
-            {/* Bottom blobs positioned at edge for seamless transition */}
-            <motion.div
-                className="absolute bottom-0 left-0 -ml-20 -mb-20 w-[500px] h-[500px] bg-red-200 rounded-full blur-3xl opacity-20"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 0.2 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-            />
-            <motion.div
-                className="absolute bottom-0 right-0 -mr-20 -mb-20 w-96 h-96 bg-red-100 rounded-full blur-3xl opacity-25"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 0.25 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-            />
         </MotionSection>
     );
 }

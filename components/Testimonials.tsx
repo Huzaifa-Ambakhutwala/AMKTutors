@@ -29,21 +29,6 @@ export default function Testimonials() {
 
     return (
         <MotionSection id="testimonials" className="py-20 bg-secondary text-white relative overflow-hidden" variants={fadeUp}>
-            {/* Top blobs that continue from previous section - positioned at top edge */}
-            <motion.div
-                className="absolute top-0 left-0 -ml-20 -mt-20 w-[500px] h-[500px] bg-red-100 rounded-full blur-3xl opacity-20"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 0.2 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-            />
-            <motion.div
-                className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-red-200 rounded-full blur-3xl opacity-25"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 0.25 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-            />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                 <motion.div
                     className="text-center mb-16"
@@ -61,7 +46,7 @@ export default function Testimonials() {
                     {testimonials.map((testimonial, index) => (
                         <MotionItem key={index}>
                             <motion.div
-                                className="relative bg-white/10 backdrop-blur-sm p-8 rounded-xl border border-yellow-300/20"
+                                className="relative bg-secondary/50 p-8 rounded-xl border border-yellow-300/20"
                                 whileHover={shouldReduceMotion ? undefined : cardHover}
                                 transition={{ duration: 0.2 }}
                             >
@@ -107,21 +92,6 @@ export default function Testimonials() {
                     ))}
                 </MotionStagger>
             </div>
-            {/* Bottom blobs positioned at edge for seamless transition */}
-            <motion.div
-                className="absolute bottom-0 left-0 -ml-20 -mb-20 w-[500px] h-[500px] bg-red-200 rounded-full blur-3xl opacity-20"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 0.2 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-            />
-            <motion.div
-                className="absolute bottom-0 right-0 -mr-20 -mb-20 w-96 h-96 bg-red-100 rounded-full blur-3xl opacity-25"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 0.25 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-            />
         </MotionSection>
     );
 }

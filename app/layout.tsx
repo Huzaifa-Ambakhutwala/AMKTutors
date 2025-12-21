@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins, Open_Sans } from "next/font/google";
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
+import CursorGlow from "@/components/CursorGlow";
 import { DEFAULT_THEME_COLORS, LOCAL_STORAGE_KEY } from "@/lib/theme-constants";
 
 const poppins = Poppins({
@@ -75,7 +76,8 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: themeScript }}
         />
         <ThemeProvider>
-        {children}
+          <CursorGlow glowSize={400} glowIntensity={0.4} glowColor="rgba(255, 255, 255, 0.6)" />
+          {children}
         </ThemeProvider>
       </body>
     </html>

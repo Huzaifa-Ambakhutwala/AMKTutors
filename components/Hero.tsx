@@ -1,19 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { motion, useScroll, useTransform, useReducedMotion, AnimatePresence } from "framer-motion";
+import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
 import { wordStagger, wordItem, buttonHover, buttonTap } from "@/lib/motion/variants";
 import { MotionDiv } from "@/lib/motion/Motion";
 import { useEffect, useState, useMemo } from "react";
 
 export default function Hero() {
     const shouldReduceMotion = useReducedMotion();
-    const { scrollY } = useScroll();
     const [titleNumber, setTitleNumber] = useState(0);
-    
-    // Subtle parallax for background blobs (disabled for reduced motion)
-    const blob1Y = shouldReduceMotion ? 0 : useTransform(scrollY, [0, 500], [0, 50]);
-    const blob2Y = shouldReduceMotion ? 0 : useTransform(scrollY, [0, 500], [0, -30]);
 
     // Rotating phrases
     const rotatingTitles = useMemo(
@@ -43,20 +38,6 @@ export default function Hero() {
 
     return (
         <section id="home" className="relative bg-secondary py-20 lg:py-32 overflow-hidden">
-            {/* Background blobs with subtle parallax - extend beyond section */}
-            <motion.div
-                className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-red-200 rounded-full blur-3xl opacity-30"
-                style={{ y: blob1Y }}
-            />
-            <motion.div
-                className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-red-100 rounded-full blur-3xl opacity-30"
-                style={{ y: blob2Y }}
-            />
-            {/* Bottom blob positioned at edge for seamless transition */}
-            <motion.div
-                className="absolute bottom-0 right-0 -mr-20 -mb-20 w-[500px] h-[500px] bg-red-200 rounded-full blur-3xl opacity-20"
-                style={{ y: shouldReduceMotion ? 0 : useTransform(scrollY, [0, 500], [0, 30]) }}
-            />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                 <div className="text-center max-w-3xl mx-auto">
