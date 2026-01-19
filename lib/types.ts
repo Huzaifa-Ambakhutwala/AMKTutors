@@ -38,7 +38,7 @@ export interface Student {
     plannedSessions?: {
         sessionsPerWeek: number;
         daysOfWeek: string[];
-        preferredTime: string;
+        preferredTime: string | Record<string, string>; // Can be string (legacy) or Record<day, time> (new format)
     };
     notes?: string;
     status: 'Active' | 'Inactive';

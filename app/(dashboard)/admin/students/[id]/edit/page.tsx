@@ -32,7 +32,7 @@ export default function EditStudentPage() {
 
     const [sessionsPerWeek, setSessionsPerWeek] = useState<number>(1);
     const [selectedDays, setSelectedDays] = useState<string[]>([]);
-    const [preferredTime, setPreferredTime] = useState("");
+    const [preferredTimes, setPreferredTimes] = useState<Record<string, string>>({});
 
     const [selectedParents, setSelectedParents] = useState<string[]>([]);
     const [selectedTutors, setSelectedTutors] = useState<string[]>([]);
@@ -65,7 +65,21 @@ export default function EditStudentPage() {
                 if (data.plannedSessions) {
                     setSessionsPerWeek(data.plannedSessions.sessionsPerWeek || 0);
                     setSelectedDays(data.plannedSessions.daysOfWeek || []);
-                    setPreferredTime(data.plannedSessions.preferredTime || "");
+                    // Handle both old format (string) and new format (Record)
+                    const preferredTimeData = data.plannedSessions.preferredTime;
+                    if (typeof preferredTimeData === 'string') {
+                        // Legacy format: single time for all days
+                        const times: Record<string, string> = {};
+                        data.plannedSessions.daysOfWeek?.forEach(day => {
+                            times[day] = preferredTimeData;
+                        });
+                        setPreferredTimes(times);
+                    } else if (preferredTimeData && typeof preferredTimeData === 'object') {
+                        // New format: Record<day, time>
+                        setPreferredTimes(preferredTimeData as Record<string, string>);
+                    } else {
+                        setPreferredTimes({});
+                    }
                 }
 
                 // 2. Fetch Users to populate selection lists
@@ -98,7 +112,7 @@ export default function EditStudentPage() {
                 plannedSessions: {
                     sessionsPerWeek,
                     daysOfWeek: selectedDays,
-                    preferredTime
+                    preferredTime: preferredTimes
                 },
                 status
             });
@@ -137,6 +151,24 @@ export default function EditStudentPage() {
             ...subjectRates,
             [subject]: parseFloat(rate) || 0
         });
+    };
+
+    const handleDayToggle = (day: string) => {
+        if (selectedDays.includes(day)) {
+            // Remove day and its time
+            setSelectedDays(selectedDays.filter(d => d !== day));
+            const newTimes = { ...preferredTimes };
+            delete newTimes[day];
+            setPreferredTimes(newTimes);
+        } else {
+            // Add day with empty time (user will set it)
+            setSelectedDays([...selectedDays, day]);
+            setPreferredTimes({ ...preferredTimes, [day]: "" });
+        }
+    };
+
+    const handleTimeChange = (day: string, time: string) => {
+        setPreferredTimes({ ...preferredTimes, [day]: time });
     };
 
     if (loading) return <div className="p-12 flex justify-center"><Loader2 className="animate-spin" /></div>;
@@ -241,35 +273,44 @@ export default function EditStudentPage() {
                                     className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
                                 />
                             </div>
+                        </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Time</label>
-                                <input
-                                    type="time"
-                                    value={preferredTime}
-                                    onChange={(e) => setPreferredTime(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-                                />
+                        <div className="space-y-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Days of Week & Times</label>
+                            <div className="flex flex-wrap gap-2 mb-4">
+                                {DAYS_OF_WEEK.map(day => (
+                                    <button
+                                        key={day}
+                                        type="button"
+                                        onClick={() => handleDayToggle(day)}
+                                        className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-all ${selectedDays.includes(day)
+                                            ? 'bg-green-100 text-green-700 border-green-200 ring-2 ring-green-500/20'
+                                            : 'bg-white text-gray-600 border-gray-200 hover:border-green-300'
+                                            }`}
+                                    >
+                                        {day}
+                                    </button>
+                                ))}
                             </div>
 
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Days of Week</label>
-                                <div className="flex flex-wrap gap-2">
-                                    {DAYS_OF_WEEK.map(day => (
-                                        <button
-                                            key={day}
-                                            type="button"
-                                            onClick={() => toggleSelection(day, selectedDays, setSelectedDays)}
-                                            className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-all ${selectedDays.includes(day)
-                                                ? 'bg-green-100 text-green-700 border-green-200 ring-2 ring-green-500/20'
-                                                : 'bg-white text-gray-600 border-gray-200 hover:border-green-300'
-                                                }`}
-                                        >
-                                            {day}
-                                        </button>
-                                    ))}
+                            {selectedDays.length > 0 && (
+                                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                    <h3 className="text-sm font-bold text-gray-700 mb-3">Set Time for Each Selected Day</h3>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                        {selectedDays.map(day => (
+                                            <div key={day}>
+                                                <label className="block text-xs font-semibold text-gray-500 mb-1">{day}</label>
+                                                <input
+                                                    type="time"
+                                                    value={preferredTimes[day] || ""}
+                                                    onChange={(e) => handleTimeChange(day, e.target.value)}
+                                                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-primary outline-none"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
                     </div>
 

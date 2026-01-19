@@ -85,8 +85,38 @@ export default function AdminStudentsPage() {
                                         <td className="px-6 py-4 text-sm text-gray-600">
                                             {s.plannedSessions ? (
                                                 <div className="flex flex-col gap-0.5">
-                                                    <span><strong>{s.plannedSessions.sessionsPerWeek}</strong>/wk @ {s.plannedSessions.preferredTime || "TBD"}</span>
-                                                    <span className="text-xs text-gray-400">{s.plannedSessions.daysOfWeek.join(", ")}</span>
+                                                    <span><strong>{s.plannedSessions.sessionsPerWeek}</strong>/wk</span>
+                                                    {(() => {
+                                                        const preferredTime = s.plannedSessions.preferredTime;
+                                                        if (typeof preferredTime === 'string') {
+                                                            // Legacy format: single time
+                                                            return (
+                                                                <div className="flex flex-col gap-0.5">
+                                                                    <span>@ {preferredTime || "TBD"}</span>
+                                                                    <span className="text-xs text-gray-400">{s.plannedSessions.daysOfWeek.join(", ")}</span>
+                                                                </div>
+                                                            );
+                                                        } else if (preferredTime && typeof preferredTime === 'object') {
+                                                            // New format: Record<day, time>
+                                                            const times = preferredTime as Record<string, string>;
+                                                            const timeEntries = Object.entries(times).filter(([_, time]) => time);
+                                                            if (timeEntries.length > 0) {
+                                                                return (
+                                                                    <div className="flex flex-col gap-0.5 text-xs">
+                                                                        {timeEntries.map(([day, time]) => (
+                                                                            <span key={day} className="text-gray-500">
+                                                                                {day}: {time}
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
+                                                                );
+                                                            } else {
+                                                                return <span className="text-gray-400">Times TBD</span>;
+                                                            }
+                                                        } else {
+                                                            return <span className="text-gray-400">Times TBD</span>;
+                                                        }
+                                                    })()}
                                                 </div>
                                             ) : (
                                                 <span className="text-gray-400 italic">No schedule</span>
