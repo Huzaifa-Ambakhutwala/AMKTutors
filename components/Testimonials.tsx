@@ -8,18 +8,18 @@ import { GlowingEffect } from "@/components/ui/glowing-effect";
 
 const testimonials = [
     {
-        quote: "AMK Tutors has been a game-changer for my son. His math grades went from a C to an A in just one semester!",
-        author: "Sarah J.",
+        quote: "We’ve had a great experience with AMK Tutors for my son. The tutor is always on time, responsible, and comes with a very positive attitude. They are patient, supportive, and truly invested in my son’s learning and progress. We really appreciate their professionalism and dedication, and we’re very happy with the results so far.",
+        author: "Sonjoy Karmokar",
         role: "Parent",
     },
     {
-        quote: "The personalized attention my daughter receives is amazing. She actually looks forward to her tutoring sessions now.",
-        author: "Michael T.",
+        quote: "We have had a wonderful experience with AMK Tutors. Khadijah is kind, patient and has been such a great help to our son with Algebra I. She is easy to schedule with, always prepared and flexible when needed. Highly recommend!",
+        author: "Kelly Pitre",
         role: "Parent",
     },
     {
-        quote: "Professional, reliable, and effective. We saw immediate improvements in study habits and confidence.",
-        author: "Emily R.",
+        quote: "AMK Tutors has been awesome for my 8th grader. Math was getting pretty stressful, especially with Algebra, but the tutor breaks things down in a way that finally clicks. My kid actually feels comfortable asking questions now, which is a big deal for us. They’re super easy to work with and flexible about meeting at the library or at home. We’ve definitely seen better grades and a lot more confidence since starting sessions. Really happy we found them!",
+        author: "Max Kapoor",
         role: "Parent",
     },
 ];
@@ -46,7 +46,7 @@ export default function Testimonials() {
                     {testimonials.map((testimonial, index) => (
                         <MotionItem key={index}>
                             <motion.div
-                                className="relative bg-secondary/50 p-8 rounded-xl border border-yellow-300/20"
+                                className="relative bg-secondary/50 p-8 rounded-xl border border-yellow-300/20 h-full flex flex-col"
                                 whileHover={shouldReduceMotion ? undefined : cardHover}
                                 transition={{ duration: 0.2 }}
                             >
@@ -82,7 +82,7 @@ export default function Testimonials() {
                                         </motion.div>
                                 ))}
                             </div>
-                                <p className="text-gray-100 italic mb-6 relative z-10">"{testimonial.quote}"</p>
+                                <p className="text-gray-100 italic mb-6 relative z-10 flex-1">"{testimonial.quote}"</p>
                             <div className="relative z-10">
                                     <p className="font-bold text-white">{testimonial.author}</p>
                                     <p className="text-sm text-gray-200">{testimonial.role}</p>

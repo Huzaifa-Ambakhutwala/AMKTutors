@@ -4,6 +4,7 @@ import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
 import CursorGlow from "@/components/CursorGlow";
 import { DEFAULT_THEME_COLORS, LOCAL_STORAGE_KEY } from "@/lib/theme-constants";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -18,10 +19,12 @@ const openSans = Open_Sans({
 
 export const metadata: Metadata = {
   title: "AMK Tutors - Personalized Tutoring",
-  description: "Personalized Tutoring. Trusted Results. Expert tutors for Math, English, Science, and more.",
+  description:
+    "Personalized Tutoring. Trusted Results. Expert tutors for Math, English, Science, and more.",
   icons: {
     icon: "/logo.png",
   },
+  themeColor: "#800000",
 };
 
 export default function RootLayout({
@@ -77,6 +80,7 @@ export default function RootLayout({
         />
         <ThemeProvider>
           <CursorGlow glowSize={400} glowIntensity={0.4} glowColor="rgba(255, 255, 255, 0.6)" />
+          <ServiceWorkerRegister />
           {children}
         </ThemeProvider>
       </body>
