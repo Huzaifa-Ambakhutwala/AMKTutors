@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { UserRole } from "@/lib/types";
 
 export interface AuthUser {
@@ -65,6 +67,9 @@ export function useAuth(): UseAuthResult {
         method: "POST",
         credentials: "include",
       });
+      await signOut(auth);
+    } catch {
+      // Clear user even if request fails
     } finally {
       setUser(null);
     }

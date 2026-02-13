@@ -7,6 +7,8 @@ import Image from "next/image";
 import { Loader2, ArrowLeft, GraduationCap, Mail, Lock, Eye, EyeOff, Users, BookOpen, Award } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 function LoginForm() {
     const [email, setEmail] = useState("");
@@ -51,6 +53,15 @@ function LoginForm() {
 
             if (!res.ok) {
                 setError(data.error || "Invalid email or password");
+                return;
+            }
+
+            // Sign in the Firebase client so Firestore requests are authenticated (required for production)
+            try {
+                await signInWithEmailAndPassword(auth, email.trim(), password);
+            } catch (firebaseErr: unknown) {
+                console.error("Firebase client sign-in:", firebaseErr);
+                setError("Login succeeded but could not connect to data. Please refresh and try again.");
                 return;
             }
 
