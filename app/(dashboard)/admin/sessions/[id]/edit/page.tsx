@@ -8,6 +8,7 @@ import { useRouter, useParams } from "next/navigation";
 import { UserProfile, Student, Session } from "@/lib/types";
 import { Loader2, ArrowLeft, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { syncSessionToCalendar } from "@/lib/calendar-sync-client";
 
 export default function EditSessionPage() {
     const router = useRouter();
@@ -121,6 +122,7 @@ export default function EditSessionPage() {
                 location
             });
 
+            syncSessionToCalendar(sessionId, "update");
             router.push("/admin/sessions");
         } catch (e) {
             console.error(e);

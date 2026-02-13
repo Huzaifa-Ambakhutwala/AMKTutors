@@ -84,6 +84,9 @@ export interface Session {
     parentId?: string | null; // For linking assessments explicitly
     evaluationId?: string;
     cost?: number; // Fixed cost override (e.g. for assessments)
+
+    // Google Calendar sync
+    googleCalendarEventId?: string | null;
 }
 
 export interface InvoiceItem {

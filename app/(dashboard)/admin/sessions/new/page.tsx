@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { UserProfile, Student } from "@/lib/types";
 import { Loader2, ArrowLeft, Calendar } from "lucide-react";
 import Link from "next/link";
+import { syncSessionToCalendar } from "@/lib/calendar-sync-client";
 
 export default function NewSessionPage() {
     const router = useRouter();
@@ -67,7 +68,7 @@ export default function NewSessionPage() {
             const startDateTime = new Date(`${date}T${time}`);
             const endDateTime = new Date(startDateTime.getTime() + parseInt(duration) * 60000);
 
-            await addDoc(collection(db, "sessions"), {
+            const ref = await addDoc(collection(db, "sessions"), {
                 studentId: student.id,
                 studentName: student.name,
                 tutorId: tutor.uid,
@@ -82,6 +83,7 @@ export default function NewSessionPage() {
                 createdAt: new Date().toISOString()
             });
 
+            syncSessionToCalendar(ref.id, "create");
             router.push("/admin/sessions");
         } catch (e) {
             console.error(e);

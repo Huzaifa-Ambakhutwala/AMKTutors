@@ -8,6 +8,7 @@ import { Loader2, Calendar, Clock, RotateCcw, Edit, Trash2, Eye, Plus } from "lu
 import Link from "next/link";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import FloatingActionButton from "@/components/FloatingActionButton";
+import { syncSessionToCalendar } from "@/lib/calendar-sync-client";
 
 function groupSessionsByDate(sessions: Session[]): { date: string; label: string; sessions: Session[] }[] {
     const map = new Map<string, Session[]>();
@@ -44,6 +45,7 @@ export default function SessionsListPage() {
     const handleDelete = async (id: string) => {
         if (!confirm("Are you sure you want to delete this session?")) return;
         try {
+            await syncSessionToCalendar(id, "delete");
             await deleteDoc(doc(db, "sessions", id));
             setSessions(sessions.filter(s => s.id !== id));
         } catch (e) {

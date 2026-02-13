@@ -9,6 +9,7 @@ import { ArrowLeft, Save, User, UserCheck, BookOpen, Loader2 } from "lucide-reac
 import Link from "next/link";
 import { normalizeOptionalString } from "@/lib/utils";
 import { FormFeedback, InlineError } from "@/components/FormFeedback";
+import { syncSessionToCalendar } from "@/lib/calendar-sync-client";
 
 export default function EditEvaluationPage() {
     const router = useRouter();
@@ -156,6 +157,7 @@ export default function EditEvaluationPage() {
                     status: status,
                     cost: charge ? parseFloat(charge) : 0
                 });
+                syncSessionToCalendar(sessionDoc.id, "update");
             }
 
             setSuccessMsg("Evaluation updated successfully!");

@@ -10,6 +10,7 @@ import Link from "next/link";
 import { v4 as uuidv4 } from 'uuid';
 import { normalizeOptionalString } from "@/lib/utils";
 import { FormFeedback, InlineError } from "@/components/FormFeedback";
+import { syncSessionToCalendar } from "@/lib/calendar-sync-client";
 
 export default function NewEvaluationPage() {
     const router = useRouter();
@@ -144,7 +145,7 @@ export default function NewEvaluationPage() {
             const sessionStart = new Date(`${date}T12:00:00`);
             const sessionEnd = new Date(sessionStart.getTime() + 60 * 60000);
 
-            await addDoc(collection(db, "sessions"), {
+            const sessionRef = await addDoc(collection(db, "sessions"), {
                 studentId: parentMode === 'existing' ? "EVALUATION-PLACEHOLDER" : "NEW-EVALUATION",
                 studentName: studentName.trim(),
                 tutorId: tutor?.uid || "",
@@ -165,6 +166,7 @@ export default function NewEvaluationPage() {
                 cost: charge ? parseFloat(charge) : 0
             });
 
+            syncSessionToCalendar(sessionRef.id, "create");
             router.push("/admin/evaluations");
 
         } catch (e: any) {
