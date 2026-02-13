@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { Loader2, Save, Palette, RefreshCw, ChevronRight } from "lucide-react";
+import { db, auth, googleProvider } from "@/lib/firebase";
+import { onAuthStateChanged, linkWithPopup, User } from "firebase/auth";
+import { Loader2, Save, Palette, RefreshCw, ChevronRight, Link2, CheckCircle } from "lucide-react";
 import RoleGuard from "@/components/RoleGuard";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
@@ -26,6 +27,10 @@ const COLOR_LABELS: { key: keyof ColorSettings; label: string; hint: string }[] 
 export default function SettingsPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+    const [linkLoading, setLinkLoading] = useState(false);
+    const [linkError, setLinkError] = useState<string | null>(null);
+    const [linkSuccess, setLinkSuccess] = useState(false);
     const [colors, setColors] = useState<ColorSettings>({
         primary: "#1A2742",
         secondary: "#800000",
@@ -38,6 +43,35 @@ export default function SettingsPage() {
     useEffect(() => {
         loadColors();
     }, []);
+
+    useEffect(() => {
+        const unsub = onAuthStateChanged(auth, setFirebaseUser);
+        return () => unsub();
+    }, []);
+
+    const hasGoogleProvider = firebaseUser?.providerData?.some((p) => p?.providerId === "google.com") ?? false;
+
+    const handleLinkGoogle = async () => {
+        if (!auth.currentUser) return;
+        setLinkLoading(true);
+        setLinkError(null);
+        setLinkSuccess(false);
+        try {
+            await linkWithPopup(auth.currentUser, googleProvider);
+            setLinkSuccess(true);
+        } catch (err: unknown) {
+            const e = err as { code?: string; message?: string };
+            if (e.code === "auth/credential-already-in-use") {
+                setLinkError("This Google account is already linked to another user.");
+            } else if (e.code === "auth/popup-closed-by-user") {
+                setLinkError(null);
+            } else {
+                setLinkError(e.message ?? "Failed to link Google account.");
+            }
+        } finally {
+            setLinkLoading(false);
+        }
+    };
 
     const loadColors = async () => {
         setLoading(true);
@@ -151,9 +185,45 @@ export default function SettingsPage() {
         <RoleGuard allowedRoles={['ADMIN']}>
             <div className="w-full max-w-full overflow-x-hidden p-4 md:p-8">
                 <div className="mb-6 md:mb-8">
-                    <h1 className="text-2xl md:text-3xl font-bold font-heading mb-2">Theme Colors</h1>
-                    <p className="text-gray-600">Customize the color scheme. Changes apply in real-time.</p>
+                    <h1 className="text-2xl md:text-3xl font-bold font-heading mb-2">Settings</h1>
+                    <p className="text-gray-600">Account and theme options.</p>
                 </div>
+
+                {/* Account - Link Google */}
+                <section className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+                    <div className="px-4 md:px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                        <Link2 className="text-primary" size={20} />
+                        <h2 className="text-lg font-semibold text-gray-900">Account</h2>
+                    </div>
+                    <div className="p-4 md:p-6">
+                        <p className="text-sm text-gray-600 mb-3">
+                            Sign-in methods: {firebaseUser?.providerData?.map((p) => p?.providerId === "google.com" ? "Google" : "Email").filter(Boolean).join(", ") || "—"}
+                        </p>
+                        {hasGoogleProvider ? (
+                            <div className="flex items-center gap-2 text-green-700 text-sm">
+                                <CheckCircle size={18} />
+                                <span>Google account linked. You can sign in with Google or email.</span>
+                            </div>
+                        ) : (
+                            <>
+                                <p className="text-sm text-gray-600 mb-3">
+                                    Link your Google account to sign in with Google in the future.
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={handleLinkGoogle}
+                                    disabled={linkLoading}
+                                    className="flex items-center justify-center gap-2 min-h-[48px] px-4 py-3 border-2 border-gray-200 rounded-xl font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                                >
+                                    {linkLoading ? <Loader2 className="animate-spin" size={20} /> : null}
+                                    Link Google to my account
+                                </button>
+                                {linkError && <p className="mt-2 text-sm text-red-600">{linkError}</p>}
+                                {linkSuccess && <p className="mt-2 text-sm text-green-600 flex items-center gap-1"><CheckCircle size={16} /> Google linked successfully.</p>}
+                            </>
+                        )}
+                    </div>
+                </section>
 
                 {/* Theme section - grouped card */}
                 <section className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
