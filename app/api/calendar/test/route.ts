@@ -38,7 +38,6 @@ export async function GET() {
         id: calendarRes.data.id,
         summary: calendarRes.data.summary,
         timeZone: calendarRes.data.timeZone,
-        accessRole: calendarRes.data.accessRole,
       };
     } catch (err: any) {
       return NextResponse.json(
