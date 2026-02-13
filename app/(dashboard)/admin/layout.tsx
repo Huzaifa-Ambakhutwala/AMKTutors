@@ -2,6 +2,7 @@
 
 import AdminSidebar from "@/components/AdminSidebar";
 import RoleGuard from "@/components/RoleGuard";
+import BottomNav from "@/components/BottomNav";
 import { Sidebar } from "@/components/ui/sidebar";
 import { useSidebar } from "@/components/ui/sidebar";
 import { motion } from "framer-motion";
@@ -33,12 +34,12 @@ function MainContent({ children }: { children: React.ReactNode }) {
 
     return (
         <motion.main
-            className="flex-1 min-h-screen transition-all duration-300 w-full pt-14 md:pt-0"
+            className="flex-1 min-h-screen transition-all duration-300 w-full pt-14 md:pt-0 pb-16 md:pb-0"
             animate={{
                 marginLeft: isDesktop ? (open ? "300px" : "64px") : "0px",
             }}
         >
-            <div className="p-6">
+            <div className="p-4 md:p-6 max-w-full overflow-x-hidden">
                 {children}
             </div>
         </motion.main>
@@ -51,7 +52,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return (
         <RoleGuard allowedRoles={['ADMIN']}>
             <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} animate={true}>
-                <div className="min-h-screen bg-gray-50 flex">
+                <div className="min-h-screen bg-gray-50 flex safe-area-inset-top">
                     {/* Sidebar - handles both desktop and mobile */}
                     <AdminSidebar onClose={() => setSidebarOpen(false)} />
 
@@ -59,6 +60,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <MainContent>
                         {children}
                     </MainContent>
+                    
+                    {/* Bottom Navigation - Mobile Only */}
+                    <BottomNav />
                 </div>
             </Sidebar>
         </RoleGuard>

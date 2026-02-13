@@ -7,6 +7,7 @@ import { db } from "@/lib/firebase";
 import { Session } from "@/lib/types";
 import { Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, User, GraduationCap, Clock } from "lucide-react";
 import Link from "next/link";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 // Helper to get days in month
 const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
@@ -22,9 +23,11 @@ const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 export default function AdminCalendarPage() {
     const [loading, setLoading] = useState(true);
     const [sessions, setSessions] = useState<Session[]>([]);
+    const isMobile = useIsMobile();
 
     // Calendar State
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -104,52 +107,195 @@ export default function AdminCalendarPage() {
         return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     };
 
-    return (
-        <RoleGuard allowedRoles={['ADMIN']}>
-            <div className="p-8 max-w-[1600px] mx-auto h-full flex flex-col">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                    <div>
-                        <h1 className="text-3xl font-bold font-heading text-gray-900 flex items-center gap-2">
-                            <CalendarIcon size={28} className="text-primary" />
-                            Calendar
-                        </h1>
-                        <p className="text-gray-500 text-sm mt-1">Manage and view upcoming tutoring sessions</p>
-                    </div>
+    const formatDate = (iso: string) => {
+        const d = new Date(iso);
+        return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    };
 
-                    <div className="flex items-center gap-2 bg-white p-1 rounded-lg border border-gray-200 shadow-sm">
-                        <button onClick={prevMonth} className="p-2 hover:bg-gray-100 rounded-md text-gray-600">
+    // Get sessions for agenda view (next 7 days or selected date)
+    const getAgendaSessions = () => {
+        if (selectedDate) {
+            return sessions.filter(s => {
+                const d = new Date(s.startTime);
+                return d.toDateString() === selectedDate.toDateString();
+            }).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+        }
+        
+        // Show next 7 days
+        const today = new Date();
+        const nextWeek = new Date(today);
+        nextWeek.setDate(today.getDate() + 7);
+        
+        return sessions
+            .filter(s => {
+                const d = new Date(s.startTime);
+                return d >= today && d <= nextWeek;
+            })
+            .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+    };
+
+    const renderMobileAgenda = () => {
+        const agendaSessions = getAgendaSessions();
+        
+        return (
+            <div className="space-y-4">
+                {/* Date Selector */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                    <div className="flex items-center justify-between mb-4">
+                        <button 
+                            onClick={prevMonth}
+                            className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 min-h-[48px] min-w-[48px] flex items-center justify-center"
+                        >
                             <ChevronLeft size={20} />
                         </button>
-                        <span className="min-w-[140px] text-center font-bold text-gray-800">
+                        <span className="font-bold text-gray-800 text-lg">
                             {MONTH_NAMES[month]} {year}
                         </span>
-                        <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-md text-gray-600">
+                        <button 
+                            onClick={nextMonth}
+                            className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 min-h-[48px] min-w-[48px] flex items-center justify-center"
+                        >
                             <ChevronRight size={20} />
                         </button>
-                        <div className="w-px h-6 bg-gray-200 mx-1"></div>
-                        <button onClick={goToToday} className="px-3 py-1.5 text-sm font-medium hover:bg-gray-100 rounded-md text-gray-600">
-                            Today
-                        </button>
                     </div>
+                    
+                    {/* Compact Week View */}
+                    <div className="grid grid-cols-7 gap-1 mb-4">
+                        {WEEKDAYS.map((day, idx) => {
+                            const dayNum = idx - startDay + 1;
+                            if (dayNum < 1 || dayNum > daysInMonth) {
+                                return <div key={day} className="aspect-square"></div>;
+                            }
+                            
+                            const daySessions = getSessionsForDay(dayNum);
+                            const isToday = dayNum === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
+                            const isSelected = selectedDate && dayNum === selectedDate.getDate() && month === selectedDate.getMonth() && year === selectedDate.getFullYear();
+                            
+                            return (
+                                <button
+                                    key={day}
+                                    onClick={() => setSelectedDate(new Date(year, month, dayNum))}
+                                    className={`aspect-square rounded-lg flex flex-col items-center justify-center p-1 min-h-[48px] transition-colors ${
+                                        isSelected 
+                                            ? 'bg-primary text-white' 
+                                            : isToday 
+                                            ? 'bg-blue-50 text-primary font-bold' 
+                                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    <span className="text-xs font-medium mb-0.5">{day}</span>
+                                    <span className={`text-sm font-bold ${isSelected ? 'text-white' : ''}`}>{dayNum}</span>
+                                    {daySessions.length > 0 && (
+                                        <span className={`text-[10px] mt-0.5 ${isSelected ? 'text-white' : 'text-primary'}`}>
+                                            {daySessions.length}
+                                        </span>
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+                    
+                    <button 
+                        onClick={goToToday}
+                        className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[48px]"
+                    >
+                        Today
+                    </button>
+                </div>
+
+                {/* Sessions List */}
+                <div className="space-y-3">
+                    {agendaSessions.length === 0 ? (
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+                            <p className="text-gray-500">No sessions scheduled</p>
+                        </div>
+                    ) : (
+                        agendaSessions.map(session => (
+                            <Link
+                                key={session.id}
+                                href={`/admin/sessions/${session.id}`}
+                                className="block bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow"
+                            >
+                                <div className="flex items-start justify-between mb-2">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <Clock size={16} className="text-gray-400" />
+                                            <span className="font-semibold text-gray-900">
+                                                {formatTime(session.startTime)} - {formatTime(session.endTime)}
+                                            </span>
+                                        </div>
+                                        <h3 className="font-bold text-lg text-gray-900 mb-1">{session.studentName}</h3>
+                                        <p className="text-sm text-gray-600">{session.subject}</p>
+                                    </div>
+                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                                        session.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
+                                        session.status === 'Completed' ? 'bg-green-100 text-green-700' :
+                                        'bg-blue-100 text-blue-700'
+                                    }`}>
+                                        {session.status}
+                                    </span>
+                                </div>
+                                {session.location && (
+                                    <div className="flex items-center gap-2 text-sm text-gray-500 mt-2">
+                                        <MapPin size={14} />
+                                        <span>{session.location}</span>
+                                    </div>
+                                )}
+                            </Link>
+                        ))
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    return (
+        <RoleGuard allowedRoles={['ADMIN']}>
+            <div className="w-full max-w-full overflow-x-hidden">
+                <div className="mb-6">
+                    <h1 className="text-2xl md:text-3xl font-bold font-heading text-gray-900 flex items-center gap-2 mb-2">
+                        <CalendarIcon size={24} className="text-primary" />
+                        Calendar
+                    </h1>
+                    <p className="text-gray-500 text-sm">Manage and view upcoming tutoring sessions</p>
                 </div>
 
                 {loading ? (
-                    <div className="flex-1 flex justify-center items-center h-64 bg-white rounded-xl border border-gray-100 shadow-sm">
+                    <div className="flex justify-center items-center h-64 bg-white rounded-xl border border-gray-100 shadow-sm">
                         <Loader2 className="animate-spin text-primary" size={32} />
                     </div>
+                ) : isMobile ? (
+                    renderMobileAgenda()
                 ) : (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-                        {/* Weekday Header */}
-                        <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
-                            {WEEKDAYS.map(day => (
-                                <div key={day} className="py-3 text-center text-sm font-semibold text-gray-500 uppercase tracking-wider">
-                                    {day}
-                                </div>
-                            ))}
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                            <button onClick={prevMonth} className="p-2 hover:bg-gray-100 rounded-md text-gray-600 min-h-[48px] min-w-[48px] flex items-center justify-center">
+                                <ChevronLeft size={20} />
+                            </button>
+                            <span className="min-w-[140px] text-center font-bold text-gray-800 text-lg">
+                                {MONTH_NAMES[month]} {year}
+                            </span>
+                            <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-md text-gray-600 min-h-[48px] min-w-[48px] flex items-center justify-center">
+                                <ChevronRight size={20} />
+                            </button>
+                            <div className="w-px h-6 bg-gray-200 mx-1"></div>
+                            <button onClick={goToToday} className="px-4 py-2 text-sm font-medium hover:bg-gray-100 rounded-md text-gray-600 min-h-[48px]">
+                                Today
+                            </button>
                         </div>
 
-                        {/* Calendar Grid */}
-                        <div className="grid grid-cols-7 auto-rows-fr bg-gray-200 gap-px border-b border-gray-200">
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                            {/* Weekday Header */}
+                            <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
+                                {WEEKDAYS.map(day => (
+                                    <div key={day} className="py-3 text-center text-sm font-semibold text-gray-500 uppercase tracking-wider">
+                                        {day}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Calendar Grid */}
+                            <div className="grid grid-cols-7 auto-rows-fr bg-gray-200 gap-px border-b border-gray-200">
                             {calendarCells.map((day, idx) => {
                                 if (day === null) {
                                     return <div key={`empty-${idx}`} className="bg-gray-50 min-h-[120px]"></div>;
@@ -221,6 +367,7 @@ export default function AdminCalendarPage() {
                                     </div>
                                 );
                             })}
+                            </div>
                         </div>
                     </div>
                 )}

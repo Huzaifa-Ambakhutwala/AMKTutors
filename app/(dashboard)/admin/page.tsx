@@ -159,11 +159,11 @@ export default function AdminDashboard() {
 
     return (
         <RoleGuard allowedRoles={['ADMIN']}>
-            <div className="p-8">
-                <h1 className="text-3xl font-bold font-heading mb-8">Admin Dashboard</h1>
+            <div className="w-full max-w-full overflow-x-hidden">
+                <h1 className="text-2xl md:text-3xl font-bold font-heading mb-6 md:mb-8">Admin Dashboard</h1>
 
                 {/* KPI Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
                     <KPICard
                         icon={DollarSign}
                         title="Monthly Revenue"
@@ -195,10 +195,10 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Weekly Session Volume Chart */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-xl font-bold">Weekly Session Volume</h2>
-                        <button className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors">
+                <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100 mb-6 md:mb-8">
+                    <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 md:mb-6 gap-4">
+                        <h2 className="text-lg md:text-xl font-bold">Weekly Session Volume</h2>
+                        <button className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors min-h-[48px] w-full md:w-auto">
                             Preview
                         </button>
                     </div>
@@ -231,10 +231,10 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Recent Invoices and Pending Pay Stubs */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
                     {/* Recent Invoices */}
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h2 className="text-xl font-bold mb-4">Recent Invoices</h2>
+                    <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h2 className="text-lg md:text-xl font-bold mb-4">Recent Invoices</h2>
                         {recentInvoices.length === 0 ? (
                             <p className="text-gray-500 text-sm">No invoices yet</p>
                         ) : (
@@ -274,8 +274,8 @@ export default function AdminDashboard() {
                     </div>
 
                     {/* Pending Pay Stubs */}
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h2 className="text-xl font-bold mb-4">Pending Pay Stubs</h2>
+                    <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h2 className="text-lg md:text-xl font-bold mb-4">Pending Pay Stubs</h2>
                         {pendingPayStubs.length === 0 ? (
                             <p className="text-gray-500 text-sm">No pending pay stubs</p>
                         ) : (
@@ -332,7 +332,7 @@ function KPICard({ icon: Icon, title, value, change, color }: {
     const ChangeIcon = isPositive ? ArrowUpRight : ArrowDownRight;
 
     return (
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <Link href="#" className="block bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow min-h-[140px]">
             <div className="flex items-center justify-between mb-4">
                 <div className={`${color} p-3 rounded-lg text-white shadow-sm`}>
                     <Icon size={20} />
@@ -344,8 +344,8 @@ function KPICard({ icon: Icon, title, value, change, color }: {
             </div>
             <div>
                 <p className="text-gray-500 text-sm font-medium mb-1">{title}</p>
-                <p className="text-2xl font-bold text-gray-900">{value}</p>
+                <p className="text-xl md:text-2xl font-bold text-gray-900">{value}</p>
             </div>
-        </div>
+        </Link>
     );
 }

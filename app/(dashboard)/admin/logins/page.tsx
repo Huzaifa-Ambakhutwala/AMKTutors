@@ -8,6 +8,7 @@ import { UserProfile } from "@/lib/types";
 import { Loader2, Shield, Key, Trash2, Mail, Edit, Plus, Link as LinkIcon, Check } from "lucide-react";
 import { getInviteLink } from "@/lib/utils";
 import { v4 as uuidv4 } from "uuid";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 export default function ManageLoginsPage() {
     const [users, setUsers] = useState<UserProfile[]>([]);
@@ -15,6 +16,7 @@ export default function ManageLoginsPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
     const router = useRouter();
+    const isMobile = useIsMobile();
 
     // Approval State
     const [selectedRole, setSelectedRole] = useState<Record<string, string>>({});
@@ -169,83 +171,182 @@ export default function ManageLoginsPage() {
         u.email?.toLowerCase().includes(searchTerm.toLowerCase())
     ));
 
-    return (
-        <div className="p-8">
-            <div className="flex justify-between items-center mb-8">
-                <h1 className="text-3xl font-bold font-heading">Manage Logins</h1>
-                <div className="flex gap-4 items-center">
-                    <button
-                        onClick={handleAddAdmin}
-                        className="bg-purple-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-purple-700 transition-colors flex items-center gap-2 shadow-sm"
-                    >
-                        <Plus size={18} /> Add Admin
-                    </button>
+    const renderMobileUserCard = (user: UserProfile, isPending: boolean = false) => (
+        <div key={user.uid} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
+            <div className="flex justify-between items-start mb-3">
+                <div className="flex-1">
+                    <h3 className="text-lg font-bold text-gray-900 mb-1">{user.name || "N/A"}</h3>
+                    <p className="text-sm text-gray-600 mb-1">{user.email}</p>
+                    {!isPending && (
+                        <p className="text-xs text-gray-400 font-mono">{user.uid.slice(0, 12)}...</p>
+                    )}
                 </div>
+                <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                    user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' :
+                    user.role === 'TUTOR' ? 'bg-blue-100 text-blue-700' :
+                    'bg-green-100 text-green-700'
+                }`}>
+                    {user.role}
+                </span>
+            </div>
+            
+            {isPending ? (
+                <div className="space-y-3 pt-3 border-t border-gray-100">
+                    <p className="text-xs text-gray-500">
+                        Joined: {new Date(user.createdAt || "").toLocaleDateString()}
+                    </p>
+                    <select
+                        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary min-h-[48px]"
+                        onChange={(e) => setSelectedRole({ ...selectedRole, [user.uid]: e.target.value })}
+                        defaultValue=""
+                    >
+                        <option value="" disabled>Select Role...</option>
+                        <option value="PARENT">Parent</option>
+                        <option value="TUTOR">Tutor</option>
+                        <option value="ADMIN">Admin</option>
+                    </select>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => handleApprove(user.uid)}
+                            className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg text-sm font-bold shadow-sm transition-colors min-h-[48px]"
+                        >
+                            Approve
+                        </button>
+                        <button
+                            onClick={() => handleDelete(user.uid)}
+                            className="flex-1 bg-red-100 hover:bg-red-200 text-red-700 px-4 py-3 rounded-lg text-sm font-bold transition-colors min-h-[48px]"
+                        >
+                            Reject
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <div className="space-y-3 pt-3 border-t border-gray-100">
+                    {user.status === 'registered' ? (
+                        <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">
+                            <Shield size={12} /> Registered
+                        </span>
+                    ) : (
+                        <span className="inline-flex items-center gap-1 bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold">
+                            <Mail size={12} /> Invited
+                        </span>
+                    )}
+                    
+                    <div className="flex flex-wrap gap-2">
+                        {user.status !== 'registered' && (
+                            <button
+                                onClick={() => handleCopyInvite(user)}
+                                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[48px] flex items-center justify-center gap-2"
+                            >
+                                {copiedEmail === user.email ? <Check size={16} className="text-green-600" /> : <LinkIcon size={16} />}
+                                {copiedEmail === user.email ? "Copied" : "Invite"}
+                            </button>
+                        )}
+                        <button
+                            onClick={() => handleResetPassword(user.email)}
+                            className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[48px] flex items-center justify-center gap-2"
+                        >
+                            <Key size={16} /> Reset
+                        </button>
+                        <button
+                            onClick={() => handleEdit(user)}
+                            className="flex-1 bg-primary hover:bg-accent text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[48px] flex items-center justify-center gap-2"
+                        >
+                            <Edit size={16} /> Edit
+                        </button>
+                        <button 
+                            onClick={() => handleDelete(user.uid)} 
+                            className="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center"
+                        >
+                            <Trash2 size={16} />
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+
+    return (
+        <div className="w-full max-w-full overflow-x-hidden">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
+                <h1 className="text-2xl md:text-3xl font-bold font-heading">Manage Logins</h1>
+                <button
+                    onClick={handleAddAdmin}
+                    className="bg-purple-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-purple-700 transition-colors flex items-center justify-center gap-2 shadow-sm min-h-[48px] w-full md:w-auto"
+                >
+                    <Plus size={18} /> Add Admin
+                </button>
             </div>
 
             {/* Pending Approvals Section */}
             {pendingUsers.length > 0 && (
-                <div className="mb-12 bg-orange-50 border border-orange-200 rounded-xl overflow-hidden p-6">
-                    <h2 className="text-xl font-bold text-orange-800 mb-4 flex items-center gap-2">
-                        <Shield size={24} /> Pending Approvals ({pendingUsers.length})
+                <div className="mb-8 bg-orange-50 border border-orange-200 rounded-xl overflow-hidden p-4 md:p-6">
+                    <h2 className="text-lg md:text-xl font-bold text-orange-800 mb-4 flex items-center gap-2">
+                        <Shield size={20} /> Pending Approvals ({pendingUsers.length})
                     </h2>
-                    <div className="bg-white rounded-lg border border-orange-100 shadow-sm">
-                        <table className="w-full text-left">
-                            <thead className="bg-orange-50/50 border-b border-orange-100">
-                                <tr>
-                                    <th className="px-6 py-3 font-semibold text-orange-900">Email</th>
-                                    <th className="px-6 py-3 font-semibold text-orange-900">Date Joined</th>
-                                    <th className="px-6 py-3 font-semibold text-orange-900">Assign Role</th>
-                                    <th className="px-6 py-3 font-semibold text-orange-900">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {pendingUsers.map(user => (
-                                    <tr key={user.uid} className="hover:bg-orange-50/30">
-                                        <td className="px-6 py-4 font-medium text-gray-900">{user.email}</td>
-                                        <td className="px-6 py-4 text-gray-500">{new Date(user.createdAt || "").toLocaleDateString()}</td>
-                                        <td className="px-6 py-4">
-                                            <select
-                                                className="border border-gray-300 rounded px-2 py-1 text-sm outline-none focus:border-primary"
-                                                onChange={(e) => setSelectedRole({ ...selectedRole, [user.uid]: e.target.value })}
-                                                defaultValue=""
-                                            >
-                                                <option value="" disabled>Select Role...</option>
-                                                <option value="PARENT">Parent</option>
-                                                <option value="TUTOR">Tutor</option>
-                                                <option value="ADMIN">Admin</option>
-                                            </select>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => handleApprove(user.uid)}
-                                                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm font-bold shadow-sm transition-colors"
-                                                >
-                                                    Approve
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(user.uid)}
-                                                    className="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded text-sm font-bold transition-colors"
-                                                >
-                                                    Reject
-                                                </button>
-                                            </div>
-                                        </td>
+                    {isMobile ? (
+                        <div className="space-y-4">
+                            {pendingUsers.map(user => renderMobileUserCard(user, true))}
+                        </div>
+                    ) : (
+                        <div className="bg-white rounded-lg border border-orange-100 shadow-sm overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead className="bg-orange-50/50 border-b border-orange-100">
+                                    <tr>
+                                        <th className="px-6 py-3 font-semibold text-orange-900">Email</th>
+                                        <th className="px-6 py-3 font-semibold text-orange-900">Date Joined</th>
+                                        <th className="px-6 py-3 font-semibold text-orange-900">Assign Role</th>
+                                        <th className="px-6 py-3 font-semibold text-orange-900">Action</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    {pendingUsers.map(user => (
+                                        <tr key={user.uid} className="hover:bg-orange-50/30">
+                                            <td className="px-6 py-4 font-medium text-gray-900">{user.email}</td>
+                                            <td className="px-6 py-4 text-gray-500">{new Date(user.createdAt || "").toLocaleDateString()}</td>
+                                            <td className="px-6 py-4">
+                                                <select
+                                                    className="border border-gray-300 rounded px-2 py-1 text-sm outline-none focus:border-primary min-h-[48px]"
+                                                    onChange={(e) => setSelectedRole({ ...selectedRole, [user.uid]: e.target.value })}
+                                                    defaultValue=""
+                                                >
+                                                    <option value="" disabled>Select Role...</option>
+                                                    <option value="PARENT">Parent</option>
+                                                    <option value="TUTOR">Tutor</option>
+                                                    <option value="ADMIN">Admin</option>
+                                                </select>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => handleApprove(user.uid)}
+                                                        className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm font-bold shadow-sm transition-colors min-h-[48px]"
+                                                    >
+                                                        Approve
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(user.uid)}
+                                                        className="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded text-sm font-bold transition-colors min-h-[48px]"
+                                                    >
+                                                        Reject
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
             )}
 
             <div className="mb-6">
-                <h2 className="text-xl font-bold mb-4">Active Users</h2>
+                <h2 className="text-lg md:text-xl font-bold mb-4">Active Users</h2>
                 <input
                     type="text"
                     placeholder="Search by name or email..."
-                    className="w-full max-w-md px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full max-w-md px-4 py-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-primary min-h-[48px]"
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
                 />
@@ -253,78 +354,90 @@ export default function ManageLoginsPage() {
 
             {loading ? (
                 <div className="flex justify-center p-12"><Loader2 className="animate-spin" /></div>
+            ) : isMobile ? (
+                <div className="space-y-4">
+                    {activeUsers.length === 0 ? (
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+                            <p className="text-gray-500">No users found</p>
+                        </div>
+                    ) : (
+                        activeUsers.map(user => renderMobileUserCard(user))
+                    )}
+                </div>
             ) : (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                    <table className="w-full text-left">
-                        <thead className="bg-gray-50 border-b border-gray-100">
-                            <tr>
-                                <th className="px-6 py-4 font-semibold text-gray-700">User</th>
-                                <th className="px-6 py-4 font-semibold text-gray-700">Role</th>
-                                <th className="px-6 py-4 font-semibold text-gray-700">Login Email</th>
-                                <th className="px-6 py-4 font-semibold text-gray-700">Status</th>
-                                <th className="px-6 py-4 font-semibold text-gray-700">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                            {activeUsers.map((user) => (
-                                <tr key={user.uid} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-4 font-medium text-gray-900">
-                                        {user.name || "N/A"}
-                                        <div className="text-xs text-gray-400 font-mono mt-0.5">{user.uid.slice(0, 8)}...</div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${activeUsers.length > 0 && user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' :
-                                            user.role === 'TUTOR' ? 'bg-blue-100 text-blue-700' :
-                                                'bg-green-100 text-green-700'
-                                            }`}>
-                                            {user.role}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-gray-600">{user.email}</td>
-                                    <td className="px-6 py-4">
-                                        {user.status === 'registered' ? (
-                                            <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-fit">
-                                                <Shield size={12} /> Registered
-                                            </span>
-                                        ) : (
-                                            <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-fit">
-                                                <Mail size={12} /> Invited
-                                            </span>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4 flex items-center gap-3">
-                                        {user.status !== 'registered' && (
-                                            <button
-                                                onClick={() => handleCopyInvite(user)}
-                                                className="text-gray-500 hover:text-green-600 tooltip flex items-center gap-1 text-sm font-medium"
-                                                title="Copy Invite Link"
-                                            >
-                                                {copiedEmail === user.email ? <Check size={16} className="text-green-600" /> : <LinkIcon size={16} />}
-                                                {copiedEmail === user.email ? "Copied" : "Invite"}
-                                            </button>
-                                        )}
-                                        <button
-                                            onClick={() => handleResetPassword(user.email)}
-                                            className="text-gray-500 hover:text-blue-600 tooltip flex items-center gap-1 text-sm font-medium"
-                                            title="Send Password Reset Email"
-                                        >
-                                            <Key size={16} /> Reset
-                                        </button>
-                                        <button
-                                            onClick={() => handleEdit(user)}
-                                            className="text-gray-500 hover:text-blue-600 tooltip flex items-center gap-1 text-sm font-medium"
-                                            title="Edit Profile"
-                                        >
-                                            <Edit size={16} /> Edit
-                                        </button>
-                                        <button onClick={() => handleDelete(user.uid)} className="text-gray-500 hover:text-red-500" title="Delete Account">
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </td>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-gray-50 border-b border-gray-100">
+                                <tr>
+                                    <th className="px-6 py-4 font-semibold text-gray-700">User</th>
+                                    <th className="px-6 py-4 font-semibold text-gray-700">Role</th>
+                                    <th className="px-6 py-4 font-semibold text-gray-700">Login Email</th>
+                                    <th className="px-6 py-4 font-semibold text-gray-700">Status</th>
+                                    <th className="px-6 py-4 font-semibold text-gray-700">Actions</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {activeUsers.map((user) => (
+                                    <tr key={user.uid} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-6 py-4 font-medium text-gray-900">
+                                            {user.name || "N/A"}
+                                            <div className="text-xs text-gray-400 font-mono mt-0.5">{user.uid.slice(0, 8)}...</div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${activeUsers.length > 0 && user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' :
+                                                user.role === 'TUTOR' ? 'bg-blue-100 text-blue-700' :
+                                                    'bg-green-100 text-green-700'
+                                                }`}>
+                                                {user.role}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-600">{user.email}</td>
+                                        <td className="px-6 py-4">
+                                            {user.status === 'registered' ? (
+                                                <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-fit">
+                                                    <Shield size={12} /> Registered
+                                                </span>
+                                            ) : (
+                                                <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-fit">
+                                                    <Mail size={12} /> Invited
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 flex items-center gap-3">
+                                            {user.status !== 'registered' && (
+                                                <button
+                                                    onClick={() => handleCopyInvite(user)}
+                                                    className="text-gray-500 hover:text-green-600 tooltip flex items-center gap-1 text-sm font-medium min-h-[48px]"
+                                                    title="Copy Invite Link"
+                                                >
+                                                    {copiedEmail === user.email ? <Check size={16} className="text-green-600" /> : <LinkIcon size={16} />}
+                                                    {copiedEmail === user.email ? "Copied" : "Invite"}
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => handleResetPassword(user.email)}
+                                                className="text-gray-500 hover:text-blue-600 tooltip flex items-center gap-1 text-sm font-medium min-h-[48px]"
+                                                title="Send Password Reset Email"
+                                            >
+                                                <Key size={16} /> Reset
+                                            </button>
+                                            <button
+                                                onClick={() => handleEdit(user)}
+                                                className="text-gray-500 hover:text-blue-600 tooltip flex items-center gap-1 text-sm font-medium min-h-[48px]"
+                                                title="Edit Profile"
+                                            >
+                                                <Edit size={16} /> Edit
+                                            </button>
+                                            <button onClick={() => handleDelete(user.uid)} className="text-gray-500 hover:text-red-500 min-h-[48px] min-w-[48px] flex items-center justify-center" title="Delete Account">
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
         </div>
