@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Poppins, Open_Sans } from "next/font/google";
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
@@ -24,6 +24,9 @@ export const metadata: Metadata = {
   icons: {
     icon: "/logo.png",
   },
+};
+
+export const viewport: Viewport = {
   themeColor: "#800000",
 };
 

@@ -17,8 +17,15 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 md:hidden safe-area-inset-bottom">
-      <div className="flex items-center justify-around h-16 px-2">
+    <nav className="fixed bottom-4 left-4 right-4 z-50 md:hidden safe-area-inset-bottom">
+      <div 
+        className="flex items-center justify-around h-16 px-2 rounded-2xl shadow-lg border border-white/20"
+        style={{
+          background: "rgba(255, 255, 255, 0.72)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+        }}
+      >
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || (item.href !== "/admin" && pathname?.startsWith(item.href));

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import RoleGuard from "@/components/RoleGuard";
 import { collection, query, where, getDocs, orderBy, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -28,6 +28,7 @@ export default function AdminCalendarPage() {
     // Calendar State
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+    const datesScrollRef = useRef<HTMLDivElement>(null);
 
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -78,7 +79,16 @@ export default function AdminCalendarPage() {
     // Navigation
     const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
     const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
-    const goToToday = () => setCurrentDate(new Date());
+    const goToToday = () => {
+        const today = new Date();
+        setCurrentDate(today);
+        setSelectedDate(today);
+        // Scroll to today's date cell after a tick so DOM is updated
+        setTimeout(() => {
+            const el = document.getElementById(`day-${today.getDate()}-${today.getMonth()}-${today.getFullYear()}`);
+            el?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+        }, 100);
+    };
 
     // Calendar Grid Generation
     const daysInMonth = getDaysInMonth(year, month);
@@ -159,34 +169,35 @@ export default function AdminCalendarPage() {
                         </button>
                     </div>
                     
-                    {/* Compact Week View */}
-                    <div className="grid grid-cols-7 gap-1 mb-4">
-                        {WEEKDAYS.map((day, idx) => {
-                            const dayNum = idx - startDay + 1;
-                            if (dayNum < 1 || dayNum > daysInMonth) {
-                                return <div key={day} className="aspect-square"></div>;
-                            }
-                            
+                    {/* Horizontally scrollable dates */}
+                    <div
+                        ref={datesScrollRef}
+                        className="flex gap-2 overflow-x-auto pb-2 -mx-1 scroll-smooth snap-x snap-mandatory"
+                        style={{ WebkitOverflowScrolling: "touch" }}
+                    >
+                        {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((dayNum) => {
+                            const d = new Date(year, month, dayNum);
+                            const dayName = WEEKDAYS[d.getDay()];
                             const daySessions = getSessionsForDay(dayNum);
                             const isToday = dayNum === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
                             const isSelected = selectedDate && dayNum === selectedDate.getDate() && month === selectedDate.getMonth() && year === selectedDate.getFullYear();
-                            
                             return (
                                 <button
-                                    key={day}
+                                    key={dayNum}
+                                    id={`day-${dayNum}-${month}-${year}`}
                                     onClick={() => setSelectedDate(new Date(year, month, dayNum))}
-                                    className={`aspect-square rounded-lg flex flex-col items-center justify-center p-1 min-h-[48px] transition-colors ${
-                                        isSelected 
-                                            ? 'bg-primary text-white' 
-                                            : isToday 
-                                            ? 'bg-blue-50 text-primary font-bold' 
-                                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                                    className={`flex-shrink-0 snap-center w-14 min-w-[3.5rem] rounded-xl flex flex-col items-center justify-center py-2.5 px-1 min-h-[56px] transition-colors ${
+                                        isSelected
+                                            ? "bg-primary text-white shadow-md"
+                                            : isToday
+                                            ? "bg-blue-100 text-primary font-bold border-2 border-primary"
+                                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                                     }`}
                                 >
-                                    <span className="text-xs font-medium mb-0.5">{day}</span>
-                                    <span className={`text-sm font-bold ${isSelected ? 'text-white' : ''}`}>{dayNum}</span>
+                                    <span className="text-[10px] font-medium uppercase tracking-wide">{dayName}</span>
+                                    <span className="text-base font-bold mt-0.5">{dayNum}</span>
                                     {daySessions.length > 0 && (
-                                        <span className={`text-[10px] mt-0.5 ${isSelected ? 'text-white' : 'text-primary'}`}>
+                                        <span className={`text-[10px] mt-0.5 ${isSelected ? "text-white/90" : "text-primary"}`}>
                                             {daySessions.length}
                                         </span>
                                     )}
@@ -197,7 +208,7 @@ export default function AdminCalendarPage() {
                     
                     <button 
                         onClick={goToToday}
-                        className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[48px]"
+                        className="w-full bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors min-h-[48px] shadow-sm"
                     >
                         Today
                     </button>

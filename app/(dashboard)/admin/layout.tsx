@@ -34,7 +34,7 @@ function MainContent({ children }: { children: React.ReactNode }) {
 
     return (
         <motion.main
-            className="flex-1 min-h-screen transition-all duration-300 w-full pt-14 md:pt-0 pb-16 md:pb-0"
+            className="flex-1 min-h-screen transition-all duration-300 w-full pt-14 md:pt-0 pb-24 md:pb-0"
             animate={{
                 marginLeft: isDesktop ? (open ? "300px" : "64px") : "0px",
             }}
