@@ -175,13 +175,14 @@ export default function NewEvaluationPage() {
         }
     };
 
+    const inputClass = (err?: string) => `w-full px-4 py-3 min-h-[48px] border rounded-xl focus:ring-2 focus:ring-primary outline-none ${err ? "border-red-500" : "border-gray-300"}`;
     return (
-        <div className="max-w-4xl mx-auto p-8">
-            <Link href="/admin/evaluations" className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6 transition-colors">
+        <div className="w-full max-w-full overflow-x-hidden max-w-4xl mx-auto p-4 md:p-8 pb-24 md:pb-8">
+            <Link href="/admin/evaluations" className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6 min-h-[48px] items-center">
                 <ArrowLeft size={20} /> Back to List
             </Link>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-8">
                 <h1 className="text-2xl font-bold font-heading mb-6 flex items-center gap-2">
                     <BookOpen className="text-primary" /> New Evaluation
                 </h1>
@@ -200,19 +201,17 @@ export default function NewEvaluationPage() {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Student Name *</label>
                                 <input
                                     type="text"
-                                    className={`w-full p-2 border rounded-lg ${errors.studentName ? 'border-red-500' : 'border-gray-300'}`}
+                                    className={inputClass(errors.studentName)}
                                     value={studentName}
                                     onChange={e => setStudentName(e.target.value)}
                                 />
                                 <InlineError message={errors.studentName} />
                             </div>
-
-
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Grade</label>
                                 <input
                                     type="text"
-                                    className="w-full p-2 border rounded-lg border-gray-300"
+                                    className={inputClass()}
                                     value={studentGrade}
                                     onChange={e => setStudentGrade(e.target.value)}
                                     placeholder="e.g. 5th Grade"
@@ -260,7 +259,7 @@ export default function NewEvaluationPage() {
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Select Parent *</label>
                                 <select
-                                    className={`w-full p-2 border rounded-lg ${errors.selectedParentId ? 'border-red-500' : 'border-gray-300'}`}
+                                    className={inputClass(errors.selectedParentId)}
                                     value={selectedParentId}
                                     onChange={(e) => {
                                         const pid = e.target.value;
@@ -292,7 +291,7 @@ export default function NewEvaluationPage() {
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Parent Name *</label>
                                     <input
                                         type="text"
-                                        className={`w-full p-2 border rounded-lg ${errors.parentName ? 'border-red-500' : 'border-gray-300'}`}
+                                        className={inputClass(errors.parentName)}
                                         value={parentName}
                                         onChange={e => setParentName(e.target.value)}
                                     />
@@ -302,7 +301,7 @@ export default function NewEvaluationPage() {
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
                                     <input
                                         type="email"
-                                        className={`w-full p-2 border rounded-lg ${errors.parentEmail ? 'border-red-500' : 'border-gray-300'}`}
+                                        className={inputClass(errors.parentEmail)}
                                         value={parentEmail}
                                         onChange={e => setParentEmail(e.target.value)}
                                     />
@@ -312,7 +311,7 @@ export default function NewEvaluationPage() {
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
                                     <input
                                         type="tel"
-                                        className="w-full p-2 border rounded-lg border-gray-300"
+                                        className={inputClass()}
                                         value={parentPhone}
                                         onChange={e => setParentPhone(e.target.value)}
                                     />
@@ -331,7 +330,7 @@ export default function NewEvaluationPage() {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
                                 <input
                                     type="date"
-                                    className={`w-full p-2 border rounded-lg ${errors.date ? 'border-red-500' : 'border-gray-300'}`}
+                                    className={inputClass(errors.date)}
                                     value={date}
                                     onChange={e => setDate(e.target.value)}
                                 />
@@ -340,7 +339,7 @@ export default function NewEvaluationPage() {
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Tutor *</label>
                                 <select
-                                    className={`w-full p-2 border rounded-lg ${errors.tutorId ? 'border-red-500' : 'border-gray-300'}`}
+                                    className={inputClass(errors.tutorId)}
                                     value={tutorId}
                                     onChange={e => setTutorId(e.target.value)}
                                 >
@@ -355,26 +354,25 @@ export default function NewEvaluationPage() {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Subjects (comma separated) *</label>
                                 <input
                                     type="text"
-                                    className={`w-full p-2 border rounded-lg ${errors.subjects ? 'border-red-500' : 'border-gray-300'}`}
+                                    className={inputClass(errors.subjects)}
                                     value={subjects}
                                     onChange={e => setSubjects(e.target.value)}
                                     placeholder="Math, English, Science"
                                 />
                                 <InlineError message={errors.subjects} />
                             </div>
-
-
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Evaluation Charge ($)</label>
                                 <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <span className="text-gray-500 sm:text-sm">$</span>
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                        <span className="text-gray-500">$</span>
                                     </div>
                                     <input
                                         type="number"
                                         min="0"
                                         step="0.01"
-                                        className="w-full pl-7 p-2 border rounded-lg border-gray-300"
+                                        inputMode="decimal"
+                                        className="w-full pl-8 py-3 min-h-[48px] border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary outline-none"
                                         value={charge}
                                         onChange={e => setCharge(e.target.value)}
                                         placeholder="0.00"
@@ -384,7 +382,7 @@ export default function NewEvaluationPage() {
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Notes / Observations *</label>
                                 <textarea
-                                    className={`w-full p-2 border rounded-lg h-32 ${errors.notes ? 'border-red-500' : 'border-gray-300'}`}
+                                    className={`w-full p-4 min-h-[48px] border rounded-xl focus:ring-2 focus:ring-primary outline-none h-32 ${errors.notes ? "border-red-500" : "border-gray-300"}`}
                                     value={notes}
                                     onChange={e => setNotes(e.target.value)}
                                     placeholder="Detailed feedback..."
@@ -394,11 +392,11 @@ export default function NewEvaluationPage() {
                         </div>
                     </div>
 
-                    <div className="pt-4 flex justify-end">
+                    <div className="pt-6 flex flex-col-reverse sm:flex-row justify-end gap-3 sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur py-4 border-t border-gray-100 -mx-4 px-4 md:mx-0 md:px-0 safe-area-pb">
                         <button
                             type="submit"
                             disabled={loading}
-                            className="bg-primary text-white px-8 py-3 rounded-lg font-bold hover:bg-accent disabled:opacity-50 flex items-center gap-2 shadow-lg hover:shadow-xl transition-all"
+                            className="w-full sm:w-auto bg-primary text-white px-8 py-3 min-h-[48px] rounded-xl font-bold hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg"
                         >
                             {loading ? <Loader2 className="animate-spin" /> : <Save />}
                             Create Evaluation

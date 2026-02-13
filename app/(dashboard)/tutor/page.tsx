@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import RoleGuard from "@/components/RoleGuard";
 import { collection, query, where, getDocs } from "firebase/firestore";
-import { db, auth } from "@/lib/firebase";
-import { signOut } from "firebase/auth";
+import { db } from "@/lib/firebase";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/hooks/useAuth";
 import { Session } from "@/lib/types";
 import { Loader2, ArrowLeft, MessageSquare, X, LogOut, CheckCircle } from "lucide-react";
 import Link from "next/link";
@@ -14,6 +14,7 @@ import ManageSessionModal from "@/components/ManageSessionModal";
 
 export default function TutorDashboard() {
     const { user, profileId } = useUserRole();
+    const { logout } = useAuth();
     const router = useRouter();
     const [sessions, setSessions] = useState<Session[]>([]);
     const [loading, setLoading] = useState(true);
@@ -45,8 +46,8 @@ export default function TutorDashboard() {
     }, [user, profileId]);
 
     const handleLogout = async () => {
-        await signOut(auth);
-        router.push("/");
+        await logout();
+        router.push("/login");
     };
 
     const handleSessionUpdate = (updatedSession: Session) => {

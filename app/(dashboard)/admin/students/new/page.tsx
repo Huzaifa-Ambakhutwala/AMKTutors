@@ -128,36 +128,39 @@ export default function AddStudentPage() {
         });
     };
 
+    const inputClass = "w-full px-4 py-3 min-h-[48px] border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none";
+    const labelClass = "block text-sm font-medium text-gray-700 mb-1";
+
     return (
         <RoleGuard allowedRoles={['ADMIN']}>
-            <div className="p-8 max-w-4xl mx-auto">
-                <div className="mb-8 flex items-center gap-4">
-                    <Link href="/admin/students" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+            <div className="w-full max-w-full overflow-x-hidden p-4 md:p-8 max-w-4xl mx-auto pb-24 md:pb-8">
+                <div className="mb-6 md:mb-8 flex items-center gap-4">
+                    <Link href="/admin/students" className="p-2.5 hover:bg-gray-100 rounded-full transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center">
                         <ArrowLeft size={20} />
                     </Link>
-                    <h1 className="text-3xl font-bold font-heading">Add New Student</h1>
+                    <h1 className="text-2xl md:text-3xl font-bold font-heading">Add New Student</h1>
                 </div>
 
                 {dataLoading ? <Loader2 className="animate-spin" /> : (
-                    <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 space-y-8">
+                    <form onSubmit={handleSubmit} className="bg-white p-4 md:p-8 rounded-xl shadow-sm border border-gray-100 space-y-8">
 
                         {/* Basic Info */}
                         <div className="space-y-4">
                             <h2 className="text-lg font-semibold border-b pb-2">Student Information</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                                    <label className={labelClass}>Full Name</label>
                                     <input
                                         required type="text" value={name} onChange={e => setName(e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                                        className={inputClass}
                                         placeholder="Student Name"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Grade Level</label>
+                                    <label className={labelClass}>Grade Level</label>
                                     <input
                                         required type="text" value={grade} onChange={e => setGrade(e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                                        className={inputClass}
                                         placeholder="e.g. 10th Grade"
                                     />
                                 </div>
@@ -194,9 +197,10 @@ export default function AddStudentPage() {
                                                     <label className="block text-xs font-semibold text-gray-500 mb-1">{subj}</label>
                                                     <input
                                                         type="number"
+                                                        inputMode="decimal"
                                                         value={subjectRates[subj] || ""}
                                                         onChange={(e) => handleRateChange(subj, e.target.value)}
-                                                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-primary outline-none"
+                                                        className="w-full px-3 py-3 min-h-[48px] border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary outline-none"
                                                         placeholder="Rate"
                                                     />
                                                 </div>
@@ -214,10 +218,10 @@ export default function AddStudentPage() {
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Sessions Per Week</label>
                                     <input
-                                        type="number" min="0" max="14"
+                                        type="number" min="0" max="14" inputMode="numeric"
                                         value={sessionsPerWeek}
                                         onChange={(e) => setSessionsPerWeek(parseInt(e.target.value))}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                                        className="w-full px-4 py-3 min-h-[48px] border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary outline-none"
                                     />
                                 </div>
                             </div>
@@ -251,7 +255,7 @@ export default function AddStudentPage() {
                                                         type="time"
                                                         value={preferredTimes[day] || ""}
                                                         onChange={(e) => handleTimeChange(day, e.target.value)}
-                                                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-primary outline-none"
+                                                        className="w-full px-3 py-3 min-h-[48px] border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary outline-none"
                                                     />
                                                 </div>
                                             ))}
@@ -308,14 +312,14 @@ export default function AddStudentPage() {
                             </div>
                         </div>
 
-                        <div className="pt-6 flex justify-end gap-3 sticky bottom-4 bg-white/95 backdrop-blur py-4 border-t border-gray-100 mt-8">
-                            <Link href="/admin/students" className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50">
+                        <div className="pt-6 flex flex-col-reverse sm:flex-row justify-end gap-3 sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur py-4 border-t border-gray-100 mt-8 -mx-4 px-4 md:mx-0 md:px-0 safe-area-pb">
+                            <Link href="/admin/students" className="px-4 py-3 min-h-[48px] border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 flex items-center justify-center">
                                 Cancel
                             </Link>
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+                                className="w-full sm:w-auto px-6 py-3 min-h-[48px] bg-primary text-white rounded-xl font-medium hover:bg-primary/90 flex items-center justify-center gap-2"
                             >
                                 {loading && <Loader2 className="animate-spin" size={18} />}
                                 Save Student

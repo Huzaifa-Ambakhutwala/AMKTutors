@@ -162,6 +162,14 @@ service cloud.firestore {
       allow create: if true;
       allow read, update, delete: if isAdmin();
     }
+
+    // 10. Auth sessions & login rate limit (server-only via Admin SDK; deny client)
+    match /authSessions/{id} {
+      allow read, write: if false;
+    }
+    match /loginAttempts/{id} {
+      allow read, write: if false;
+    }
     
     // Default Deny
     match /{document=**} {

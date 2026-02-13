@@ -130,18 +130,19 @@ export default function EditSessionPage() {
         }
     };
 
+    const inputClass = "w-full px-4 py-3 min-h-[48px] border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary outline-none";
     return (
         <RoleGuard allowedRoles={['ADMIN']}>
-            <div className="p-8 max-w-2xl mx-auto">
-                <div className="mb-8 flex items-center gap-4">
-                    <Link href="/admin/sessions" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+            <div className="w-full max-w-full overflow-x-hidden p-4 md:p-8 max-w-2xl mx-auto pb-24 md:pb-8">
+                <div className="mb-6 md:mb-8 flex items-center gap-4">
+                    <Link href="/admin/sessions" className="p-2.5 hover:bg-gray-100 rounded-full transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center">
                         <ArrowLeft size={20} />
                     </Link>
-                    <h1 className="text-3xl font-bold font-heading">Edit Session</h1>
+                    <h1 className="text-2xl md:text-3xl font-bold font-heading">Edit Session</h1>
                 </div>
 
                 {loading ? <div className="flex justify-center p-12"><Loader2 className="animate-spin" /></div> : (
-                    <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 space-y-6">
+                    <form onSubmit={handleSubmit} className="bg-white p-4 md:p-8 rounded-xl shadow-sm border border-gray-100 space-y-6">
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
@@ -149,12 +150,11 @@ export default function EditSessionPage() {
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Student</label>
                                 {subject === 'Evaluation' || selectedStudentId?.includes('EVALUATION') ? (
-                                    // Read-only view for Assessment sessions to prevent validation errors
                                     <input
                                         type="text"
                                         value={students.find(s => s.id === selectedStudentId)?.name || (status === 'Completed' || status === 'Scheduled' ? "Potential Student (Evaluation)" : "")}
                                         disabled
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500"
+                                        className="w-full px-4 py-3 min-h-[48px] border border-gray-300 rounded-xl bg-gray-100 text-gray-500"
                                         placeholder="Student Name"
                                     />
                                 ) : (
@@ -162,7 +162,7 @@ export default function EditSessionPage() {
                                         required
                                         value={selectedStudentId}
                                         onChange={e => setSelectedStudentId(e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                                        className={inputClass}
                                     >
                                         <option value="" disabled>Select Student...</option>
                                         {students.map(s => (
@@ -179,7 +179,7 @@ export default function EditSessionPage() {
                                     required
                                     value={selectedTutorId}
                                     onChange={e => setSelectedTutorId(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                                    className={inputClass}
                                 >
                                     <option value="" disabled>Select Tutor...</option>
                                     {tutors.map(t => (
@@ -203,10 +203,10 @@ export default function EditSessionPage() {
                                         required
                                         value={subject}
                                         onChange={e => setSubject(e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                                        className={inputClass}
                                     >
                                         <option value="">Select Subject...</option>
-                                        {selectedStudent?.subjects.map(subj => (
+                                        {selectedStudent?.subjects?.map(subj => (
                                             <option key={subj} value={subj}>{subj}</option>
                                         ))}
                                         <option value="Other">Other / Evaluation</option>
@@ -222,7 +222,7 @@ export default function EditSessionPage() {
                                     type="date"
                                     value={date}
                                     onChange={e => setDate(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                                    className={inputClass}
                                 />
                             </div>
 
@@ -233,7 +233,7 @@ export default function EditSessionPage() {
                                     type="time"
                                     value={time}
                                     onChange={e => setTime(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                                    className={inputClass}
                                 />
                             </div>
 
@@ -242,7 +242,7 @@ export default function EditSessionPage() {
                                 <select
                                     value={duration}
                                     onChange={e => setDuration(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                                    className={inputClass}
                                 >
                                     <option value="30">30 Minutes</option>
                                     <option value="45">45 Minutes</option>
@@ -257,7 +257,7 @@ export default function EditSessionPage() {
                                 <select
                                     value={status}
                                     onChange={e => setStatus(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                                    className={inputClass}
                                 >
                                     <option value="Scheduled">Scheduled</option>
                                     <option value="Completed">Completed</option>
@@ -271,7 +271,7 @@ export default function EditSessionPage() {
                                 <select
                                     value={attendance}
                                     onChange={e => setAttendance(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                                    className={inputClass}
                                 >
                                     <option value="Present">Present</option>
                                     <option value="Absent">Absent</option>
@@ -302,21 +302,21 @@ export default function EditSessionPage() {
                                     type="text"
                                     value={location}
                                     onChange={e => setLocation(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                                    className={inputClass}
                                     placeholder="e.g. Online, Library, Home"
                                 />
                             </div>
 
                         </div>
 
-                        <div className="pt-6 flex justify-end gap-3 border-t">
-                            <Link href="/admin/sessions" className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50">
+                        <div className="pt-6 flex flex-col-reverse sm:flex-row justify-end gap-3 sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur py-4 border-t border-gray-100 -mx-4 px-4 md:mx-0 md:px-0 safe-area-pb">
+                            <Link href="/admin/sessions" className="px-4 py-3 min-h-[48px] border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 flex items-center justify-center">
                                 Cancel
                             </Link>
                             <button
                                 type="submit"
                                 disabled={submitting}
-                                className="px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-accent transition-colors flex items-center gap-2"
+                                className="w-full sm:w-auto px-6 py-3 min-h-[48px] bg-primary text-white rounded-xl font-medium hover:bg-primary/90 flex items-center justify-center gap-2"
                             >
                                 {submitting && <Loader2 className="animate-spin" size={18} />}
                                 Save Changes

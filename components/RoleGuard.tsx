@@ -2,7 +2,7 @@
 
 import { useUserRole } from "@/hooks/useUserRole";
 import { UserRole } from "@/lib/types";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -14,31 +14,33 @@ interface RoleGuardProps {
 export default function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
     const { role, loading, user } = useUserRole();
     const router = useRouter();
+    const pathname = usePathname();
 
     useEffect(() => {
-        if (!loading) {
-            if (!user) {
-                router.push("/login");
-            } else if (role && !allowedRoles.includes(role)) {
-                // Redirect based on actual role
-                if (role === 'ADMIN') router.push("/admin");
-                else if (role === 'TUTOR') router.push("/tutor");
-                else if (role === 'PARENT') router.push("/parent");
-                else router.push("/"); // Fallback
-            }
+        if (loading) return;
+        if (!user) {
+            const returnUrl = pathname ? encodeURIComponent(pathname) : "";
+            router.push(returnUrl ? `/login?returnUrl=${returnUrl}` : "/login");
+            return;
         }
-    }, [user, role, loading, allowedRoles, router]);
+        if (role && !allowedRoles.includes(role)) {
+            if (role === "ADMIN") router.push("/admin");
+            else if (role === "TUTOR") router.push("/tutor");
+            else if (role === "PARENT") router.push("/parent");
+            else router.push("/");
+        }
+    }, [user, role, loading, allowedRoles, router, pathname]);
 
     if (loading) {
         return (
-            <div className="flex h-screen w-full items-center justify-center">
+            <div className="flex h-screen w-full items-center justify-center bg-gray-50">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         );
     }
 
     if (!user || (role && !allowedRoles.includes(role))) {
-        return null; // Will redirect
+        return null;
     }
 
     return <>{children}</>;

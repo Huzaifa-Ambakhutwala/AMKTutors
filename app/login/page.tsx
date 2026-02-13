@@ -1,24 +1,34 @@
 "use client";
 
-import { useState } from "react";
-import { loginWithEmailPassword } from "@/lib/auth-helpers";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
 import { Loader2, ArrowLeft, GraduationCap, Mail, Lock, Eye, EyeOff, Users, BookOpen, Award } from "lucide-react";
 import { motion } from "framer-motion";
+import { useAuth } from "@/hooks/useAuth";
 
-export default function LoginPage() {
+function LoginForm() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [rememberMe, setRememberMe] = useState(true);
+    const { user, loading: authLoading } = useAuth();
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [emailFocused, setEmailFocused] = useState(false);
     const [passwordFocused, setPasswordFocused] = useState(false);
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const returnUrl = searchParams.get("returnUrl") ?? "";
+
+    useEffect(() => {
+        if (authLoading) return;
+        if (user) {
+            const target = returnUrl && returnUrl.startsWith("/") ? decodeURIComponent(returnUrl) : (user.role === "ADMIN" ? "/admin" : user.role === "TUTOR" ? "/tutor" : "/parent");
+            router.replace(target);
+        }
+    }, [user, authLoading, returnUrl, router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -26,24 +36,25 @@ export default function LoginPage() {
         setError("");
 
         try {
-            const credential = await loginWithEmailPassword(email, password);
-            const uid = credential.user.uid;
+            const res = await fetch("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({
+                    email: email.trim(),
+                    password,
+                    rememberMe,
+                }),
+            });
 
-            // Fetch User Role to Redirect Directly
-            let target = "/";
-            try {
-                const userDoc = await getDoc(doc(db, "users", uid));
-                if (userDoc.exists()) {
-                    const role = userDoc.data().role;
-                    if (role === "ADMIN") target = "/admin";
-                    else if (role === "TUTOR") target = "/tutor";
-                    else if (role === "PARENT") target = "/parent";
-                }
-            } catch (roleError) {
-                console.error("Error fetching role for redirect:", roleError);
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                setError(data.error || "Invalid email or password");
+                return;
             }
 
-            // Redirect
+            const target = returnUrl && returnUrl.startsWith("/") ? decodeURIComponent(returnUrl) : (data.redirectTo || "/admin");
             router.push(target);
         } catch (err: any) {
             console.error(err);
@@ -52,6 +63,18 @@ export default function LoginPage() {
             setLoading(false);
         }
     };
+
+    if (authLoading) {
+        return (
+            <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-secondary via-secondary/95 to-secondary">
+                <Loader2 className="h-10 w-10 animate-spin text-yellow-300" />
+            </div>
+        );
+    }
+
+    if (user) {
+        return null;
+    }
 
     return (
         <div className="min-h-screen w-full bg-gradient-to-br from-secondary via-secondary/95 to-secondary relative overflow-hidden">
@@ -295,14 +318,16 @@ export default function LoginPage() {
                                     </div>
                                 </div>
 
-                                {/* Remember / Forgot */}
+                                {/* Keep me signed in / Forgot */}
                                 <div className="flex items-center justify-between text-sm">
-                                    <label className="flex items-center gap-2 text-gray-600">
+                                    <label className="flex items-center gap-2 text-gray-600 cursor-pointer">
                                         <input
                                             type="checkbox"
+                                            checked={rememberMe}
+                                            onChange={(e) => setRememberMe(e.target.checked)}
                                             className="h-4 w-4 text-secondary focus:ring-secondary border-gray-300 rounded"
                                         />
-                                        <span>Remember me</span>
+                                        <span>Keep me signed in</span>
                                     </label>
                                     <button
                                         type="button"
@@ -343,5 +368,17 @@ export default function LoginPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-secondary via-secondary/95 to-secondary">
+                <Loader2 className="h-10 w-10 animate-spin text-yellow-300" />
+            </div>
+        }>
+            <LoginForm />
+        </Suspense>
     );
 }

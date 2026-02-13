@@ -17,7 +17,7 @@ import {
     Settings,
 } from "lucide-react";
 import Image from "next/image";
-import { logout } from "@/lib/auth-helpers";
+import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { SidebarBody, SidebarLink, useSidebar } from "@/components/ui/sidebar";
 import { motion } from "framer-motion";
@@ -32,6 +32,7 @@ export default function AdminSidebar({ onClose, className }: AdminSidebarProps) 
     const pathname = usePathname();
     const router = useRouter();
     const { open } = useSidebar();
+    const { logout: sessionLogout } = useAuth();
 
     const links = [
         { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -47,7 +48,7 @@ export default function AdminSidebar({ onClose, className }: AdminSidebarProps) 
     ];
 
     const handleLogout = async () => {
-        await logout();
+        await sessionLogout();
         router.push("/login");
     };
 

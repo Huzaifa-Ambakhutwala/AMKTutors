@@ -91,18 +91,19 @@ export default function NewSessionPage() {
         }
     };
 
+    const inputClass = "w-full px-4 py-3 min-h-[48px] border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary outline-none";
     return (
         <RoleGuard allowedRoles={['ADMIN']}>
-            <div className="p-8 max-w-2xl mx-auto">
-                <div className="mb-8 flex items-center gap-4">
-                    <Link href="/admin/sessions" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+            <div className="w-full max-w-full overflow-x-hidden p-4 md:p-8 max-w-2xl mx-auto pb-24 md:pb-8">
+                <div className="mb-6 md:mb-8 flex items-center gap-4">
+                    <Link href="/admin/sessions" className="p-2.5 hover:bg-gray-100 rounded-full transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center">
                         <ArrowLeft size={20} />
                     </Link>
-                    <h1 className="text-3xl font-bold font-heading">Schedule Session</h1>
+                    <h1 className="text-2xl md:text-3xl font-bold font-heading">Schedule Session</h1>
                 </div>
 
                 {dataLoading ? <Loader2 className="animate-spin" /> : (
-                    <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 space-y-6">
+                    <form onSubmit={handleSubmit} className="bg-white p-4 md:p-8 rounded-xl shadow-sm border border-gray-100 space-y-6">
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
@@ -114,12 +115,11 @@ export default function NewSessionPage() {
                                     value={selectedStudentId}
                                     onChange={e => {
                                         setSelectedStudentId(e.target.value);
-                                        // Auto-select subject if they only have one
                                         const s = students.find(x => x.id === e.target.value);
-                                        if (s && s.subjects.length === 1) setSubject(s.subjects[0]);
+                                        if (s && s.subjects?.length === 1) setSubject(s.subjects[0]);
                                         else setSubject("");
                                     }}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                                    className={inputClass}
                                 >
                                     <option value="">Select Student...</option>
                                     {students.map(s => (
@@ -135,7 +135,7 @@ export default function NewSessionPage() {
                                     required
                                     value={selectedTutorId}
                                     onChange={e => setSelectedTutorId(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                                    className={inputClass}
                                 >
                                     <option value="">Select Tutor...</option>
                                     {tutors.map(t => (
@@ -151,7 +151,7 @@ export default function NewSessionPage() {
                                     required
                                     value={subject}
                                     onChange={e => setSubject(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                                    className={inputClass}
                                     disabled={!selectedStudentId}
                                 >
                                     <option value="">Select Subject...</option>
@@ -171,7 +171,7 @@ export default function NewSessionPage() {
                                     type="date"
                                     value={date}
                                     onChange={e => setDate(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                                    className={inputClass}
                                 />
                             </div>
 
@@ -182,7 +182,7 @@ export default function NewSessionPage() {
                                     type="time"
                                     value={time}
                                     onChange={e => setTime(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                                    className={inputClass}
                                 />
                             </div>
 
@@ -191,7 +191,7 @@ export default function NewSessionPage() {
                                 <select
                                     value={duration}
                                     onChange={e => setDuration(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                                    className={inputClass}
                                 >
                                     <option value="30">30 Minutes</option>
                                     <option value="45">45 Minutes</option>
@@ -206,7 +206,7 @@ export default function NewSessionPage() {
                                 <select
                                     value={status}
                                     onChange={e => setStatus(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                                    className={inputClass}
                                 >
                                     <option value="Scheduled">Scheduled</option>
                                     <option value="Completed">Completed</option>
@@ -221,21 +221,21 @@ export default function NewSessionPage() {
                                     type="text"
                                     value={location}
                                     onChange={e => setLocation(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                                    className={inputClass}
                                     placeholder="e.g. Online, Library, Home"
                                 />
                             </div>
 
                         </div>
 
-                        <div className="pt-6 flex justify-end gap-3 border-t">
-                            <Link href="/admin/sessions" className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50">
+                        <div className="pt-6 flex flex-col-reverse sm:flex-row justify-end gap-3 sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur py-4 border-t border-gray-100 -mx-4 px-4 md:mx-0 md:px-0 safe-area-pb">
+                            <Link href="/admin/sessions" className="px-4 py-3 min-h-[48px] border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 flex items-center justify-center">
                                 Cancel
                             </Link>
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+                                className="w-full sm:w-auto px-6 py-3 min-h-[48px] bg-primary text-white rounded-xl font-medium hover:bg-primary/90 flex items-center justify-center gap-2"
                             >
                                 {loading && <Loader2 className="animate-spin" size={18} />}
                                 Schedule Session

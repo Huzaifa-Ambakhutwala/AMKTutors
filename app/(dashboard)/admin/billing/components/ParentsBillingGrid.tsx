@@ -12,6 +12,7 @@ interface ParentBillingSummary {
     students: Student[];
     unbilledSessionCount: number;
     unbilledAmount: number;
+    thisMonthAmount: number;
 }
 
 export default function ParentsBillingGrid() {
@@ -44,13 +45,16 @@ export default function ParentsBillingGrid() {
                 const allSessions = sessionsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Session));
 
                 // 4. Aggregate
+                const now = new Date();
+                const thisMonth = now.getMonth();
+                const thisYear = now.getFullYear();
+
                 const stats: ParentBillingSummary[] = parents.map(parent => {
                     // Find children
                     const myStudents = allStudents.filter(s => s.parentIds?.includes(parent.uid));
                     const myStudentIds = new Set(myStudents.map(s => s.id));
 
                     // Find unbilled sessions for these students
-                    // Find unbilled sessions for these students OR linked assessments
                     const unbilledSessions = allSessions.filter(s =>
                         (
                             (myStudentIds.has(s.studentId)) ||
@@ -61,23 +65,27 @@ export default function ParentsBillingGrid() {
 
                     // Calculate totals
                     let totalUnbilled = 0;
+                    let thisMonthUnbilled = 0;
                     unbilledSessions.forEach(session => {
-                        // If it has a fixed cost (like assessment), use that. Otherwise calculate hourly.
-                        if (session.cost !== undefined) {
-                            totalUnbilled += session.cost;
-                        } else {
-                            const student = myStudents.find(s => s.id === session.studentId);
-                            const rate = student?.subjectRates?.[session.subject] || 0;
-                            const hours = session.durationMinutes / 60;
-                            totalUnbilled += (hours * rate);
-                        }
+                        const amount = session.cost !== undefined
+                            ? session.cost
+                            : (() => {
+                                const student = myStudents.find(s => s.id === session.studentId);
+                                const rate = student?.subjectRates?.[session.subject] || 0;
+                                const hours = session.durationMinutes / 60;
+                                return hours * rate;
+                            })();
+                        totalUnbilled += amount;
+                        const d = new Date(session.startTime);
+                        if (d.getMonth() === thisMonth && d.getFullYear() === thisYear) thisMonthUnbilled += amount;
                     });
 
                     return {
                         parent,
                         students: myStudents,
                         unbilledSessionCount: unbilledSessions.length,
-                        unbilledAmount: totalUnbilled
+                        unbilledAmount: totalUnbilled,
+                        thisMonthAmount: thisMonthUnbilled
                     };
                 });
 
@@ -123,8 +131,23 @@ export default function ParentsBillingGrid() {
 
     if (loading) return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary" size={32} /></div>;
 
+    const outstandingTotal = filtered.reduce((a, s) => a + s.unbilledAmount, 0);
+    const thisMonthTotal = filtered.reduce((a, s) => a + s.thisMonthAmount, 0);
+
     return (
         <div className="space-y-6">
+            {/* Summary - pinned at top on mobile */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-[#1A2742] text-white rounded-xl p-4 shadow-sm">
+                    <p className="text-xs font-semibold uppercase tracking-wide opacity-80 mb-1">Outstanding balance</p>
+                    <p className="text-2xl font-bold">${outstandingTotal.toFixed(2)}</p>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">This month (unbilled)</p>
+                    <p className="text-2xl font-bold text-gray-900">${thisMonthTotal.toFixed(2)}</p>
+                </div>
+            </div>
+
             {/* Header / Filter */}
             <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                 <div className="relative w-full md:w-96">

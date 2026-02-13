@@ -104,55 +104,55 @@ export default function CreateInvoicePage() {
         }
     };
 
+    const inputClass = "w-full px-4 py-3 min-h-[48px] border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary outline-none";
     return (
-        <div className="p-8 max-w-4xl mx-auto">
-            <div className="mb-8 flex items-center gap-4">
-                <Link href="/admin/billing" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+        <div className="w-full max-w-full overflow-x-hidden p-4 md:p-8 max-w-4xl mx-auto pb-24 md:pb-8">
+            <div className="mb-6 md:mb-8 flex items-center gap-4">
+                <Link href="/admin/billing" className="p-2.5 hover:bg-gray-100 rounded-full transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center">
                     <ArrowLeft size={20} />
                 </Link>
-                <h1 className="text-3xl font-bold font-heading">New Invoice</h1>
+                <h1 className="text-2xl md:text-3xl font-bold font-heading">New Invoice</h1>
             </div>
 
-            <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl shadow-lg border border-gray-200">
+            <form onSubmit={handleSubmit} className="bg-white p-4 md:p-8 rounded-xl shadow-lg border border-gray-200">
 
                 {/* Header Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-8">
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">Bill To (Parent)</label>
                         <select
                             required
                             value={selectedParentId}
                             onChange={e => setSelectedParentId(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                            className={inputClass}
                         >
                             <option value="">Select Parent...</option>
                             {parents.map(p => (
                                 <option key={p.uid} value={p.uid}>{p.name} ({p.email})</option>
                             ))}
                         </select>
-                        {/* Could Fetch/Show address details here */}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-bold text-gray-700 mb-2">Invoice #</label>
                             <input
                                 type="text" value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono"
+                                className={`${inputClass} font-mono`}
                             />
                         </div>
                         <div>
                             <label className="block text-sm font-bold text-gray-700 mb-2">Issue Date</label>
                             <input
                                 type="date" value={issueDate} onChange={e => setIssueDate(e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                className={inputClass}
                             />
                         </div>
-                        <div>
+                        <div className="sm:col-span-2">
                             <label className="block text-sm font-bold text-gray-700 mb-2">Due Date</label>
                             <input
                                 type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                className={inputClass}
                             />
                         </div>
                     </div>
@@ -166,42 +166,42 @@ export default function CreateInvoicePage() {
 
                     <div className="space-y-4">
                         {items.map((item, idx) => (
-                            <div key={idx} className="flex gap-4 items-end">
-                                <div className="flex-1">
+                            <div key={idx} className="flex flex-col sm:flex-row gap-4 sm:items-end border border-gray-100 rounded-xl p-4">
+                                <div className="flex-1 min-w-0">
                                     <label className="block text-xs font-medium text-gray-500 mb-1">Description</label>
                                     <input
                                         type="text"
                                         value={item.description}
                                         onChange={e => updateItem(idx, 'description', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded"
+                                        className="w-full px-4 py-3 min-h-[48px] border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary outline-none"
                                         placeholder="Service description..."
                                     />
                                 </div>
-                                <div className="w-20">
-                                    <label className="block text-xs font-medium text-gray-500 mb-1">Qty</label>
-                                    <input
-                                        type="number" min="0"
-                                        value={item.quantity}
-                                        onChange={e => updateItem(idx, 'quantity', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded text-center"
-                                    />
-                                </div>
-                                <div className="w-24">
-                                    <label className="block text-xs font-medium text-gray-500 mb-1">Rate ($)</label>
-                                    <input
-                                        type="number" min="0" step="0.01"
-                                        value={item.rate}
-                                        onChange={e => updateItem(idx, 'rate', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded text-right"
-                                    />
-                                </div>
-                                <div className="w-24 text-right pb-2 font-mono font-bold">
-                                    ${(item.total).toFixed(2)}
-                                </div>
-                                <div className="pb-1">
-                                    <button type="button" onClick={() => removeItem(idx)} className="text-red-400 hover:text-red-600 p-1">
-                                        <Trash2 size={18} />
-                                    </button>
+                                <div className="flex gap-3 items-end">
+                                    <div className="w-20 sm:w-20">
+                                        <label className="block text-xs font-medium text-gray-500 mb-1">Qty</label>
+                                        <input
+                                            type="number" min="0" inputMode="numeric"
+                                            value={item.quantity}
+                                            onChange={e => updateItem(idx, 'quantity', e.target.value)}
+                                            className="w-full px-3 py-3 min-h-[48px] border border-gray-300 rounded-xl text-center focus:ring-2 focus:ring-primary outline-none"
+                                        />
+                                    </div>
+                                    <div className="w-28">
+                                        <label className="block text-xs font-medium text-gray-500 mb-1">Rate ($)</label>
+                                        <input
+                                            type="number" min="0" step="0.01" inputMode="decimal"
+                                            value={item.rate}
+                                            onChange={e => updateItem(idx, 'rate', e.target.value)}
+                                            className="w-full px-3 py-3 min-h-[48px] border border-gray-300 rounded-xl text-right focus:ring-2 focus:ring-primary outline-none"
+                                        />
+                                    </div>
+                                    <div className="flex items-center gap-2 pb-1">
+                                        <span className="font-mono font-bold text-gray-700">${(item.total).toFixed(2)}</span>
+                                        <button type="button" onClick={() => removeItem(idx)} className="p-2 text-red-500 hover:text-red-600 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-xl hover:bg-red-50">
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -226,15 +226,15 @@ export default function CreateInvoicePage() {
                     </div>
                 </div>
 
-                {/* Actions */}
-                <div className="mt-8 flex justify-end gap-4">
-                    <Link href="/admin/billing" className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50">
+                {/* Actions - sticky on mobile */}
+                <div className="mt-8 flex flex-col-reverse sm:flex-row justify-end gap-3 sticky bottom-0 left-0 right-0 bg-white py-4 border-t border-gray-100 -mx-4 px-4 md:mx-0 md:px-0 safe-area-pb">
+                    <Link href="/admin/billing" className="px-6 py-3 min-h-[48px] border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 flex items-center justify-center">
                         Cancel
                     </Link>
                     <button
                         type="submit"
                         disabled={loading}
-                        className="px-8 py-2 bg-primary text-white rounded-lg font-bold hover:bg-blue-700 transition-shadow shadow-lg flex items-center gap-2"
+                        className="w-full sm:w-auto px-8 py-3 min-h-[48px] bg-primary text-white rounded-xl font-bold hover:bg-primary/90 flex items-center justify-center gap-2"
                     >
                         {loading && <Loader2 className="animate-spin" />}
                         Create Invoice

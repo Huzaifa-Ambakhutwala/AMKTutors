@@ -106,6 +106,10 @@ body {
   padding-right: env(safe-area-inset-right);
 }
 
+.safe-area-pb {
+  padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+}
+
 /* Mobile-optimized buttons */
 @media (max-width: 767px) {
   button, a[role="button"] {
