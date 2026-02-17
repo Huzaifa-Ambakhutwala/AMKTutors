@@ -10,6 +10,21 @@ import { getInviteLink } from "@/lib/utils";
 import { v4 as uuidv4 } from "uuid";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
+// Google Calendar event colors (classic palette from Calendar API)
+const GOOGLE_EVENT_COLORS: { id: string; name: string; bg: string }[] = [
+    { id: "1", name: "Lavender", bg: "#A4BDFC" },
+    { id: "2", name: "Sage", bg: "#7AE7BF" },
+    { id: "3", name: "Grape", bg: "#DBADFF" },
+    { id: "4", name: "Flamingo", bg: "#FF887C" },
+    { id: "5", name: "Banana", bg: "#FBD75B" },
+    { id: "6", name: "Tangerine", bg: "#FFB878" },
+    { id: "7", name: "Peacock", bg: "#46D6DB" },
+    { id: "8", name: "Graphite", bg: "#E1E1E1" },
+    { id: "9", name: "Blueberry", bg: "#5484ED" },
+    { id: "10", name: "Basil", bg: "#51B749" },
+    { id: "11", name: "Tomato", bg: "#DC2127" },
+];
+
 export default function ManageLoginsPage() {
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [loading, setLoading] = useState(true);
@@ -171,6 +186,33 @@ export default function ManageLoginsPage() {
         u.email?.toLowerCase().includes(searchTerm.toLowerCase())
     ));
 
+    const handleSetCalendarColor = async (user: UserProfile, colorId: string) => {
+        if (user.role !== 'TUTOR' && user.role !== 'ADMIN') return;
+        const color = GOOGLE_EVENT_COLORS.find(c => c.id === colorId);
+        try {
+            await updateDoc(doc(db, "users", user.uid), {
+                calendarColorId: color ? colorId : null,
+                calendarColorBg: color?.bg ?? null,
+                calendarColorFg: color ? "#1d1d1d" : null,
+            });
+            setUsers(prev =>
+                prev.map(u =>
+                    u.uid === user.uid
+                        ? {
+                            ...u,
+                            calendarColorId: color ? colorId : null,
+                            calendarColorBg: color?.bg ?? null,
+                            calendarColorFg: color ? "#1d1d1d" : null,
+                        }
+                        : u
+                )
+            );
+        } catch (e) {
+            console.error("Error setting calendar color:", e);
+            alert("Failed to update calendar color");
+        }
+    };
+
     const renderMobileUserCard = (user: UserProfile, isPending: boolean = false) => (
         <div key={user.uid} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
             <div className="flex justify-between items-start mb-3">
@@ -218,7 +260,7 @@ export default function ManageLoginsPage() {
                         >
                             Reject
                         </button>
-                    </div>
+                </div>
                 </div>
             ) : (
                 <div className="space-y-3 pt-3 border-t border-gray-100">
@@ -231,7 +273,33 @@ export default function ManageLoginsPage() {
                             <Mail size={12} /> Invited
                         </span>
                     )}
-                    
+                    {/* Calendar color selector for mobile (Admins & Tutors) */}
+                    {(user.role === 'ADMIN' || user.role === 'TUTOR') && (
+                        <div className="pt-2 border-t border-gray-100">
+                            <p className="text-xs text-gray-500 mb-2">Calendar color</p>
+                            <select
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary min-h-[44px] bg-white"
+                                value={user.calendarColorId ?? ""}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (value) {
+                                        handleSetCalendarColor(user, value);
+                                    } else {
+                                        // Clear color: pass empty string, we treat as null
+                                        handleSetCalendarColor(user, "");
+                                    }
+                                }}
+                            >
+                                <option value="">Default (no color)</option>
+                                {GOOGLE_EVENT_COLORS.map(color => (
+                                    <option key={color.id} value={color.id}>
+                                        {color.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+
                     <div className="flex flex-wrap gap-2">
                         {user.status !== 'registered' && (
                             <button
@@ -373,6 +441,7 @@ export default function ManageLoginsPage() {
                                     <th className="px-6 py-4 font-semibold text-gray-700">User</th>
                                     <th className="px-6 py-4 font-semibold text-gray-700">Role</th>
                                     <th className="px-6 py-4 font-semibold text-gray-700">Login Email</th>
+                                    <th className="px-6 py-4 font-semibold text-gray-700">Calendar Color</th>
                                     <th className="px-6 py-4 font-semibold text-gray-700">Status</th>
                                     <th className="px-6 py-4 font-semibold text-gray-700">Actions</th>
                                 </tr>
@@ -393,6 +462,39 @@ export default function ManageLoginsPage() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-gray-600">{user.email}</td>
+                                        <td className="px-6 py-4">
+                                            {(user.role === 'ADMIN' || user.role === 'TUTOR') ? (
+                                                <div className="inline-flex items-center gap-2">
+                                                    <div className="w-4 h-4 rounded-full border border-gray-300"
+                                                        style={{
+                                                            backgroundColor:
+                                                                GOOGLE_EVENT_COLORS.find(c => c.id === user.calendarColorId)?.bg ?? "transparent",
+                                                        }}
+                                                    />
+                                                    <select
+                                                        className="border border-gray-300 rounded px-2 py-1 text-xs outline-none focus:border-primary bg-white min-h-[32px]"
+                                                        value={user.calendarColorId ?? ""}
+                                                        onChange={(e) => {
+                                                            const value = e.target.value;
+                                                            if (value) {
+                                                                handleSetCalendarColor(user, value);
+                                                            } else {
+                                                                handleSetCalendarColor(user, "");
+                                                            }
+                                                        }}
+                                                    >
+                                                        <option value="">Default</option>
+                                                        {GOOGLE_EVENT_COLORS.map(color => (
+                                                            <option key={color.id} value={color.id}>
+                                                                {color.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-gray-400">N/A</span>
+                                            )}
+                                        </td>
                                         <td className="px-6 py-4">
                                             {user.status === 'registered' ? (
                                                 <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-fit">

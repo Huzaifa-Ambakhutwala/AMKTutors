@@ -36,7 +36,7 @@ function sessionToEvent(session: Session & { id: string }) {
     .filter(Boolean)
     .join("\n");
 
-  return {
+  const event: any = {
     summary: title,
     description,
     start: {
@@ -48,6 +48,13 @@ function sessionToEvent(session: Session & { id: string }) {
       timeZone: "America/New_York",
     },
   };
+
+  // If tutorCalendarColorId is present, use it for the event color
+  if (session.tutorCalendarColorId) {
+    event.colorId = session.tutorCalendarColorId;
+  }
+
+  return event;
 }
 
 export async function createCalendarEvent(

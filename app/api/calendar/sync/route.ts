@@ -76,9 +76,28 @@ export async function POST(request: Request) {
       ...sessionSnap.data(),
     } as Session & { id: string };
 
+    // Enrich session with tutor calendar color from users collection (if available)
+    let sessionForCalendar: Session & { id: string } = session;
+    if (session.tutorId) {
+      try {
+        const tutorSnap = await adminDb.collection("users").doc(session.tutorId).get();
+        if (tutorSnap.exists) {
+          const tutorData = tutorSnap.data() as any;
+          sessionForCalendar = {
+            ...session,
+            tutorCalendarColorId: tutorData.calendarColorId ?? null,
+            tutorCalendarColorBg: tutorData.calendarColorBg ?? null,
+            tutorCalendarColorFg: tutorData.calendarColorFg ?? null,
+          };
+        }
+      } catch (e) {
+        console.error("[Calendar Sync API] Failed to load tutor color info:", e);
+      }
+    }
+
     if (action === "create") {
       console.log(`[Calendar Sync API] Creating calendar event for session ${sessionId}...`);
-      const eventId = await createCalendarEvent(session);
+      const eventId = await createCalendarEvent(sessionForCalendar);
       console.log(`[Calendar Sync API] Event created with ID: ${eventId}`);
       await adminDb.collection("sessions").doc(sessionId).update({
         googleCalendarEventId: eventId,
@@ -92,9 +111,9 @@ export async function POST(request: Request) {
         session.googleCalendarEventId ??
         (sessionSnap.data() as Session)?.googleCalendarEventId;
       if (eventId) {
-        await updateCalendarEvent(eventId, session);
+        await updateCalendarEvent(eventId, sessionForCalendar);
       } else {
-        const newEventId = await createCalendarEvent(session);
+        const newEventId = await createCalendarEvent(sessionForCalendar);
         await adminDb.collection("sessions").doc(sessionId).update({
           googleCalendarEventId: newEventId,
         });

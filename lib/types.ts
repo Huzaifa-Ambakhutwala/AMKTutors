@@ -23,6 +23,11 @@ export interface UserProfile {
     registeredAt?: string | null; // ISO String
     isShadow?: boolean;
 
+    // Google Calendar / Calendar color
+    calendarColorId?: string | null;   // Google Calendar event colorId (e.g. "1".."11")
+    calendarColorBg?: string | null;   // Hex background for AMK + Google parity
+    calendarColorFg?: string | null;   // Hex foreground (usually #1d1d1d)
+
     createdAt: string;
 }
 
@@ -87,6 +92,11 @@ export interface Session {
 
     // Google Calendar sync
     googleCalendarEventId?: string | null;
+
+    // Optional cached tutor calendar color (used when enriching for calendar/events)
+    tutorCalendarColorId?: string | null;
+    tutorCalendarColorBg?: string | null;
+    tutorCalendarColorFg?: string | null;
 }
 
 export interface InvoiceItem {

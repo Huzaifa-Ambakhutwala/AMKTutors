@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import RoleGuard from "@/components/RoleGuard";
-import { collection, query, where, getDocs, orderBy, Timestamp } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Session } from "@/lib/types";
 import { Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, User, GraduationCap, Clock } from "lucide-react";
@@ -23,6 +23,7 @@ const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 export default function AdminCalendarPage() {
     const [loading, setLoading] = useState(true);
     const [sessions, setSessions] = useState<Session[]>([]);
+    const [tutorColors, setTutorColors] = useState<Record<string, { bg: string | null; id: string | null }>>({});
     const isMobile = useIsMobile();
 
     // Calendar State
@@ -75,6 +76,29 @@ export default function AdminCalendarPage() {
 
         fetchSessions();
     }, [year, month]);
+
+    // Fetch tutor/admin calendar colors once
+    useEffect(() => {
+        async function fetchTutorColors() {
+            try {
+                const snap = await getDocs(collection(db, "users"));
+                const map: Record<string, { bg: string | null; id: string | null }> = {};
+                snap.forEach(docSnap => {
+                    const data = docSnap.data() as UserProfile;
+                    if (data.role === 'TUTOR' || data.role === 'ADMIN') {
+                        map[docSnap.id] = {
+                            bg: (data as any).calendarColorBg ?? null,
+                            id: (data as any).calendarColorId ?? null,
+                        };
+                    }
+                });
+                setTutorColors(map);
+            } catch (e) {
+                console.error("Error fetching tutor colors:", e);
+            }
+        }
+        fetchTutorColors();
+    }, []);
 
     // Navigation
     const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
@@ -324,24 +348,35 @@ export default function AdminCalendarPage() {
                                         </div>
 
                                         <div className="space-y-1.5 flex-1">
-                                            {daySessions.map(session => (
-                                                <Link
-                                                    href={`/admin/sessions/${session.id}`}
-                                                    key={session.id}
-                                                    className="group relative block"
-                                                >
-                                                    {/* Event Block */}
-                                                    <div className={`
+                                            {daySessions.map(session => {
+                                                const tutorColor = tutorColors[session.tutorId]?.bg ?? null;
+                                                const isCancelled = session.status === 'Cancelled';
+                                                const isCompleted = session.status === 'Completed';
+                                                return (
+                                                    <Link
+                                                        href={`/admin/sessions/${session.id}`}
+                                                        key={session.id}
+                                                        className="group relative block"
+                                                    >
+                                                        {/* Event Block */}
+                                                        <div
+                                                            className={`
                                                         px-2 py-1 rounded text-xs border border-l-[3px] truncate shadow-sm cursor-pointer transition-all hover:scale-[1.02]
-                                                        ${session.status === 'Cancelled' ? 'bg-red-50 border-red-500 text-red-700 opacity-60 line-through' :
-                                                            session.status === 'Completed' ? 'bg-green-50 border-green-500 text-green-700' :
-                                                                'bg-blue-50 border-primary text-blue-700'}
-                                                    `}>
-                                                        <span className="font-semibold">{formatTime(session.startTime)}</span>
-                                                        <span className="mx-1">•</span>
-                                                        <span className="font-medium">{session.studentName?.split(' ')[0]}</span>
-                                                        <span className="hidden xl:inline"> - {session.subject}</span>
-                                                    </div>
+                                                        ${isCancelled ? 'bg-red-50 border-red-500 text-red-700 opacity-60 line-through' :
+                                                            isCompleted ? 'bg-green-50 border-green-500 text-green-700' :
+                                                                'text-gray-900'}
+                                                    `}
+                                                            style={
+                                                                !isCancelled && !isCompleted && tutorColor
+                                                                    ? { backgroundColor: tutorColor, borderColor: tutorColor }
+                                                                    : undefined
+                                                            }
+                                                        >
+                                                            <span className="font-semibold">{formatTime(session.startTime)}</span>
+                                                            <span className="mx-1">•</span>
+                                                            <span className="font-medium">{session.studentName?.split(' ')[0]}</span>
+                                                            <span className="hidden xl:inline"> - {session.subject}</span>
+                                                        </div>
 
                                                     {/* Custom Tooltip */}
                                                     <div className="hidden group-hover:block absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 pointer-events-none fade-in">
@@ -373,7 +408,8 @@ export default function AdminCalendarPage() {
                                                         <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></div>
                                                     </div>
                                                 </Link>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 );
