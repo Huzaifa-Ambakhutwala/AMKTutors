@@ -84,11 +84,11 @@ export default function AdminCalendarPage() {
                 const snap = await getDocs(collection(db, "users"));
                 const map: Record<string, { bg: string | null; id: string | null }> = {};
                 snap.forEach(docSnap => {
-                    const data = docSnap.data() as UserProfile;
+                    const data = docSnap.data() as any;
                     if (data.role === 'TUTOR' || data.role === 'ADMIN') {
                         map[docSnap.id] = {
-                            bg: (data as any).calendarColorBg ?? null,
-                            id: (data as any).calendarColorId ?? null,
+                            bg: data.calendarColorBg ?? null,
+                            id: data.calendarColorId ?? null,
                         };
                     }
                 });
