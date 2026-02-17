@@ -56,9 +56,13 @@ export async function POST(request: NextRequest) {
       const snapshot = { docs: [...byId.values()] };
 
       const candidates = snapshot.docs.filter((d) => {
-        const data = d.data();
+        const data = d.data() as { role?: string; isShadow?: boolean };
         if (data.isShadow === true) return false;
-        return ALLOWED_ROLES.includes((data.role as string) ?? "");
+        return (
+          data.role === "ADMIN" ||
+          data.role === "TUTOR" ||
+          data.role === "PARENT"
+        );
       });
 
       let existingDoc: (typeof snapshot.docs)[number] | null = null;
@@ -114,7 +118,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (!ALLOWED_ROLES.includes((role ?? "") as (typeof ALLOWED_ROLES)[number])) {
+    if (role !== "ADMIN" && role !== "TUTOR" && role !== "PARENT") {
       return NextResponse.json(
         {
           error: "Account is pending approval. Please contact an administrator.",
