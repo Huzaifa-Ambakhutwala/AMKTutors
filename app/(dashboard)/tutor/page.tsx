@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import RoleGuard from "@/components/RoleGuard";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,8 +25,18 @@ export default function TutorDashboard() {
             // Need both user (auth) and profileId (db id)
             if (!user || !profileId) return;
             try {
-                // Query using the correct Profile ID (which matches the Tutor ID in sessions)
-                const q = query(collection(db, "sessions"), where("tutorId", "==", profileId));
+                // Resolve logical tutor ID using pointer (same logic as Firestore getUserId)
+                let logicalTutorId = profileId;
+                const userDoc = await getDoc(doc(db, "users", profileId));
+                if (userDoc.exists()) {
+                    const data = userDoc.data() as any;
+                    if (data.pointer) {
+                        logicalTutorId = data.pointer as string;
+                    }
+                }
+
+                // Query sessions using the logical tutor ID (matches tutorId stored on sessions)
+                const q = query(collection(db, "sessions"), where("tutorId", "==", logicalTutorId));
                 const snap = await getDocs(q);
 
                 if (snap.empty) {
