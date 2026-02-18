@@ -29,6 +29,14 @@ export default function NewSessionPage() {
     const [status, setStatus] = useState<any>('Scheduled');
     const [location, setLocation] = useState("Online");
 
+    // Recurring
+    const [isRecurring, setIsRecurring] = useState(false);
+    const [recurringDays, setRecurringDays] = useState<number[]>([]); // 0=Sun, 1=Mon, ... 6=Sat
+    const [recurringEndAfter, setRecurringEndAfter] = useState(10); // number of occurrences
+    const [recurringEndBy, setRecurringEndBy] = useState(""); // YYYY-MM-DD optional
+
+    const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
     // Derived Data
     const selectedStudent = students.find(s => s.id === selectedStudentId);
 
@@ -54,6 +62,33 @@ export default function NewSessionPage() {
         fetchData();
     }, []);
 
+    /** Get next N occurrence dates for weekly recurrence (daysOfWeek: 0=Sun..6=Sat). Uses startDate's time for each. */
+    function getRecurringDates(startDate: Date, daysOfWeek: number[], endAfter: number, endByDateStr?: string): Date[] {
+        const out: Date[] = [];
+        const endBy = endByDateStr ? new Date(endByDateStr + "T23:59:59").getTime() : null;
+        const startTime = startDate.getTime();
+        const startHours = startDate.getHours();
+        const startMins = startDate.getMinutes();
+        let current = new Date(startDate);
+        current.setHours(0, 0, 0, 0);
+        const maxIter = 365 * 2;
+        let iter = 0;
+        while (out.length < endAfter && iter++ < maxIter) {
+            if (daysOfWeek.includes(current.getDay())) {
+                const sessionStart = new Date(current);
+                sessionStart.setHours(startHours, startMins, 0, 0);
+                if (sessionStart.getTime() < startTime) {
+                    current.setDate(current.getDate() + 1);
+                    continue;
+                }
+                if (endBy != null && sessionStart.getTime() > endBy) break;
+                out.push(sessionStart);
+            }
+            current.setDate(current.getDate() + 1);
+        }
+        return out.slice(0, endAfter);
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -64,26 +99,57 @@ export default function NewSessionPage() {
 
             if (!student || !tutor) throw new Error("Invalid selection");
 
-            // Calculate timestamps
             const startDateTime = new Date(`${date}T${time}`);
-            const endDateTime = new Date(startDateTime.getTime() + parseInt(duration) * 60000);
+            const durationMs = parseInt(duration) * 60000;
+            const seriesId = isRecurring ? "rec-" + Date.now() : null;
 
-            const ref = await addDoc(collection(db, "sessions"), {
+            const basePayload = {
                 studentId: student.id,
                 studentName: student.name,
                 tutorId: tutor.uid,
                 tutorName: tutor.name,
                 subject,
-                startTime: startDateTime.toISOString(),
-                endTime: endDateTime.toISOString(),
                 durationMinutes: parseInt(duration),
                 status,
                 location,
-                attendance: 'Present', // Default placeholder
-                createdAt: new Date().toISOString()
-            });
+                attendance: "Present" as const,
+                createdAt: new Date().toISOString(),
+            };
 
-            syncSessionToCalendar(ref.id, "create");
+            if (isRecurring && recurringDays.length > 0) {
+                const endAfter = Math.min(Math.max(1, recurringEndAfter), 52);
+                const occurrenceDates = getRecurringDates(
+                    startDateTime,
+                    recurringDays,
+                    endAfter,
+                    recurringEndBy || undefined
+                );
+                if (occurrenceDates.length === 0) {
+                    alert("No occurrence dates. Check start date and selected days.");
+                    setLoading(false);
+                    return;
+                }
+                for (const sessionStart of occurrenceDates) {
+                    const sessionEnd = new Date(sessionStart.getTime() + durationMs);
+                    const ref = await addDoc(collection(db, "sessions"), {
+                        ...basePayload,
+                        startTime: sessionStart.toISOString(),
+                        endTime: sessionEnd.toISOString(),
+                        ...(seriesId ? { recurringSeriesId: seriesId } : {}),
+                    });
+                    syncSessionToCalendar(ref.id, "create");
+                }
+            } else {
+                const endDateTime = new Date(startDateTime.getTime() + durationMs);
+                const ref = await addDoc(collection(db, "sessions"), {
+                    ...basePayload,
+                    startTime: startDateTime.toISOString(),
+                    endTime: endDateTime.toISOString(),
+                    ...(seriesId ? { recurringSeriesId: seriesId } : {}),
+                });
+                syncSessionToCalendar(ref.id, "create");
+            }
+
             router.push("/admin/sessions");
         } catch (e) {
             console.error(e);
@@ -226,6 +292,64 @@ export default function NewSessionPage() {
                                     className={inputClass}
                                     placeholder="e.g. Online, Library, Home"
                                 />
+                            </div>
+
+                            {/* Recurring: Repeat weekly */}
+                            <div className="md:col-span-2 border-t border-gray-200 pt-6 space-y-4">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={isRecurring}
+                                        onChange={e => setIsRecurring(e.target.checked)}
+                                        className="rounded border-gray-300 text-primary focus:ring-primary"
+                                    />
+                                    <span className="font-medium text-gray-700">Repeat weekly</span>
+                                </label>
+                                {isRecurring && (
+                                    <>
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-700 mb-2">On days</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {WEEKDAY_LABELS.map((label, i) => (
+                                                    <label key={i} className="flex items-center gap-1.5 cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={recurringDays.includes(i)}
+                                                            onChange={e => {
+                                                                if (e.target.checked) setRecurringDays([...recurringDays, i].sort((a, b) => a - b));
+                                                                else setRecurringDays(recurringDays.filter(d => d !== i));
+                                                            }}
+                                                            className="rounded border-gray-300 text-primary focus:ring-primary"
+                                                        />
+                                                        <span className="text-sm text-gray-700">{label}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">End after (occurrences)</label>
+                                                <input
+                                                    type="number"
+                                                    min={1}
+                                                    max={52}
+                                                    value={recurringEndAfter}
+                                                    onChange={e => setRecurringEndAfter(parseInt(e.target.value, 10) || 1)}
+                                                    className={inputClass}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">Or end by date (optional)</label>
+                                                <input
+                                                    type="date"
+                                                    value={recurringEndBy}
+                                                    onChange={e => setRecurringEndBy(e.target.value)}
+                                                    className={inputClass}
+                                                />
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                             </div>
 
                         </div>

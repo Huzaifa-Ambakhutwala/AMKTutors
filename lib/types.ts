@@ -93,6 +93,9 @@ export interface Session {
     // Google Calendar sync
     googleCalendarEventId?: string | null;
 
+    // Recurring: optional link to group instances created from one "recurring" creation
+    recurringSeriesId?: string | null;
+
     // Optional cached tutor calendar color (used when enriching for calendar/events)
     tutorCalendarColorId?: string | null;
     tutorCalendarColorBg?: string | null;

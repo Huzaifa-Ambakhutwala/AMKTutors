@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { collection, getDocs, query, orderBy, deleteDoc, doc } from "firebase/firestore";
+import { useEffect, useState, useRef } from "react";
+import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Session } from "@/lib/types";
-import { Loader2, Calendar, Clock, RotateCcw, Edit, Trash2, Eye, Plus } from "lucide-react";
+import { Loader2, Calendar, Clock, RotateCcw, Edit, Trash2, Eye, Plus, CalendarDays } from "lucide-react";
 import Link from "next/link";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import FloatingActionButton from "@/components/FloatingActionButton";
 import { syncSessionToCalendar } from "@/lib/calendar-sync-client";
 
-function groupSessionsByDate(sessions: Session[]): { date: string; label: string; sessions: Session[] }[] {
+type ViewMode = "today" | "week" | "all";
+
+function groupSessionsByDate(sessions: Session[]): { date: string; label: string; isToday: boolean; sessions: Session[] }[] {
     const map = new Map<string, Session[]>();
     sessions.forEach(s => {
         const d = new Date(s.startTime);
@@ -19,11 +21,35 @@ function groupSessionsByDate(sessions: Session[]): { date: string; label: string
         map.get(key)!.push(s);
     });
     const sorted = Array.from(map.entries()).sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime());
+    const todayStr = new Date().toDateString();
     return sorted.map(([date, sess]) => ({
         date,
         label: new Date(date).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", year: "numeric" }),
+        isToday: date === todayStr,
         sessions: sess.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()),
     }));
+}
+
+function filterSessionsByView(sessions: Session[], viewMode: ViewMode): Session[] {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfToday = new Date(startOfToday);
+    endOfToday.setDate(endOfToday.getDate() + 1);
+    const endOfWeek = new Date(startOfToday);
+    endOfWeek.setDate(endOfWeek.getDate() + 7);
+    if (viewMode === "today") {
+        return sessions.filter(s => {
+            const t = new Date(s.startTime).getTime();
+            return t >= startOfToday.getTime() && t < endOfToday.getTime();
+        });
+    }
+    if (viewMode === "week") {
+        return sessions.filter(s => {
+            const t = new Date(s.startTime).getTime();
+            return t >= startOfToday.getTime() && t < endOfWeek.getTime();
+        });
+    }
+    return sessions;
 }
 
 function formatTime(iso: string) {
@@ -40,7 +66,17 @@ function statusClass(s: Session) {
 export default function SessionsListPage() {
     const [sessions, setSessions] = useState<Session[]>([]);
     const [loading, setLoading] = useState(true);
+    const [viewMode, setViewMode] = useState<ViewMode>("today");
+    const todaySectionRef = useRef<HTMLDivElement>(null);
     const isMobile = useIsMobile();
+
+    const filteredSessions = filterSessionsByView(sessions, viewMode);
+    const grouped = groupSessionsByDate(filteredSessions);
+
+    const goToToday = () => {
+        setViewMode("today");
+        todaySectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
 
     const handleDelete = async (id: string) => {
         if (!confirm("Are you sure you want to delete this session?")) return;
@@ -59,7 +95,7 @@ export default function SessionsListPage() {
         try {
             const snapshot = await getDocs(collection(db, "sessions"));
             const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Session));
-            data.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+            data.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
             setSessions(data);
         } catch (e) {
             console.error(e);
@@ -74,23 +110,51 @@ export default function SessionsListPage() {
 
     return (
         <div className="w-full max-w-full overflow-x-hidden">
-            <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
-                <div className="flex items-center gap-3">
-                    <h1 className="text-2xl md:text-3xl font-bold font-heading">All Sessions</h1>
-                    <button
-                        onClick={fetchSessions}
-                        className="p-2.5 hover:bg-gray-100 rounded-xl transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center"
-                        title="Refresh"
+            <div className="flex flex-col gap-4 mb-6">
+                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-2xl md:text-3xl font-bold font-heading">Sessions</h1>
+                        <button
+                            onClick={fetchSessions}
+                            className="p-2.5 hover:bg-gray-100 rounded-xl transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center"
+                            title="Refresh"
+                        >
+                            <RotateCcw size={20} className="text-gray-500" />
+                        </button>
+                    </div>
+                    <Link
+                        href="/admin/sessions/new"
+                        className="bg-primary text-white px-6 py-3 rounded-xl font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 min-h-[48px] w-full md:w-auto"
                     >
-                        <RotateCcw size={20} className="text-gray-500" />
+                        <Plus size={20} /> Schedule Session
+                    </Link>
+                </div>
+
+                {/* Day-based view: Today | This week | All */}
+                <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium text-gray-500 mr-1 flex items-center gap-1">
+                        <CalendarDays size={16} /> View:
+                    </span>
+                    {(["today", "week", "all"] as ViewMode[]).map(mode => (
+                        <button
+                            key={mode}
+                            onClick={() => setViewMode(mode)}
+                            className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors min-h-[44px] ${
+                                viewMode === mode
+                                    ? "bg-primary text-white"
+                                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            }`}
+                        >
+                            {mode === "today" ? "Today" : mode === "week" ? "This week" : "All"}
+                        </button>
+                    ))}
+                    <button
+                        onClick={goToToday}
+                        className="px-4 py-2 rounded-xl text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors min-h-[44px]"
+                    >
+                        Go to today
                     </button>
                 </div>
-                <Link
-                    href="/admin/sessions/new"
-                    className="bg-primary text-white px-6 py-3 rounded-xl font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 min-h-[48px] w-full md:w-auto"
-                >
-                    <Plus size={20} /> Schedule Session
-                </Link>
             </div>
 
             {loading ? (
@@ -99,15 +163,18 @@ export default function SessionsListPage() {
                 </div>
             ) : isMobile ? (
                 <div className="space-y-6 pb-24">
-                    {sessions.length === 0 ? (
+                    {grouped.length === 0 ? (
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
-                            <p className="text-gray-500">No sessions found.</p>
+                            <p className="text-gray-500">
+                                {viewMode === "today" ? "No sessions today." : viewMode === "week" ? "No sessions this week." : "No sessions found."}
+                            </p>
                         </div>
                     ) : (
-                        groupSessionsByDate(sessions).map(({ date, label, sessions: daySessions }) => (
-                            <div key={date}>
+                        grouped.map(({ date, label, isToday, sessions: daySessions }) => (
+                            <div key={date} ref={isToday ? todaySectionRef : undefined}>
                                 <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
                                     <Calendar size={16} /> {label}
+                                    {isToday && <span className="bg-primary text-white text-xs px-2 py-0.5 rounded-full">Today</span>}
                                 </h2>
                                 <div className="space-y-3">
                                     {daySessions.map(s => (
@@ -156,66 +223,74 @@ export default function SessionsListPage() {
                     )}
                 </div>
             ) : (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-gray-50 border-b border-gray-100">
-                                <tr>
-                                    <th className="px-6 py-4 font-semibold text-gray-700">Date & Time</th>
-                                    <th className="px-6 py-4 font-semibold text-gray-700">Student</th>
-                                    <th className="px-6 py-4 font-semibold text-gray-700">Tutor</th>
-                                    <th className="px-6 py-4 font-semibold text-gray-700">Subject</th>
-                                    <th className="px-6 py-4 font-semibold text-gray-700">Status</th>
-                                    <th className="px-6 py-4 font-semibold text-gray-700">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50">
-                                {sessions.map(s => (
-                                    <tr key={s.id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-4">
-                                            <div className="flex flex-col">
-                                                <span className="font-medium text-gray-900">{new Date(s.startTime).toLocaleDateString()}</span>
-                                                <span className="text-xs text-gray-500 flex items-center gap-1">
-                                                    <Clock size={12} />
-                                                    {formatTime(s.startTime)} – {formatTime(s.endTime)}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 font-medium text-gray-800">{s.studentName}</td>
-                                        <td className="px-6 py-4 text-gray-600">{s.tutorName}</td>
-                                        <td className="px-6 py-4">
-                                            <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-medium border border-gray-200">
-                                                {s.subject}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${statusClass(s)}`}>
-                                                {s.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 flex gap-3">
-                                            <Link href={`/admin/sessions/${s.id}`} className="text-gray-500 hover:text-primary" title="View">
-                                                <Eye size={18} />
-                                            </Link>
-                                            <Link href={`/admin/sessions/${s.id}/edit`} className="text-gray-500 hover:text-orange-500" title="Edit">
-                                                <Edit size={18} />
-                                            </Link>
-                                            <button onClick={() => handleDelete(s.id)} className="text-gray-500 hover:text-red-500" title="Delete">
-                                                <Trash2 size={18} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {sessions.length === 0 && (
-                                    <tr>
-                                        <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                                            No sessions found.
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                <div className="space-y-8">
+                    {grouped.length === 0 ? (
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+                            <p className="text-gray-500">
+                                {viewMode === "today" ? "No sessions today." : viewMode === "week" ? "No sessions this week." : "No sessions found."}
+                            </p>
+                        </div>
+                    ) : (
+                        grouped.map(({ date, label, isToday, sessions: daySessions }) => (
+                            <div key={date} ref={isToday ? todaySectionRef : undefined}>
+                                <h2 className="text-base font-bold text-gray-700 mb-3 flex items-center gap-2 sticky top-0 bg-gray-50/95 backdrop-blur py-2 z-10">
+                                    <Calendar size={18} /> {label}
+                                    {isToday && <span className="bg-primary text-white text-xs px-2 py-0.5 rounded-full">Today</span>}
+                                </h2>
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left">
+                                            <thead className="bg-gray-50 border-b border-gray-100">
+                                                <tr>
+                                                    <th className="px-6 py-4 font-semibold text-gray-700">Time</th>
+                                                    <th className="px-6 py-4 font-semibold text-gray-700">Student</th>
+                                                    <th className="px-6 py-4 font-semibold text-gray-700">Tutor</th>
+                                                    <th className="px-6 py-4 font-semibold text-gray-700">Subject</th>
+                                                    <th className="px-6 py-4 font-semibold text-gray-700">Status</th>
+                                                    <th className="px-6 py-4 font-semibold text-gray-700">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-50">
+                                                {daySessions.map(s => (
+                                                    <tr key={s.id} className="hover:bg-gray-50 transition-colors">
+                                                        <td className="px-6 py-4">
+                                                            <span className="text-sm font-medium text-gray-900 flex items-center gap-1">
+                                                                <Clock size={14} />
+                                                                {formatTime(s.startTime)} – {formatTime(s.endTime)}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-4 font-medium text-gray-800">{s.studentName}</td>
+                                                        <td className="px-6 py-4 text-gray-600">{s.tutorName}</td>
+                                                        <td className="px-6 py-4">
+                                                            <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-medium border border-gray-200">
+                                                                {s.subject}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${statusClass(s)}`}>
+                                                                {s.status}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-4 flex gap-3">
+                                                            <Link href={`/admin/sessions/${s.id}`} className="text-gray-500 hover:text-primary" title="View">
+                                                                <Eye size={18} />
+                                                            </Link>
+                                                            <Link href={`/admin/sessions/${s.id}/edit`} className="text-gray-500 hover:text-orange-500" title="Edit">
+                                                                <Edit size={18} />
+                                                            </Link>
+                                                            <button onClick={() => handleDelete(s.id)} className="text-gray-500 hover:text-red-500" title="Delete">
+                                                                <Trash2 size={18} />
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             )}
 
