@@ -272,19 +272,42 @@ export default function InvoiceViewer({ invoice, onClose, onUpdate }: InvoiceVie
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {invoice.items.map((item, idx) => (
-                                        <tr key={idx} style={{ borderBottom: '1px solid #F3F4F6' }}>
-                                            <td className="py-4">
-                                                <div className="font-bold" style={{ color: '#1F2937' }}>{item.description}</div>
-                                                <div className="text-sm text-xs" style={{ color: '#6B7280' }}>
-                                                    {item.studentName ? `Student: ${item.studentName} ` : ""}
-                                                </div>
-                                            </td>
-                                            <td className="py-4 text-center" style={{ color: '#374151' }}>{item.quantity.toFixed(2)}</td>
-                                            <td className="py-4 text-right" style={{ color: '#374151' }}>${item.rate.toFixed(2)}</td>
-                                            <td className="py-4 text-right font-bold" style={{ color: '#111827' }}>${item.total.toFixed(2)}</td>
-                                        </tr>
-                                    ))}
+                                    {invoice.items.map((item, idx) => {
+                                        const isAdjustment = item.lineItemType && item.lineItemType !== "session";
+                                        const isNegative = item.total < 0;
+                                        const amountStr = isNegative
+                                            ? `-$${Math.abs(item.total).toFixed(2)}`
+                                            : `$${item.total.toFixed(2)}`;
+                                        const rateStr = isNegative
+                                            ? `-$${Math.abs(item.rate).toFixed(2)}`
+                                            : `$${item.rate.toFixed(2)}`;
+                                        return (
+                                            <tr key={idx} style={{ borderBottom: "1px solid #F3F4F6" }}>
+                                                <td className="py-4">
+                                                    <div className="font-bold" style={{ color: "#1F2937" }}>
+                                                        {item.description}
+                                                    </div>
+                                                    {!isAdjustment && item.studentName && (
+                                                        <div className="text-sm text-xs" style={{ color: "#6B7280" }}>
+                                                            Student: {item.studentName}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="py-4 text-center" style={{ color: "#374151" }}>
+                                                    {isAdjustment ? "—" : item.quantity.toFixed(2)}
+                                                </td>
+                                                <td className="py-4 text-right" style={{ color: "#374151" }}>
+                                                    {rateStr}
+                                                </td>
+                                                <td
+                                                    className="py-4 text-right font-bold"
+                                                    style={{ color: isNegative ? "#B91C1C" : "#111827" }}
+                                                >
+                                                    {amountStr}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>

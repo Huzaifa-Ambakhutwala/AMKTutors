@@ -4,11 +4,22 @@ import { useState, useEffect } from "react";
 import { collection, query, where, getDocs, doc, writeBatch, deleteDoc, getDoc, runTransaction } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { UserProfile, Student, Session, Invoice, InvoiceItem } from "@/lib/types";
-import { ArrowLeft, Loader2, FileText, CheckCircle, AlertCircle, Trash2, Calendar, DollarSign, Clock, User, Eye } from "lucide-react";
-import { v4 as uuidv4 } from 'uuid';
+import { ArrowLeft, Loader2, FileText, CheckCircle, AlertCircle, Trash2, Calendar, DollarSign, Clock, User, Eye, Plus, X } from "lucide-react";
+import { v4 as uuidv4 } from "uuid";
 import { FormFeedback } from "@/components/FormFeedback";
 import InvoiceViewer from "./InvoiceViewer";
 import { toast } from "sonner";
+
+type LineItemAdjustmentType = "discount" | "travel" | "custom";
+
+interface LineItemAdjustment {
+    id: string;
+    type: LineItemAdjustmentType;
+    description: string;
+    amount: number;
+    /** Only for type 'custom': true = deduct from total, false = add to total */
+    subtract?: boolean;
+}
 
 interface ParentBillingDetailProps {
     parentId: string;
@@ -23,10 +34,17 @@ export default function ParentBillingDetail({ parentId, onBack }: ParentBillingD
     const [students, setStudents] = useState<Student[]>([]);
 
     // Pending Data
-    const [pendingSessions, setPendingSessions] = useState<(Session & { calculatedRate: number, lineTotal: number })[]>([]);
+    const [pendingSessions, setPendingSessions] = useState<(Session & { calculatedRate: number; lineTotal: number })[]>([]);
     const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(new Set());
     const [invoiceNotes, setInvoiceNotes] = useState("");
+    const [lineItemAdjustments, setLineItemAdjustments] = useState<LineItemAdjustment[]>([]);
     const [processing, setProcessing] = useState(false);
+
+    // Add line item form (dropdown type + fields)
+    const [addLineItemType, setAddLineItemType] = useState<LineItemAdjustmentType | "">("");
+    const [addLineItemDescription, setAddLineItemDescription] = useState("");
+    const [addLineItemAmount, setAddLineItemAmount] = useState("");
+    const [addLineItemSubtract, setAddLineItemSubtract] = useState(true); // for custom: deduct by default
 
     // History Data
     const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -133,6 +151,44 @@ export default function ParentBillingDetail({ parentId, onBack }: ParentBillingD
         }
     };
 
+    /** Session subtotal (selected sessions only) */
+    const sessionSubtotal = pendingSessions
+        .filter((s) => selectedSessionIds.has(s.id))
+        .reduce((acc, s) => acc + s.lineTotal, 0);
+    /** Net effect of line item adjustments */
+    const adjustmentTotal = lineItemAdjustments.reduce((sum, a) => {
+        if (a.type === "discount") return sum - a.amount;
+        if (a.type === "travel") return sum + a.amount;
+        return a.subtract ? sum - a.amount : sum + a.amount;
+    }, 0);
+    const pendingTotal = Math.max(0, sessionSubtotal + adjustmentTotal);
+
+    const addLineItem = () => {
+        const amount = parseFloat(addLineItemAmount);
+        if (isNaN(amount) || amount <= 0) return;
+        const desc =
+            addLineItemDescription.trim() ||
+            (addLineItemType === "discount" ? "Discount" : addLineItemType === "travel" ? "Travel fee" : "Custom");
+        setLineItemAdjustments((prev) => [
+            ...prev,
+            {
+                id: uuidv4(),
+                type: addLineItemType as LineItemAdjustmentType,
+                description: desc,
+                amount,
+                subtract: addLineItemType === "custom" ? addLineItemSubtract : undefined,
+            },
+        ]);
+        setAddLineItemType("");
+        setAddLineItemDescription("");
+        setAddLineItemAmount("");
+        setAddLineItemSubtract(true);
+    };
+
+    const removeLineItemAdjustment = (id: string) => {
+        setLineItemAdjustments((prev) => prev.filter((a) => a.id !== id));
+    };
+
     // --- Actions ---
 
     const handleCreateInvoice = async () => {
@@ -153,18 +209,39 @@ export default function ParentBillingDetail({ parentId, onBack }: ParentBillingD
 
                 // 2. Prepare Data
                 const invoiceId = uuidv4();
-                const selectedItems = pendingSessions.filter(s => selectedSessionIds.has(s.id));
-                const totalAmount = selectedItems.reduce((sum, s) => sum + s.lineTotal, 0);
-                const items: InvoiceItem[] = selectedItems.map(s => ({
-                    description: `${s.subject} Session - ${new Date(s.startTime).toLocaleDateString()}`,
-                    quantity: s.durationMinutes / 60,
-                    rate: s.calculatedRate,
-                    total: s.lineTotal,
-                    sessionId: s.id,
-                    studentId: s.studentId,
-                    studentName: s.studentName,
-                    date: s.startTime
-                }));
+                const selectedItems = pendingSessions.filter((s) => selectedSessionIds.has(s.id));
+                const sessionSubtotalVal = selectedItems.reduce((sum, s) => sum + s.lineTotal, 0);
+                const adjustmentTotalVal = lineItemAdjustments.reduce((sum, a) => {
+                    if (a.type === "discount") return sum - a.amount;
+                    if (a.type === "travel") return sum + a.amount;
+                    return a.subtract ? sum - a.amount : sum + a.amount;
+                }, 0);
+                const totalAmount = Math.max(0, sessionSubtotalVal + adjustmentTotalVal);
+
+                const items: InvoiceItem[] = [
+                    ...selectedItems.map((s) => ({
+                        description: `${s.subject} Session - ${new Date(s.startTime).toLocaleDateString()}`,
+                        quantity: s.durationMinutes / 60,
+                        rate: s.calculatedRate,
+                        total: s.lineTotal,
+                        sessionId: s.id,
+                        studentId: s.studentId,
+                        studentName: s.studentName,
+                        date: s.startTime,
+                        lineItemType: "session" as const,
+                    })),
+                    ...lineItemAdjustments.map((a) => {
+                        const sign = a.type === "discount" || a.subtract ? -1 : 1;
+                        const amt = a.amount * sign;
+                        return {
+                            description: a.description,
+                            quantity: 1,
+                            rate: amt,
+                            total: amt,
+                            lineItemType: a.type,
+                        } as InvoiceItem;
+                    }),
+                ];
 
                 const invoiceNumString = `INV-${nextNum}`;
 
@@ -204,6 +281,7 @@ export default function ParentBillingDetail({ parentId, onBack }: ParentBillingD
             toast.success("Invoice created!");
             setProcessing(false);
             setInvoiceNotes("");
+            setLineItemAdjustments([]);
             loadDetailData(true); // Force refresh
             setActiveTab('HISTORY');
 
@@ -253,8 +331,6 @@ export default function ParentBillingDetail({ parentId, onBack }: ParentBillingD
 
     if (loading) return <div className="p-12 text-center"><Loader2 className="animate-spin inline" /> Loading Detail...</div>;
     if (!parent) return <div>Parent not found</div>;
-
-    const pendingTotal = pendingSessions.filter(s => selectedSessionIds.has(s.id)).reduce((acc, s) => acc + s.lineTotal, 0);
 
     return (
         <div className="animate-fade-in space-y-6">
@@ -365,6 +441,111 @@ export default function ParentBillingDetail({ parentId, onBack }: ParentBillingD
                                 </table>
                             </div>
 
+                            {/* Add line item: Discount / Travel fee / Custom */}
+                            <div className="p-4 border-t border-gray-100 bg-white">
+                                <h4 className="text-sm font-semibold text-gray-700 mb-3">Add line item</h4>
+                                <div className="flex flex-wrap items-end gap-3">
+                                    <div>
+                                        <label className="block text-xs text-gray-500 mb-1">Type</label>
+                                        <select
+                                            value={addLineItemType}
+                                            onChange={(e) => {
+                                                setAddLineItemType(e.target.value as LineItemAdjustmentType | "");
+                                                setAddLineItemDescription("");
+                                                setAddLineItemAmount("");
+                                            }}
+                                            className="border border-gray-300 rounded-lg px-3 py-2 text-sm min-w-[160px]"
+                                        >
+                                            <option value="">Select type</option>
+                                            <option value="discount">Discount</option>
+                                            <option value="travel">Travel fee</option>
+                                            <option value="custom">Custom line item</option>
+                                        </select>
+                                    </div>
+                                    {addLineItemType && (
+                                        <>
+                                            <div>
+                                                <label className="block text-xs text-gray-500 mb-1">
+                                                    {addLineItemType === "custom" ? "Description" : "Description (optional)"}
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={addLineItemDescription}
+                                                    onChange={(e) => setAddLineItemDescription(e.target.value)}
+                                                    placeholder={
+                                                        addLineItemType === "discount"
+                                                            ? "e.g. Early payment"
+                                                            : addLineItemType === "travel"
+                                                            ? "e.g. Round trip"
+                                                            : "e.g. Materials"
+                                                    }
+                                                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-40"
+                                                />
+                                            </div>
+                                            {addLineItemType === "custom" && (
+                                                <div>
+                                                    <label className="block text-xs text-gray-500 mb-1">Effect</label>
+                                                    <select
+                                                        value={addLineItemSubtract ? "deduct" : "add"}
+                                                        onChange={(e) => setAddLineItemSubtract(e.target.value === "deduct")}
+                                                        className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                                                    >
+                                                        <option value="deduct">Deduct from total</option>
+                                                        <option value="add">Add to total</option>
+                                                    </select>
+                                                </div>
+                                            )}
+                                            <div>
+                                                <label className="block text-xs text-gray-500 mb-1">Amount ($)</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="0.01"
+                                                    value={addLineItemAmount}
+                                                    onChange={(e) => setAddLineItemAmount(e.target.value)}
+                                                    placeholder="0.00"
+                                                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-24"
+                                                />
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={addLineItem}
+                                                className="flex items-center gap-1.5 bg-gray-800 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-900"
+                                            >
+                                                <Plus size={16} /> Add
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                                {lineItemAdjustments.length > 0 && (
+                                    <ul className="mt-3 space-y-1.5">
+                                        {lineItemAdjustments.map((a) => (
+                                            <li
+                                                key={a.id}
+                                                className="flex items-center justify-between text-sm py-1.5 px-2 rounded bg-gray-50"
+                                            >
+                                                <span className="text-gray-700">
+                                                    {a.type === "discount" && "Discount"}
+                                                    {a.type === "travel" && "Travel fee"}
+                                                    {a.type === "custom" && (a.subtract ? "Deduction" : "Additional")}: {a.description}
+                                                    {a.type === "discount" && ` (-$${a.amount.toFixed(2)})`}
+                                                    {a.type === "travel" && ` (+$${a.amount.toFixed(2)})`}
+                                                    {a.type === "custom" && (a.subtract ? ` (-$${a.amount.toFixed(2)})` : ` (+$${a.amount.toFixed(2)})`)}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeLineItemAdjustment(a.id)}
+                                                    className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                                    aria-label="Remove"
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+
                             <div className="p-6 bg-gray-50 border-t border-gray-100 flex flex-col md:flex-row justify-between items-end gap-6">
                                 <div className="w-full md:w-2/3">
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Invoice Notes (Optional)</label>
@@ -377,8 +558,28 @@ export default function ParentBillingDetail({ parentId, onBack }: ParentBillingD
                                 </div>
                                 <div className="w-full md:w-1/3 text-right space-y-3">
                                     <div className="flex justify-between items-center text-sm text-gray-600">
-                                        <span>Subtotal ({selectedSessionIds.size} items)</span>
-                                        <span className="font-medium">${pendingTotal.toFixed(2)}</span>
+                                        <span>Subtotal ({selectedSessionIds.size} sessions)</span>
+                                        <span className="font-medium">${sessionSubtotal.toFixed(2)}</span>
+                                    </div>
+                                    {lineItemAdjustments.length > 0 && (
+                                        <>
+                                            {lineItemAdjustments.map((a) => (
+                                                <div key={a.id} className="flex justify-between items-center text-sm text-gray-600">
+                                                    <span className="text-gray-500">
+                                                        {a.type === "discount" && "Discount"}
+                                                        {a.type === "travel" && "Travel fee"}
+                                                        {a.type === "custom" && a.description}
+                                                    </span>
+                                                    <span className={a.type === "discount" || a.subtract ? "text-red-600" : "text-green-700"}>
+                                                        {a.type === "discount" || a.subtract ? "-" : "+"}${a.amount.toFixed(2)}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </>
+                                    )}
+                                    <div className="flex justify-between items-center text-base font-bold text-gray-900 pt-1 border-t border-gray-200">
+                                        <span>Total</span>
+                                        <span>${pendingTotal.toFixed(2)}</span>
                                     </div>
                                     <button
                                         onClick={handleCreateInvoice}

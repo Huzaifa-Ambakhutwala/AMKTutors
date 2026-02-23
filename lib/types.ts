@@ -140,13 +140,15 @@ export interface Session {
 
 export interface InvoiceItem {
     description: string;
-    quantity: number; // hours
+    quantity: number; // hours (use 1 for adjustment line items)
     rate: number;
     total: number;
     sessionId?: string; // Optional link to specific session
     studentId?: string; // Helpful for grouping
     studentName?: string;
     date?: string;
+    /** For non-session line items: discount (deduct), travel (add), custom */
+    lineItemType?: 'session' | 'discount' | 'travel' | 'custom';
 }
 
 export interface Invoice {
