@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { UserProfile, Student, Session } from "@/lib/types";
-import { Loader2, ArrowLeft, Mail, Phone, MapPin, Link as LinkIcon, Check } from "lucide-react";
+import { Loader2, ArrowLeft, Mail, Phone, MapPin, Link as LinkIcon, Check, MessageSquare } from "lucide-react";
 import { getInviteLink } from "@/lib/utils";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { toast } from "sonner";
 
 // Utility to categorize sessions
 const categorizeSessions = (sessions: Session[]) => {
@@ -90,7 +91,7 @@ export default function ParentDetailPage() {
 
     const handleCopyInvite = () => {
         if (!parent || !parent.inviteToken) {
-            alert("No invite token available.");
+            toast.warning("No invite token available.");
             return;
         }
         const link = getInviteLink(parent.inviteToken);
@@ -128,6 +129,12 @@ export default function ParentDetailPage() {
                                 {copied ? "Copied Link" : "Invite Link"}
                             </button>
                         )}
+                        <Link
+                            href={`/messages?with=${parentId}`}
+                            className="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded transition hover:bg-gray-50 text-sm font-medium flex items-center gap-2"
+                        >
+                            <MessageSquare size={14} /> Message
+                        </Link>
                         <Link
                             href={`/admin/parents/${parentId}/edit`}
                             className="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded transition hover:bg-gray-50 text-sm font-medium"

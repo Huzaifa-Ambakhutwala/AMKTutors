@@ -7,6 +7,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { toast } from "sonner";
 
 interface PayStubViewerProps {
     payStub: PayStub;
@@ -84,7 +85,7 @@ export default function PayStubViewer({ payStub, onClose }: PayStubViewerProps) 
             pdf.save(`PayStub-${payStub.tutorName.replace(/\s+/g, '_')}-${new Date(payStub.issueDate).toISOString().split('T')[0]}.pdf`);
         } catch (e) {
             console.error("Error generating PDF:", e);
-            alert("Failed to generate PDF. If using dark mode or specific colors, try standard theme.");
+            toast.error("Failed to generate PDF. If using dark mode or specific colors, try standard theme.");
         } finally {
             setDownloading(false);
         }
@@ -102,7 +103,7 @@ export default function PayStubViewer({ payStub, onClose }: PayStubViewerProps) 
             const tutorEmail = tutorDoc.exists() ? tutorDoc.data().email : null;
 
             if (!tutorEmail) {
-                alert("Could not find tutor email.");
+                toast.error("Could not find tutor email.");
                 return;
             }
 
@@ -130,10 +131,10 @@ export default function PayStubViewer({ payStub, onClose }: PayStubViewerProps) 
                 throw new Error(err.error || "Server failed to send");
             }
 
-            alert("Pay Stub sent successfully!");
+            toast.success("Pay Stub sent successfully!");
         } catch (e: any) {
             console.error(e);
-            alert(`Failed to send email: ${e.message}`);
+            toast.error(`Failed to send email: ${e.message}`);
         } finally {
             setEmailing(false);
         }

@@ -8,11 +8,25 @@ import { Student } from "@/lib/types";
 import { Loader2, Eye, Edit, Trash2, Plus } from "lucide-react";
 import Link from "next/link";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { toast } from "sonner";
+import SearchFilterBar from "@/components/SearchFilterBar";
 
 export default function AdminStudentsPage() {
     const [students, setStudents] = useState<Student[]>([]);
     const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState<"" | "Active" | "Inactive">("");
     const isMobile = useIsMobile();
+
+    const filteredStudents = students.filter(s => {
+        const matchesSearch =
+            !searchTerm.trim() ||
+            s.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            s.grade?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            s.subjects?.some(subj => subj.toLowerCase().includes(searchTerm.toLowerCase()));
+        const matchesStatus = !statusFilter || s.status === statusFilter;
+        return matchesSearch && matchesStatus;
+    });
 
     const fetchStudents = async () => {
         try {
@@ -36,7 +50,7 @@ export default function AdminStudentsPage() {
             await deleteDoc(doc(db, "students", id));
             setStudents(students.filter(s => s.id !== id));
         } catch (e) {
-            alert("Error deleting student");
+            toast.error("Error deleting student");
             console.error(e);
         }
     };
@@ -138,17 +152,35 @@ export default function AdminStudentsPage() {
                         Add Student
                     </Link>
                 </div>
+                <div className="flex flex-col sm:flex-row gap-3 mb-6">
+                    <div className="flex-1 min-w-0">
+                        <SearchFilterBar
+                            placeholder="Search by name, grade, or subject..."
+                            value={searchTerm}
+                            onChange={setSearchTerm}
+                        />
+                    </div>
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value as "" | "Active" | "Inactive")}
+                        className="px-3 py-2 rounded-xl text-sm border border-gray-200 bg-white min-h-[44px] sm:w-40"
+                    >
+                        <option value="">All statuses</option>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                </div>
 
                 {loading ? (
                     <div className="flex justify-center p-12"><Loader2 className="animate-spin" /></div>
                 ) : isMobile ? (
                     <div className="space-y-4">
-                        {students.length === 0 ? (
+                        {filteredStudents.length === 0 ? (
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
                                 <p className="text-gray-500">No students found</p>
                             </div>
                         ) : (
-                            students.map(renderMobileCard)
+                            filteredStudents.map(renderMobileCard)
                         )}
                     </div>
                 ) : (
@@ -166,7 +198,7 @@ export default function AdminStudentsPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
-                                    {students.map((s) => (
+                                    {filteredStudents.map((s) => (
                                         <tr key={s.id} className="hover:bg-gray-50 transition-colors">
                                             <td className="px-6 py-4 font-medium">{s.name}</td>
                                             <td className="px-6 py-4">{s.grade}</td>

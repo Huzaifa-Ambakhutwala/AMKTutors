@@ -5,6 +5,7 @@ import { db } from "@/lib/firebase";
 import { collection, addDoc, getDocs, DocumentData } from "firebase/firestore";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { loginWithEmailPassword, logout, signUpWithEmailPassword } from "@/lib/auth-helpers";
+import { toast } from "sonner";
 
 export default function TestFirebase() {
     const { user, loading } = useCurrentUser();
@@ -88,7 +89,7 @@ export default function TestFirebase() {
                                         try {
                                             await loginWithEmailPassword(email, password);
                                         } catch (e: any) {
-                                            alert("Login failed: " + e.message);
+                                            toast.error("Login failed: " + e.message);
                                         }
                                     }}
                                     className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 flex-1"
@@ -102,7 +103,7 @@ export default function TestFirebase() {
                                         try {
                                             await signUpWithEmailPassword(email, password);
                                         } catch (e: any) {
-                                            alert("Signup failed: " + e.message);
+                                            toast.error("Signup failed: " + e.message);
                                         }
                                     }}
                                     className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 flex-1"

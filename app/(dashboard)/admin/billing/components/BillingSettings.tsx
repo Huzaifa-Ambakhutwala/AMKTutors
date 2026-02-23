@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Loader2, Save, Mail, FileText, DollarSign } from "lucide-react";
+import { toast } from "sonner";
 
 export default function BillingSettings() {
     const [loading, setLoading] = useState(true);
@@ -98,10 +99,10 @@ AMK Tutors`;
                     nextPayStubNumber // Save this
                 }
             }, { merge: true });
-            alert("Settings saved successfully!");
+            toast.success("Settings saved successfully!");
         } catch (error) {
             console.error("Error saving settings:", error);
-            alert("Failed to save settings");
+            toast.error("Failed to save settings");
         } finally {
             setSaving(false);
         }

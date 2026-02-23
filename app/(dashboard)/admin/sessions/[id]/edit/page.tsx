@@ -9,6 +9,7 @@ import { UserProfile, Student, Session } from "@/lib/types";
 import { Loader2, ArrowLeft, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { syncSessionToCalendar } from "@/lib/calendar-sync-client";
+import { toast } from "sonner";
 
 export default function EditSessionPage() {
     const router = useRouter();
@@ -43,7 +44,7 @@ export default function EditSessionPage() {
                 // 1. Fetch Session
                 const sessDoc = await getDoc(doc(db, "sessions", sessionId));
                 if (!sessDoc.exists()) {
-                    alert("Session not found");
+                    toast.error("Session not found");
                     router.push("/admin/sessions");
                     return;
                 }
@@ -126,7 +127,7 @@ export default function EditSessionPage() {
             router.push("/admin/sessions");
         } catch (e) {
             console.error(e);
-            alert("Error updating session");
+            toast.error("Error updating session");
         } finally {
             setSubmitting(false);
         }

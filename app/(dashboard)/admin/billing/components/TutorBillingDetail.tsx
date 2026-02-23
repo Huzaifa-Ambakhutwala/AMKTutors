@@ -7,6 +7,7 @@ import { UserProfile, Session, PayStub, PayStubItem } from "@/lib/types";
 import PayStubViewer from "./PayStubViewer";
 import { ArrowLeft, Loader2, FileText, CheckCircle, Trash2, Calendar, Clock, DollarSign, User, Eye } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
+import { toast } from "sonner";
 
 interface TutorBillingDetailProps {
     tutorId: string;
@@ -153,7 +154,7 @@ export default function TutorBillingDetail({ tutorId, onBack }: TutorBillingDeta
             });
 
             // Refresh
-            alert("Pay Stub recorded!");
+            toast.success("Pay Stub recorded!");
             setProcessing(false);
             setPayNotes("");
             loadDetailData();
@@ -161,7 +162,7 @@ export default function TutorBillingDetail({ tutorId, onBack }: TutorBillingDeta
 
         } catch (e) {
             console.error("Error creating pay stub:", e);
-            alert("Failed to create pay stub");
+            toast.error("Failed to create pay stub");
             setProcessing(false);
         }
     };
@@ -190,12 +191,12 @@ export default function TutorBillingDetail({ tutorId, onBack }: TutorBillingDeta
 
             await batch.commit();
 
-            alert("Pay Stub voided and sessions reverted.");
+            toast.success("Pay Stub voided and sessions reverted.");
             loadDetailData();
 
         } catch (e) {
             console.error("Error voiding pay stub:", e);
-            alert("Failed to void pay stub");
+            toast.error("Failed to void pay stub");
         } finally {
             setProcessing(false);
         }

@@ -6,6 +6,7 @@ import { db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { Loader2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 // Using crypto.randomUUID if available or a simple fallback
 const generateId = () => typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `parent-${Date.now()}`;
 
@@ -44,7 +45,7 @@ export default function AddParentPage() {
 
             router.push("/admin/parents");
         } catch (e) {
-            alert("Error adding parent");
+            toast.error("Error adding parent");
             console.error(e);
         } finally {
             setLoading(false);

@@ -7,6 +7,7 @@ import { Session } from "@/lib/types";
 import { Loader2, X, CheckCircle, Save, Lock, MessageSquare, BookOpen, Clock } from "lucide-react";
 import { FormFeedback } from "@/components/FormFeedback";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { toast } from "sonner";
 
 interface ManageSessionModalProps {
     session: Session;
@@ -68,7 +69,7 @@ export default function ManageSessionModal({ session, onClose, onUpdate }: Manag
             } as Session);
 
             onClose();
-            alert(isCompleted ? "Session updated!" : "Session marked as completed!");
+            toast.success(isCompleted ? "Session updated!" : "Session marked as completed!");
 
         } catch (e) {
             console.error(e);

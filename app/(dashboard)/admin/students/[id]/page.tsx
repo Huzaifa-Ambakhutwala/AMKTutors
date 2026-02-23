@@ -109,9 +109,14 @@ export default function StudentDetailPage() {
                             </span>
                         </div>
                     </div>
-                    <Link href={`/admin/students/${studentId}/edit`} className="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded transition hover:bg-gray-50 text-sm font-medium">
-                        Edit Student
-                    </Link>
+                    <div className="flex gap-2">
+                        <Link href={`/admin/students/${studentId}/progress`} className="bg-primary text-white px-3 py-1.5 rounded transition hover:bg-primary/90 text-sm font-medium">
+                            Progress
+                        </Link>
+                        <Link href={`/admin/students/${studentId}/edit`} className="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded transition hover:bg-gray-50 text-sm font-medium">
+                            Edit Student
+                        </Link>
+                    </div>
                 </div>
             </div>
 

@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { UserProfile } from "@/lib/types";
 import { Loader2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 const SUBJECT_OPTIONS = ["Math", "English", "Science", "History", " SAT/ACT", "Spanish", "French", "Other"];
 const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -75,7 +76,7 @@ export default function AddStudentPage() {
             });
             router.push("/admin/students");
         } catch (e) {
-            alert("Error adding student");
+            toast.error("Error adding student");
             console.error(e);
         } finally {
             setLoading(false);

@@ -9,6 +9,7 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { toast } from "sonner";
 
 interface InvoiceViewerProps {
     invoice: Invoice;
@@ -48,7 +49,7 @@ export default function InvoiceViewer({ invoice, onClose, onUpdate }: InvoiceVie
             if (onUpdate) onUpdate();
         } catch (e) {
             console.error("Error updating status:", e);
-            alert("Failed to update status");
+            toast.error("Failed to update status");
         }
     };
 
@@ -85,7 +86,7 @@ export default function InvoiceViewer({ invoice, onClose, onUpdate }: InvoiceVie
             pdf.save(`Invoice-${invoice.invoiceNumber}.pdf`);
         } catch (e) {
             console.error("Error generating PDF:", e);
-            alert("Failed to generate PDF");
+            toast.error("Failed to generate PDF");
         } finally {
             setDownloading(false);
         }
@@ -115,11 +116,11 @@ export default function InvoiceViewer({ invoice, onClose, onUpdate }: InvoiceVie
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Failed to send email");
 
-            alert("Invoice emailed successfully!");
+            toast.success("Invoice emailed successfully!");
             handleStatusChange('Sent'); // Auto-update to Sent
         } catch (e: any) {
             console.error("Error sending email:", e);
-            alert(`Error: ${e.message}`);
+            toast.error(`Error: ${e.message}`);
         } finally {
             setSending(false);
         }

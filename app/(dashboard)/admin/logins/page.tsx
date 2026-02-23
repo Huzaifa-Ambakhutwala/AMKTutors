@@ -9,6 +9,7 @@ import { Loader2, Shield, Key, Trash2, Mail, Edit, Plus, Link as LinkIcon, Check
 import { getInviteLink } from "@/lib/utils";
 import { v4 as uuidv4 } from "uuid";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { toast } from "sonner";
 
 // Google Calendar event colors (classic palette from Calendar API)
 const GOOGLE_EVENT_COLORS: { id: string; name: string; bg: string }[] = [
@@ -65,7 +66,7 @@ export default function ManageLoginsPage() {
             // Check if exists
             const existing = users.find(u => u.email.toLowerCase() === email.toLowerCase());
             if (existing) {
-                alert("User already exists!");
+                toast.error("User already exists!");
                 return;
             }
 
@@ -89,10 +90,10 @@ export default function ManageLoginsPage() {
             });
 
             fetchUsers();
-            alert("Admin profile created! You can now copy their invite link.");
+            toast.success("Admin profile created! You can now copy their invite link.");
         } catch (e) {
             console.error(e);
-            alert("Error creating admin");
+            toast.error("Error creating admin");
         }
     };
 
@@ -101,7 +102,7 @@ export default function ManageLoginsPage() {
 
         let token = user.inviteToken;
         if (!token) {
-            alert("No invite token found. Please regenerate it.");
+            toast.warning("No invite token found. Please regenerate it.");
             return;
         }
 
@@ -122,13 +123,13 @@ export default function ManageLoginsPage() {
             const data = await res.json();
 
             if (res.ok) {
-                alert(`Password reset email sent to ${email}`);
+                toast.success(`Password reset email sent to ${email}`);
             } else {
                 throw new Error(data.error || "Failed to send");
             }
         } catch (e: any) {
             console.error(e);
-            alert("Error sending reset email: " + e.message);
+            toast.error("Error sending reset email: " + e.message);
         }
     };
 
@@ -139,14 +140,14 @@ export default function ManageLoginsPage() {
             setUsers(users.filter(u => u.uid !== uid));
         } catch (e) {
             console.error(e);
-            alert("Error deleting user");
+            toast.error("Error deleting user");
         }
     };
 
     const handleApprove = async (uid: string) => {
         const roleToSet = selectedRole[uid];
         if (!roleToSet) {
-            alert("Please select a role first");
+            toast.warning("Please select a role first");
             return;
         }
         try {
@@ -154,10 +155,10 @@ export default function ManageLoginsPage() {
                 role: roleToSet
             });
             setUsers(users.map(u => u.uid === uid ? { ...u, role: roleToSet as any } : u));
-            alert("User approved!");
+            toast.success("User approved!");
         } catch (e) {
             console.error(e);
-            alert("Error approving user");
+            toast.error("Error approving user");
         }
     };
 
@@ -174,7 +175,7 @@ export default function ManageLoginsPage() {
                     setUsers(users.map(u => u.uid === user.uid ? { ...u, name: newName } : u));
                 } catch (e) {
                     console.error("Error updating admin name:", e);
-                    alert("Failed to update name");
+                    toast.error("Failed to update name");
                 }
             }
         }
@@ -209,7 +210,7 @@ export default function ManageLoginsPage() {
             );
         } catch (e) {
             console.error("Error setting calendar color:", e);
-            alert("Failed to update calendar color");
+            toast.error("Failed to update calendar color");
         }
     };
 

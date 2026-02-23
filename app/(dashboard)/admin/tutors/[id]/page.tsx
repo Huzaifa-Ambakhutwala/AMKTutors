@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { UserProfile, Student, Session } from "@/lib/types";
-import { Loader2, ArrowLeft, Mail, BookOpen, Clock, Link as LinkIcon, Check } from "lucide-react";
+import { Loader2, ArrowLeft, Mail, BookOpen, Clock, Link as LinkIcon, Check, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { getInviteLink } from "@/lib/utils";
+import { toast } from "sonner";
 
 // Reuse categorization from Parent Detail (could refactor to utils later)
 const categorizeSessions = (sessions: Session[]) => {
@@ -88,7 +89,7 @@ export default function TutorDetailPage() {
 
     const handleCopyInvite = () => {
         if (!tutor || !tutor.inviteToken) {
-            alert("No invite token available.");
+            toast.warning("No invite token available.");
             return;
         }
         const link = getInviteLink(tutor.inviteToken);
@@ -133,6 +134,9 @@ export default function TutorDetailPage() {
                                 {copied ? "Copied Link" : "Invite Link"}
                             </button>
                         )}
+                        <Link href={`/messages?with=${tutorId}`} className="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded transition hover:bg-gray-50 text-sm font-medium flex items-center gap-2">
+                            <MessageSquare size={14} /> Message
+                        </Link>
                         <Link href={`/admin/tutors/${tutorId}/edit`} className="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded transition hover:bg-gray-50 text-sm font-medium">
                             Edit Profile
                         </Link>

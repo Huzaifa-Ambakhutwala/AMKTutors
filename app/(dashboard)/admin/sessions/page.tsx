@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
+import { collection, getDocs, onSnapshot, deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Session } from "@/lib/types";
 import { Loader2, Calendar, Clock, RotateCcw, Edit, Trash2, Eye, Plus, CalendarDays } from "lucide-react";
@@ -9,6 +9,8 @@ import Link from "next/link";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import FloatingActionButton from "@/components/FloatingActionButton";
 import { syncSessionToCalendar } from "@/lib/calendar-sync-client";
+import { toast } from "sonner";
+import SearchFilterBar from "@/components/SearchFilterBar";
 
 type ViewMode = "today" | "week" | "all";
 
@@ -67,10 +69,23 @@ export default function SessionsListPage() {
     const [sessions, setSessions] = useState<Session[]>([]);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<ViewMode>("today");
+    const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState<Session["status"] | "">("");
     const todaySectionRef = useRef<HTMLDivElement>(null);
     const isMobile = useIsMobile();
 
-    const filteredSessions = filterSessionsByView(sessions, viewMode);
+    const byView = filterSessionsByView(sessions, viewMode);
+    const bySearch = searchTerm.trim()
+        ? byView.filter(
+            s =>
+                s.studentName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                s.tutorName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                s.subject?.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        : byView;
+    const filteredSessions = statusFilter
+        ? bySearch.filter(s => s.status === statusFilter)
+        : bySearch;
     const grouped = groupSessionsByDate(filteredSessions);
 
     const goToToday = () => {
@@ -86,26 +101,27 @@ export default function SessionsListPage() {
             setSessions(sessions.filter(s => s.id !== id));
         } catch (e) {
             console.error(e);
-            alert("Error deleting session");
+            toast.error("Error deleting session");
         }
     };
 
-    const fetchSessions = async () => {
+    const fetchSessions = () => {
         setLoading(true);
-        try {
-            const snapshot = await getDocs(collection(db, "sessions"));
+        const unsub = onSnapshot(collection(db, "sessions"), (snapshot) => {
             const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Session));
             data.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
             setSessions(data);
-        } catch (e) {
-            console.error(e);
-        } finally {
             setLoading(false);
-        }
+        }, (err) => {
+            console.error(err);
+            setLoading(false);
+        });
+        return unsub;
     };
 
     useEffect(() => {
-        fetchSessions();
+        const unsub = fetchSessions();
+        return () => unsub();
     }, []);
 
     return (
@@ -114,13 +130,12 @@ export default function SessionsListPage() {
                 <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
                     <div className="flex items-center gap-3">
                         <h1 className="text-2xl md:text-3xl font-bold font-heading">Sessions</h1>
-                        <button
-                            onClick={fetchSessions}
-                            className="p-2.5 hover:bg-gray-100 rounded-xl transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center"
-                            title="Refresh"
+                        <span
+                            className="p-2.5 rounded-xl min-h-[48px] min-w-[48px] flex items-center justify-center text-gray-400"
+                            title="Live updating"
                         >
-                            <RotateCcw size={20} className="text-gray-500" />
-                        </button>
+                            <RotateCcw size={20} />
+                        </span>
                     </div>
                     <Link
                         href="/admin/sessions/new"
@@ -130,6 +145,30 @@ export default function SessionsListPage() {
                     </Link>
                 </div>
 
+                {/* Search and filters */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex-1 min-w-0">
+                        <SearchFilterBar
+                            placeholder="Search by student, tutor, or subject..."
+                            value={searchTerm}
+                            onChange={setSearchTerm}
+                        />
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-medium text-gray-500">Status:</span>
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value as Session["status"] | "")}
+                            className="px-3 py-2 rounded-xl text-sm border border-gray-200 bg-white min-h-[44px]"
+                        >
+                            <option value="">All</option>
+                            <option value="Scheduled">Scheduled</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Cancelled">Cancelled</option>
+                            <option value="NoShow">No Show</option>
+                        </select>
+                    </div>
+                </div>
                 {/* Day-based view: Today | This week | All */}
                 <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-medium text-gray-500 mr-1 flex items-center gap-1">

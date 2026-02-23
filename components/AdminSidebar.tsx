@@ -15,6 +15,8 @@ import {
     Home,
     ClipboardList,
     Settings,
+    BarChart3,
+    FileText,
 } from "lucide-react";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
@@ -43,6 +45,8 @@ export default function AdminSidebar({ onClose, className }: AdminSidebarProps) 
         { name: "Sessions", href: "/admin/sessions", icon: Calendar },
         { name: "Evaluations", href: "/admin/evaluations", icon: ClipboardList },
         { name: "Billing", href: "/admin/billing", icon: CreditCard },
+        { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+        { name: "Reports", href: "/admin/reports", icon: FileText },
         { name: "Settings", href: "/admin/settings", icon: Settings },
         { name: "Manage Logins", href: "/admin/logins", icon: Lock },
     ];

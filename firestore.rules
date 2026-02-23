@@ -86,6 +86,13 @@ service cloud.firestore {
 
       // Parents can read students they are assigned to
       allow read: if isParent() && getUserId() in resource.data.parentIds; // Updated
+
+      // Progress subcollection (goals, milestones, assessment scores)
+      match /progress/{progressId} {
+        allow read, write: if isAdmin();
+        allow read: if isTutor() && getUserId() in get(/databases/$(database)/documents/students/$(studentId)).data.tutorIds;
+        allow read: if isParent() && getUserId() in get(/databases/$(database)/documents/students/$(studentId)).data.parentIds;
+      }
     }
 
     // 3. Sessions Collection
@@ -163,7 +170,23 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
-    // 10. Auth sessions & login rate limit (server-only via Admin SDK; deny client)
+    // 10. Tutor availability
+    match /availability/{tutorId} {
+      allow read, write: if isTutor() && tutorId == getUserId();
+      allow read: if isAdmin();
+    }
+
+    // 11. Conversations and messages (in-app messaging)
+    match /conversations/{convId} {
+      allow read, update, delete: if isAuthenticated() && getUserId() in resource.data.participants;
+      allow create: if isAuthenticated() && getUserId() in request.resource.data.participants;
+    }
+    match /conversations/{convId}/messages/{msgId} {
+      allow read, write: if isAuthenticated()
+        && getUserId() in get(/databases/$(database)/documents/conversations/$(convId)).data.participants;
+    }
+
+    // 12. Auth sessions & login rate limit (server-only via Admin SDK; deny client)
     match /authSessions/{id} {
       allow read, write: if false;
     }

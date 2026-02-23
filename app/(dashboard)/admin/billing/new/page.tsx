@@ -7,6 +7,7 @@ import { UserProfile, InvoiceItem } from "@/lib/types";
 import { Loader2, ArrowLeft, Plus, Trash2, Calculator } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function CreateInvoicePage() {
     const router = useRouter();
@@ -73,7 +74,7 @@ export default function CreateInvoicePage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedParentId) {
-            alert("Please select a parent");
+            toast.warning("Please select a parent");
             return;
         }
         setLoading(true);
@@ -98,7 +99,7 @@ export default function CreateInvoicePage() {
             router.push("/admin/billing");
         } catch (e) {
             console.error(e);
-            alert("Error creating invoice");
+            toast.error("Error creating invoice");
         } finally {
             setLoading(false);
         }

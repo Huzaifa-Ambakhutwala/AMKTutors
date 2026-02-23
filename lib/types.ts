@@ -31,6 +31,42 @@ export interface UserProfile {
     createdAt: string;
 }
 
+/** Recurring weekly availability slot. dayOfWeek: 0 = Sunday, 6 = Saturday. */
+export interface RecurringAvailabilitySlot {
+  dayOfWeek: number;
+  startTime: string; // "HH:mm"
+  endTime: string;
+}
+
+/** One-off block (e.g. vacation, appointment). */
+export interface AvailabilityBlock {
+  start: string; // ISO
+  end: string;
+  note?: string;
+}
+
+export interface TutorAvailability {
+  tutorId: string;
+  recurring: RecurringAvailabilitySlot[];
+  blocks: AvailabilityBlock[];
+  updatedAt: string;
+}
+
+export interface Conversation {
+  id: string;
+  participants: string[];
+  participantNames?: Record<string, string>;
+  lastMessage?: string;
+  lastAt: string;
+}
+
+export interface ChatMessage {
+  id?: string;
+  from: string;
+  text: string;
+  createdAt: string;
+}
+
 export interface Student {
     id: string; // Firestore Doc ID
     name: string;
@@ -154,6 +190,43 @@ export interface PayStub {
     status: 'Draft' | 'Paid';
     notes?: string;
 }
+
+/** Progress tracking: goal, milestone, or assessment score. */
+export type ProgressEntryType = "goal" | "milestone" | "assessment";
+
+export interface ProgressGoal {
+  id?: string;
+  studentId: string;
+  subject: string;
+  title: string;
+  targetDate?: string;
+  completed: boolean;
+  completedAt?: string;
+  createdAt: string;
+}
+
+export interface ProgressMilestone {
+  id?: string;
+  studentId: string;
+  subject: string;
+  title: string;
+  achievedAt: string;
+  note?: string;
+  createdAt: string;
+}
+
+export interface AssessmentScore {
+  id?: string;
+  studentId: string;
+  subject: string;
+  assessmentName: string;
+  score: number;
+  maxScore?: number;
+  date: string;
+  createdAt: string;
+}
+
+export type ProgressEntry = ProgressGoal | ProgressMilestone | AssessmentScore;
 
 export interface Evaluation {
     id: string;

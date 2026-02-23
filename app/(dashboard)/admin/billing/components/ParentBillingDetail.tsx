@@ -8,6 +8,7 @@ import { ArrowLeft, Loader2, FileText, CheckCircle, AlertCircle, Trash2, Calenda
 import { v4 as uuidv4 } from 'uuid';
 import { FormFeedback } from "@/components/FormFeedback";
 import InvoiceViewer from "./InvoiceViewer";
+import { toast } from "sonner";
 
 interface ParentBillingDetailProps {
     parentId: string;
@@ -200,7 +201,7 @@ export default function ParentBillingDetail({ parentId, onBack }: ParentBillingD
             });
 
             // Refresh
-            alert("Invoice created!");
+            toast.success("Invoice created!");
             setProcessing(false);
             setInvoiceNotes("");
             loadDetailData(true); // Force refresh
@@ -208,7 +209,7 @@ export default function ParentBillingDetail({ parentId, onBack }: ParentBillingD
 
         } catch (e) {
             console.error("Error creating invoice:", e);
-            alert("Failed to create invoice");
+            toast.error("Failed to create invoice");
             setProcessing(false);
         }
     };
@@ -239,12 +240,12 @@ export default function ParentBillingDetail({ parentId, onBack }: ParentBillingD
 
             await batch.commit();
 
-            alert("Invoice voided and sessions reverted.");
+            toast.success("Invoice voided and sessions reverted.");
             loadDetailData(); // Refresh to see sessions back in Pending
 
         } catch (e) {
             console.error("Error voiding invoice:", e);
-            alert("Failed to void invoice");
+            toast.error("Failed to void invoice");
         } finally {
             setProcessing(false);
         }

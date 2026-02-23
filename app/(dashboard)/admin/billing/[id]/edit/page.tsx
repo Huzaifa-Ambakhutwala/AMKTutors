@@ -7,6 +7,7 @@ import { UserProfile, Invoice, InvoiceItem } from "@/lib/types";
 import { Loader2, ArrowLeft, Plus, Trash2, Calculator } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
+import { toast } from "sonner";
 
 export default function EditInvoicePage() {
     const router = useRouter();
@@ -41,7 +42,7 @@ export default function EditInvoicePage() {
                 // 2. Fetch Invoice
                 const invDoc = await getDoc(doc(db, "invoices", invoiceId));
                 if (!invDoc.exists()) {
-                    alert("Invoice not found");
+                    toast.error("Invoice not found");
                     router.push("/admin/billing");
                     return;
                 }
@@ -94,7 +95,7 @@ export default function EditInvoicePage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedParentId) {
-            alert("Please select a parent");
+            toast.warning("Please select a parent");
             return;
         }
         setSubmitting(true);
@@ -116,7 +117,7 @@ export default function EditInvoicePage() {
             router.push("/admin/billing");
         } catch (e) {
             console.error(e);
-            alert("Error updating invoice");
+            toast.error("Error updating invoice");
         } finally {
             setSubmitting(false);
         }

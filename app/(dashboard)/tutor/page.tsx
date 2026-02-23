@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import RoleGuard from "@/components/RoleGuard";
-import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,38 +21,30 @@ export default function TutorDashboard() {
     const [managingSession, setManagingSession] = useState<Session | null>(null);
 
     useEffect(() => {
-        async function fetchSessions() {
-            // Need both user (auth) and profileId (db id)
-            if (!user || !profileId) return;
-            try {
-                // Resolve logical tutor ID using pointer (same logic as Firestore getUserId)
-                let logicalTutorId = profileId;
-                const userDoc = await getDoc(doc(db, "users", profileId));
-                if (userDoc.exists()) {
-                    const data = userDoc.data() as any;
-                    if (data.pointer) {
-                        logicalTutorId = data.pointer as string;
-                    }
-                }
-
-                // Query sessions using the logical tutor ID (matches tutorId stored on sessions)
-                const q = query(collection(db, "sessions"), where("tutorId", "==", logicalTutorId));
-                const snap = await getDocs(q);
-
-                if (snap.empty) {
-                    // Optional: Handling empty state
-                    setSessions([]);
-                } else {
-                    const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as Session));
-                    setSessions(list);
-                }
-            } catch (e) {
-                console.error(e);
-            } finally {
-                setLoading(false);
+        if (!user || !profileId) return;
+        let unsub: (() => void) | null = null;
+        getDoc(doc(db, "users", profileId)).then((userDoc) => {
+            let logicalTutorId = profileId;
+            if (userDoc.exists()) {
+                const data = userDoc.data() as { pointer?: string };
+                if (data.pointer) logicalTutorId = data.pointer;
             }
-        }
-        fetchSessions();
+            const q = query(collection(db, "sessions"), where("tutorId", "==", logicalTutorId));
+            unsub = onSnapshot(q, (snap) => {
+                const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as Session));
+                setSessions(list);
+                setLoading(false);
+            }, (err) => {
+                console.error(err);
+                setLoading(false);
+            });
+        }).catch((e) => {
+            console.error(e);
+            setLoading(false);
+        });
+        return () => {
+            if (unsub) unsub();
+        };
     }, [user, profileId]);
 
     const handleLogout = async () => {
@@ -73,6 +65,9 @@ export default function TutorDashboard() {
                     <div className="flex items-center gap-3">
                         <Link href="/" className="flex items-center gap-2 text-gray-600 hover:text-primary font-medium px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors">
                             <ArrowLeft size={20} /> Back to Website
+                        </Link>
+                        <Link href="/tutor/availability" className="flex items-center gap-2 text-primary hover:bg-primary/10 font-medium px-4 py-2 rounded-lg transition-colors">
+                            Set availability
                         </Link>
                         <button
                             onClick={handleLogout}

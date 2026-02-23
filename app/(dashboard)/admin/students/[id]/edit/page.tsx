@@ -8,6 +8,7 @@ import { useRouter, useParams } from "next/navigation";
 import { UserProfile, Student } from "@/lib/types";
 import { Loader2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 const SUBJECT_OPTIONS = ["Math", "English", "Science", "History", " SAT/ACT", "Spanish", "French", "Other"];
 const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -47,7 +48,7 @@ export default function EditStudentPage() {
                 // 1. Fetch Student Data
                 const studentDoc = await getDoc(doc(db, "students", studentId));
                 if (!studentDoc.exists()) {
-                    alert("Student not found");
+                    toast.error("Student not found");
                     router.push("/admin/students");
                     return;
                 }
@@ -118,7 +119,7 @@ export default function EditStudentPage() {
             });
             router.push("/admin/students");
         } catch (e) {
-            alert("Error updating student");
+            toast.error("Error updating student");
             console.error(e);
         } finally {
             setSubmitting(false);

@@ -9,6 +9,7 @@ import { UserProfile, Student } from "@/lib/types";
 import { Loader2, ArrowLeft, Calendar } from "lucide-react";
 import Link from "next/link";
 import { syncSessionToCalendar } from "@/lib/calendar-sync-client";
+import { toast } from "sonner";
 
 export default function NewSessionPage() {
     const router = useRouter();
@@ -125,7 +126,7 @@ export default function NewSessionPage() {
                     recurringEndBy || undefined
                 );
                 if (occurrenceDates.length === 0) {
-                    alert("No occurrence dates. Check start date and selected days.");
+                    toast.warning("No occurrence dates. Check start date and selected days.");
                     setLoading(false);
                     return;
                 }
@@ -153,7 +154,7 @@ export default function NewSessionPage() {
             router.push("/admin/sessions");
         } catch (e) {
             console.error(e);
-            alert("Error creating session");
+            toast.error("Error creating session");
         } finally {
             setLoading(false);
         }

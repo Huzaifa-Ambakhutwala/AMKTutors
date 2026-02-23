@@ -7,6 +7,7 @@ import { useRouter, useParams } from "next/navigation";
 import { Loader2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { UserProfile } from "@/lib/types";
+import { toast } from "sonner";
 
 export default function EditParentPage() {
     const router = useRouter();
@@ -32,7 +33,7 @@ export default function EditParentPage() {
                     setPhone(data.phone || "");
                     setAddress(data.address || "");
                 } else {
-                    alert("Parent not found");
+                    toast.error("Parent not found");
                     router.push("/admin/parents");
                 }
             } catch (e) {
@@ -58,7 +59,7 @@ export default function EditParentPage() {
 
             router.push("/admin/parents");
         } catch (e) {
-            alert("Error updating parent");
+            toast.error("Error updating parent");
             console.error(e);
         } finally {
             setSubmitting(false);

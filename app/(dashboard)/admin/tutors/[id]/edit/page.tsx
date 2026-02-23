@@ -7,6 +7,7 @@ import { useRouter, useParams } from "next/navigation";
 import { Loader2, ArrowLeft, Lock, Phone, DollarSign } from "lucide-react";
 import Link from "next/link";
 import { UserProfile } from "@/lib/types";
+import { toast } from "sonner";
 
 export default function EditTutorPage() {
     const router = useRouter();
@@ -38,7 +39,7 @@ export default function EditTutorPage() {
                     setHourlyPayRate(data.hourlyPayRate ? data.hourlyPayRate.toString() : "");
                     setIsActive(data.isActive ?? true);
                 } else {
-                    alert("Tutor not found");
+                    toast.error("Tutor not found");
                     router.push("/admin/tutors");
                 }
             } catch (e) {
@@ -66,7 +67,7 @@ export default function EditTutorPage() {
 
             router.push("/admin/tutors");
         } catch (e) {
-            alert("Error updating tutor");
+            toast.error("Error updating tutor");
             console.error(e);
         } finally {
             setSubmitting(false);

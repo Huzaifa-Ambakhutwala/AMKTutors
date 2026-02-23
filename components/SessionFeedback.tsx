@@ -5,7 +5,8 @@ import { UserProfile, Session } from "@/lib/types"; // Import UserProfile
 import { doc, updateDoc, serverTimestamp } from "firebase/firestore"; // Import serverTimestamp
 import { db } from "@/lib/firebase";
 import { Loader2, Save, Lock, MessageSquare } from "lucide-react";
-import { useCurrentUser } from "@/hooks/useCurrentUser"; // Assume this hook exists and provides the current user
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { toast } from "sonner";
 
 interface SessionFeedbackProps {
     session: Session;
@@ -64,11 +65,11 @@ export default function SessionFeedback({ session, onUpdate, userRole }: Session
                 // Construct updated session object for local UI update
                 const updatedSession = { ...session, ...updates };
                 if (onUpdate) onUpdate(updatedSession);
-                alert("Saved changes!");
+                toast.success("Saved changes!");
             }
         } catch (e) {
             console.error(e);
-            alert("Error saving feedback");
+            toast.error("Error saving feedback");
         } finally {
             setLoading(false);
         }

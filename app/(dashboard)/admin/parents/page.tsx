@@ -8,11 +8,22 @@ import { Loader2, Eye, Edit, Trash2, User, Plus } from "lucide-react";
 import Link from "next/link";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import FloatingActionButton from "@/components/FloatingActionButton";
+import { toast } from "sonner";
+import SearchFilterBar from "@/components/SearchFilterBar";
 
 export default function ParentsListPage() {
     const [parents, setParents] = useState<(UserProfile & { childCount: number })[]>([]);
     const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState("");
     const isMobile = useIsMobile();
+
+    const filteredParents = parents.filter(
+        p =>
+            !searchTerm.trim() ||
+            p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (p.phone && p.phone.includes(searchTerm))
+    );
 
     useEffect(() => {
         async function fetchData() {
@@ -51,7 +62,7 @@ export default function ParentsListPage() {
             await deleteDoc(doc(db, "users", uid));
             setParents(parents.filter(p => p.uid !== uid));
         } catch (e) {
-            alert("Error deleting parent");
+            toast.error("Error deleting parent");
             console.error(e);
         }
     };
@@ -67,6 +78,13 @@ export default function ParentsListPage() {
                     <Plus size={20} /> Add Parent
                 </Link>
             </div>
+            <div className="mb-6 max-w-md">
+                <SearchFilterBar
+                    placeholder="Search by name, email, or phone..."
+                    value={searchTerm}
+                    onChange={setSearchTerm}
+                />
+            </div>
 
             {loading ? (
                 <div className="flex justify-center p-12">
@@ -74,12 +92,12 @@ export default function ParentsListPage() {
                 </div>
             ) : isMobile ? (
                 <div className="space-y-4 pb-24">
-                    {parents.length === 0 ? (
+                    {filteredParents.length === 0 ? (
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
                             <p className="text-gray-500">No parents found.</p>
                         </div>
                     ) : (
-                        parents.map(p => (
+                        filteredParents.map(p => (
                             <div
                                 key={p.uid}
                                 className="bg-white rounded-xl shadow-sm border border-gray-200 p-4"
@@ -136,7 +154,7 @@ export default function ParentsListPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
-                                {parents.map(p => (
+                                {filteredParents.map(p => (
                                     <tr key={p.uid} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4 font-medium">{p.name}</td>
                                         <td className="px-6 py-4 text-gray-500">{p.email}</td>
@@ -159,7 +177,7 @@ export default function ParentsListPage() {
                                         </td>
                                     </tr>
                                 ))}
-                                {parents.length === 0 && (
+                                {filteredParents.length === 0 && (
                                     <tr>
                                         <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
                                             No parents found.

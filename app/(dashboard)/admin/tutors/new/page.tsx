@@ -7,7 +7,8 @@ import { db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { Loader2, ArrowLeft, Lock, Phone, DollarSign } from "lucide-react";
 import Link from "next/link";
-import { v4 as uuidv4 } from 'uuid'; // Standard uuid is good, but for client-side random string let's just use simple random
+import { v4 as uuidv4 } from 'uuid';
+import { toast } from "sonner";
 
 export default function AddTutorPage() {
     const router = useRouter();
@@ -57,7 +58,7 @@ export default function AddTutorPage() {
 
             router.push("/admin/tutors");
         } catch (e) {
-            alert("Error adding tutor");
+            toast.error("Error adding tutor");
             console.error(e);
         } finally {
             setLoading(false);

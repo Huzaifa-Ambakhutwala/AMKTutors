@@ -7,6 +7,7 @@ import { onAuthStateChanged, linkWithPopup, User } from "firebase/auth";
 import { Loader2, Save, Palette, RefreshCw, ChevronRight, Link2, CheckCircle } from "lucide-react";
 import RoleGuard from "@/components/RoleGuard";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { toast } from "sonner";
 
 interface ColorSettings {
     primary: string;
@@ -118,10 +119,10 @@ export default function SettingsPage() {
         setSaving(true);
         try {
             await setDoc(doc(db, "settings", "theme_colors"), colors, { merge: true });
-            alert("Colors saved successfully! The changes are now live across the website.");
+            toast.success("Colors saved successfully! The changes are now live across the website.");
         } catch (error) {
             console.error("Error saving colors:", error);
-            alert("Failed to save colors");
+            toast.error("Failed to save colors");
         } finally {
             setSaving(false);
         }
@@ -139,10 +140,10 @@ export default function SettingsPage() {
         setSaving(true);
         try {
             await setDoc(doc(db, "settings", "theme_colors_default"), colors, { merge: true });
-            alert("Current colors have been saved as default! You can reset to these colors anytime.");
+            toast.success("Current colors have been saved as default! You can reset to these colors anytime.");
         } catch (error) {
             console.error("Error setting default colors:", error);
-            alert("Failed to set default colors");
+            toast.error("Failed to set default colors");
         } finally {
             setSaving(false);
         }
@@ -156,13 +157,13 @@ export default function SettingsPage() {
             setColors(defaultColors);
             applyColorsToDOM(defaultColors);
             await setDoc(doc(db, "settings", "theme_colors"), defaultColors, { merge: true });
-            alert("Colors reset to default!");
+            toast.success("Colors reset to default!");
         } catch (error) {
             console.error("Error resetting colors:", error);
             const defaultColors = getSystemDefaultColors();
             setColors(defaultColors);
             applyColorsToDOM(defaultColors);
-            alert("Colors reset to system defaults!");
+            toast.success("Colors reset to system defaults!");
         } finally {
             setSaving(false);
         }

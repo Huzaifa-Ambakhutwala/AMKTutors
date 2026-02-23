@@ -9,6 +9,7 @@ import { Plus, Search, Edit2, UserPlus, CheckCircle, Trash2, Loader2 } from "luc
 import { useRouter } from "next/navigation";
 import { v4 as uuidv4 } from 'uuid';
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { toast } from "sonner";
 
 export default function EvaluationsPage() {
     const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
@@ -44,7 +45,7 @@ export default function EvaluationsPage() {
             setEvaluations(prev => prev.filter(a => a.id !== id));
         } catch (e) {
             console.error("Error deleting evaluation:", e);
-            alert("Failed to delete evaluation");
+            toast.error("Failed to delete evaluation");
         }
     };
 
@@ -114,12 +115,12 @@ export default function EvaluationsPage() {
 
             await batch.commit();
 
-            alert(`Successfully converted! \nCreated Student: ${evaluation.studentName}`);
+            toast.success(`Successfully converted! Created Student: ${evaluation.studentName}`);
             fetchEvaluations(); // Refresh
 
         } catch (e) {
             console.error("Error converting:", e);
-            alert("Error converting evaluation");
+            toast.error("Error converting evaluation");
         } finally {
             setConvertingId(null);
         }

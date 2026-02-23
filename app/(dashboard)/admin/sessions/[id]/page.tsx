@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import RoleGuard from "@/components/RoleGuard";
 import SessionFeedback from "@/components/SessionFeedback";
+import { toast } from "sonner";
 
 export default function SessionDetailPage() {
     const { id } = useParams();
@@ -27,7 +28,7 @@ export default function SessionDetailPage() {
                 if (docSnap.exists()) {
                     setSession({ id: docSnap.id, ...docSnap.data() } as Session);
                 } else {
-                    alert("Session not found");
+                    toast.error("Session not found");
                     router.push("/admin/sessions");
                 }
             } catch (e) {

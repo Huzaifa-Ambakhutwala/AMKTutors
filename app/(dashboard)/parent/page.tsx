@@ -2,12 +2,12 @@
 
 import RoleGuard from "@/components/RoleGuard";
 import { useEffect, useState } from "react";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { Session } from "@/lib/types";
-import { Loader2, ArrowLeft, MessageSquare, X, LogOut } from "lucide-react";
+import { Loader2, ArrowLeft, MessageSquare, X, LogOut, Calendar, FileText, Clock } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import SessionFeedback from "@/components/SessionFeedback";
@@ -18,85 +18,63 @@ export default function ParentDashboard() {
     const router = useRouter();
     const [sessions, setSessions] = useState<Session[]>([]);
     const [loading, setLoading] = useState(true);
+    const [studentIds, setStudentIds] = useState<string[]>([]);
     const [selectedSession, setSelectedSession] = useState<Session | null>(null);
 
+    // Load student IDs for this parent (one-time when profileId is ready)
     useEffect(() => {
-        async function fetchSessions() {
-            if (!user || !profileId) return;
-            try {
-                // 1. Find all students belonging to this parent (using profileId)
-                const studentsQuery = query(collection(db, "students"), where("parentIds", "array-contains", profileId));
-                const studentsSnap = await getDocs(studentsQuery);
+        if (!profileId || roleLoading) return;
+        getDocs(query(collection(db, "students"), where("parentIds", "array-contains", profileId)))
+            .then((snap) => {
+                setStudentIds(snap.docs.map(d => d.id));
+            })
+            .catch((e) => console.error("Error fetching students:", e));
+    }, [profileId, roleLoading]);
 
-                if (studentsSnap.empty) {
-                    setSessions([]);
-                    setLoading(false);
-                    return;
-                }
-
-                const studentIds = studentsSnap.docs.map(d => d.id);
-
-                // 2. Fetch sessions for these students
-                // Firestore 'in' query supports up to 10 items. If a parent has >10 kids, we'd need multiple queries, 
-                // but for now 'in' is fine or doing parallel requests.
-                // Let's do parallel requests for each student to adhere to the precise logic of "sessions for this student".
-                // Actually 'in' query is better if < 10 students.
-
-                let allSessions: Session[] = [];
-
-                if (studentIds.length > 0) {
-                    // We can use 'in' operator to fetch all at once if length <= 10
-                    if (studentIds.length <= 10) {
-                        const q = query(collection(db, "sessions"), where("studentId", "in", studentIds));
-                        const snap = await getDocs(q);
-                        allSessions = snap.docs.map(d => ({ id: d.id, ...d.data() } as Session));
-                    } else {
-                        // Fallback: fetch for each student (unlikely to hit >10 limit for parents)
-                        const promises = studentIds.map(sid =>
-                            getDocs(query(collection(db, "sessions"), where("studentId", "==", sid)))
-                        );
-                        const snaps = await Promise.all(promises);
-                        snaps.forEach(s => {
-                            const studentSessions = s.docs.map(d => ({ id: d.id, ...d.data() } as Session));
-                            allSessions = [...allSessions, ...studentSessions];
-                        });
-                    }
-                }
-
-                // 3. Process and Sanitize
-                const safeList = allSessions.map(s => {
-                    // CRITICAL: Strip internal notes
-                    return { ...s, internalNotes: null };
-                });
-
-                // Sort by date (newest first)
-                safeList.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
-
-                setSessions(safeList);
-            } catch (e) {
-                console.error("Error fetching sessions:", e);
-            } finally {
+    // Real-time sessions: subscribe to all sessions and filter by studentIds client-side
+    useEffect(() => {
+        if (!user || !profileId || studentIds.length === 0) {
+            if (studentIds.length === 0 && profileId) {
+                setSessions([]);
                 setLoading(false);
             }
+            return;
         }
-        if (!roleLoading && profileId) {
-            fetchSessions();
-        }
-    }, [user, profileId, roleLoading]);
+        setLoading(true);
+        const unsub = onSnapshot(collection(db, "sessions"), (snap) => {
+            const studentIdSet = new Set(studentIds);
+            const allSessions = snap.docs
+                .map(d => ({ id: d.id, ...d.data() } as Session))
+                .filter(s => studentIdSet.has(s.studentId));
+            const safeList = allSessions.map(s => ({ ...s, internalNotes: null }));
+            safeList.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+            setSessions(safeList);
+            setLoading(false);
+        }, (err) => {
+            console.error("Error subscribing to sessions:", err);
+            setLoading(false);
+        });
+        return () => unsub();
+    }, [user, profileId, studentIds.join(",")]);
 
     const handleLogout = async () => {
         await logout();
         router.push("/login");
     };
 
+    const now = new Date();
+    const upcomingSessions = sessions.filter(s => new Date(s.startTime) >= now).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+    const pastSessions = sessions.filter(s => new Date(s.startTime) < now);
+    const sessionsWithFeedback = pastSessions.filter(s => s.parentFeedback?.text).slice(0, 5);
+
     return (
         <RoleGuard allowedRoles={['PARENT']}>
-            <div className="p-8 relative">
-                <div className="flex justify-between items-center mb-8">
-                    <h1 className="text-3xl font-bold font-heading">Parent Portal</h1>
-                    <div className="flex items-center gap-3">
+            <div className="p-4 md:p-8 relative max-w-5xl mx-auto">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                    <h1 className="text-2xl md:text-3xl font-bold font-heading">Parent Portal</h1>
+                    <div className="flex items-center gap-2">
                         <Link href="/" className="flex items-center gap-2 text-gray-600 hover:text-primary font-medium px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors">
-                            <ArrowLeft size={20} /> Back to Website
+                            <ArrowLeft size={20} /> Website
                         </Link>
                         <button
                             onClick={handleLogout}
@@ -107,42 +85,120 @@ export default function ParentDashboard() {
                     </div>
                 </div>
 
-                <h2 className="text-xl font-bold mb-4">Upcoming Sessions</h2>
-                {loading ? <Loader2 className="animate-spin" /> : (
+                {/* Quick links */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                    <Link
+                        href="/parent/invoices"
+                        className="flex items-center gap-4 p-4 bg-white rounded-xl shadow-sm border border-gray-200 hover:border-primary/30 hover:shadow-md transition-all"
+                    >
+                        <div className="p-3 bg-primary/10 rounded-lg">
+                            <FileText className="text-primary" size={24} />
+                        </div>
+                        <div>
+                            <p className="font-bold text-gray-900">My Invoices</p>
+                            <p className="text-sm text-gray-500">View and track your invoices</p>
+                        </div>
+                    </Link>
+                    <div className="flex items-center gap-4 p-4 bg-white rounded-xl shadow-sm border border-gray-200">
+                        <div className="p-3 bg-primary/10 rounded-lg">
+                            <Calendar className="text-primary" size={24} />
+                        </div>
+                        <div>
+                            <p className="font-bold text-gray-900">Sessions</p>
+                            <p className="text-sm text-gray-500">All sessions listed below</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Upcoming sessions widget */}
+                {upcomingSessions.length > 0 && (
+                    <div className="mb-8">
+                        <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                            <Clock size={20} /> Upcoming ({upcomingSessions.length})
+                        </h2>
+                        <div className="space-y-3">
+                            {upcomingSessions.slice(0, 5).map((s) => (
+                                <div key={s.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex flex-wrap items-center justify-between gap-2">
+                                    <div>
+                                        <p className="font-bold text-gray-900">{s.studentName}</p>
+                                        <p className="text-sm text-gray-500">{s.subject} with {s.tutorName}</p>
+                                    </div>
+                                    <p className="text-sm font-medium text-gray-700">{new Date(s.startTime).toLocaleString()}</p>
+                                </div>
+                            ))}
+                            {upcomingSessions.length > 5 && (
+                                <p className="text-sm text-gray-500">+ {upcomingSessions.length - 5} more upcoming</p>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Recent feedback widget */}
+                {sessionsWithFeedback.length > 0 && (
+                    <div className="mb-8">
+                        <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                            <MessageSquare size={20} /> Recent feedback
+                        </h2>
+                        <div className="space-y-2">
+                            {sessionsWithFeedback.map((s) => (
+                                <button
+                                    key={s.id}
+                                    onClick={() => setSelectedSession(s)}
+                                    className="w-full text-left bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:border-purple-200 hover:bg-purple-50/30 transition-colors"
+                                >
+                                    <p className="font-bold text-gray-900">{s.studentName} – {s.subject}</p>
+                                    <p className="text-sm text-gray-600 line-clamp-1">{s.parentFeedback?.text}</p>
+                                    <p className="text-xs text-gray-400 mt-1">{new Date(s.startTime).toLocaleDateString()}</p>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                <h2 className="text-xl font-bold mb-4">All Sessions</h2>
+                {loading ? (
+                    <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary" size={32} /></div>
+                ) : sessions.length === 0 ? (
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+                        <p className="text-gray-500">No sessions yet.</p>
+                    </div>
+                ) : (
                     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                        <table className="w-full text-left">
-                            <thead className="bg-gray-50 border-b border-gray-100">
-                                <tr>
-                                    <th className="px-6 py-4 text-gray-700">Student</th>
-                                    <th className="px-6 py-4 text-gray-700">Tutor</th>
-                                    <th className="px-6 py-4 text-gray-700">Subject</th>
-                                    <th className="px-6 py-4 text-gray-700">Time</th>
-                                    <th className="px-6 py-4 text-gray-700">Feedback</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {sessions.map(s => (
-                                    <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50">
-                                        <td className="px-6 py-4 font-medium">{s.studentName}</td>
-                                        <td className="px-6 py-4">{s.tutorName}</td>
-                                        <td className="px-6 py-4">{s.subject}</td>
-                                        <td className="px-6 py-4">{new Date(s.startTime).toLocaleString()}</td>
-                                        <td className="px-6 py-4">
-                                            {s.parentFeedback ? (
-                                                <button
-                                                    onClick={() => setSelectedSession(s)}
-                                                    className="text-purple-600 hover:bg-purple-50 px-3 py-1 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-                                                >
-                                                    <MessageSquare size={16} /> View Feedback
-                                                </button>
-                                            ) : (
-                                                <span className="text-gray-400 text-sm italic">No feedback</span>
-                                            )}
-                                        </td>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead className="bg-gray-50 border-b border-gray-100">
+                                    <tr>
+                                        <th className="px-4 md:px-6 py-4 text-gray-700">Student</th>
+                                        <th className="px-4 md:px-6 py-4 text-gray-700">Tutor</th>
+                                        <th className="px-4 md:px-6 py-4 text-gray-700">Subject</th>
+                                        <th className="px-4 md:px-6 py-4 text-gray-700">Time</th>
+                                        <th className="px-4 md:px-6 py-4 text-gray-700">Feedback</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {sessions.map(s => (
+                                        <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50">
+                                            <td className="px-4 md:px-6 py-4 font-medium">{s.studentName}</td>
+                                            <td className="px-4 md:px-6 py-4">{s.tutorName}</td>
+                                            <td className="px-4 md:px-6 py-4">{s.subject}</td>
+                                            <td className="px-4 md:px-6 py-4 text-sm">{new Date(s.startTime).toLocaleString()}</td>
+                                            <td className="px-4 md:px-6 py-4">
+                                                {s.parentFeedback ? (
+                                                    <button
+                                                        onClick={() => setSelectedSession(s)}
+                                                        className="text-purple-600 hover:bg-purple-50 px-3 py-1 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                                                    >
+                                                        <MessageSquare size={16} /> View
+                                                    </button>
+                                                ) : (
+                                                    <span className="text-gray-400 text-sm italic">—</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 )}
 

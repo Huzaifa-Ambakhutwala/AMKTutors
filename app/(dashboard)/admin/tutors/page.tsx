@@ -9,11 +9,28 @@ import { Loader2, Eye, Edit, Trash2, Plus } from "lucide-react";
 import Link from "next/link";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import FloatingActionButton from "@/components/FloatingActionButton";
+import { toast } from "sonner";
+import SearchFilterBar from "@/components/SearchFilterBar";
 
 export default function AdminTutorsPage() {
     const [tutors, setTutors] = useState<UserProfile[]>([]);
     const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [activeFilter, setActiveFilter] = useState<"" | "active" | "inactive">("");
     const isMobile = useIsMobile();
+
+    const filteredTutors = tutors.filter(t => {
+        const matchesSearch =
+            !searchTerm.trim() ||
+            t.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            t.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            t.subjects?.some(s => s.toLowerCase().includes(searchTerm.toLowerCase()));
+        const matchesActive =
+            !activeFilter ||
+            (activeFilter === "active" && t.isActive !== false) ||
+            (activeFilter === "inactive" && t.isActive === false);
+        return matchesSearch && matchesActive;
+    });
 
     const fetchTutors = async () => {
         try {
@@ -48,7 +65,7 @@ export default function AdminTutorsPage() {
             await deleteDoc(doc(db, "users", uid));
             setTutors(tutors.filter(t => t.uid !== uid));
         } catch (e) {
-            alert("Error deleting tutor");
+            toast.error("Error deleting tutor");
             console.error(e);
         }
     };
@@ -65,6 +82,24 @@ export default function AdminTutorsPage() {
                         <Plus size={20} /> Add Tutor
                     </Link>
                 </div>
+                <div className="flex flex-col sm:flex-row gap-3 mb-6">
+                    <div className="flex-1 min-w-0">
+                        <SearchFilterBar
+                            placeholder="Search by name, email, or subject..."
+                            value={searchTerm}
+                            onChange={setSearchTerm}
+                        />
+                    </div>
+                    <select
+                        value={activeFilter}
+                        onChange={(e) => setActiveFilter(e.target.value as "" | "active" | "inactive")}
+                        className="px-3 py-2 rounded-xl text-sm border border-gray-200 bg-white min-h-[44px] sm:w-40"
+                    >
+                        <option value="">All</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
 
                 {loading ? (
                     <div className="flex justify-center p-12">
@@ -72,12 +107,12 @@ export default function AdminTutorsPage() {
                     </div>
                 ) : isMobile ? (
                     <div className="space-y-4 pb-24">
-                        {tutors.length === 0 ? (
+                        {filteredTutors.length === 0 ? (
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
                                 <p className="text-gray-500">No tutors found.</p>
                             </div>
                         ) : (
-                            tutors.map(tutor => (
+                            filteredTutors.map(tutor => (
                                 <div
                                     key={tutor.uid}
                                     className="bg-white rounded-xl shadow-sm border border-gray-200 p-4"
@@ -144,7 +179,7 @@ export default function AdminTutorsPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
-                                    {tutors.map(tutor => (
+                                    {filteredTutors.map(tutor => (
                                         <tr key={tutor.uid} className="hover:bg-gray-50 transition-colors">
                                             <td className="px-6 py-4 font-medium">{tutor.name}</td>
                                             <td className="px-6 py-4 text-gray-500">{tutor.email}</td>
@@ -181,7 +216,7 @@ export default function AdminTutorsPage() {
                                             </td>
                                         </tr>
                                     ))}
-                                    {tutors.length === 0 && (
+                                    {filteredTutors.length === 0 && (
                                         <tr>
                                             <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
                                                 No tutors found.

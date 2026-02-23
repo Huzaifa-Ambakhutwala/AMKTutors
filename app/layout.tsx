@@ -3,6 +3,7 @@ import { Poppins, Open_Sans } from "next/font/google";
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
 import CursorGlow from "@/components/CursorGlow";
+import { Toaster } from "@/components/Toaster";
 import { DEFAULT_THEME_COLORS, LOCAL_STORAGE_KEY } from "@/lib/theme-constants";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
@@ -84,6 +85,7 @@ export default function RootLayout({
         <ThemeProvider>
           <CursorGlow glowSize={400} glowIntensity={0.4} glowColor="rgba(255, 255, 255, 0.6)" />
           <ServiceWorkerRegister />
+          <Toaster />
           {children}
         </ThemeProvider>
       </body>
