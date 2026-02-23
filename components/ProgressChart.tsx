@@ -33,7 +33,15 @@ export default function ProgressChart({ data, subjects, valueLabel = "Score" }: 
         <YAxis stroke="#6b7280" style={{ fontSize: 12 }} domain={[0, 100]} />
         <Tooltip
           contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }}
-          formatter={(value: number) => [value, valueLabel]}
+          formatter={(value) => {
+            const n =
+              typeof value === "number"
+                ? value
+                : typeof value === "string"
+                  ? Number(value)
+                  : 0;
+            return [n, valueLabel];
+          }}
         />
         <Legend />
         {subjects.map((subject, i) => (

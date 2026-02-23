@@ -56,10 +56,17 @@ export default function TutorAvailabilityPage() {
     ]);
   };
 
-  const updateRecurring = (index: number, field: keyof RecurringAvailabilitySlot, value: number | string) => {
+  const updateRecurring = <K extends keyof RecurringAvailabilitySlot>(
+    index: number,
+    field: K,
+    value: RecurringAvailabilitySlot[K]
+  ) => {
     setRecurring((prev) => {
       const next = [...prev];
-      (next[index] as Record<string, unknown>)[field] = value;
+      next[index] = {
+        ...next[index],
+        [field]: value,
+      };
       return next;
     });
   };
@@ -81,10 +88,17 @@ export default function TutorAvailabilityPage() {
     ]);
   };
 
-  const updateBlock = (index: number, field: keyof AvailabilityBlock, value: string) => {
+  const updateBlock = <K extends keyof AvailabilityBlock>(
+    index: number,
+    field: K,
+    value: AvailabilityBlock[K]
+  ) => {
     setBlocks((prev) => {
       const next = [...prev];
-      (next[index] as Record<string, unknown>)[field] = value;
+      next[index] = {
+        ...next[index],
+        [field]: value,
+      };
       return next;
     });
   };

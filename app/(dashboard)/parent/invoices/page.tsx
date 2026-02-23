@@ -1,7 +1,7 @@
 "use client";
 
 import RoleGuard from "@/components/RoleGuard";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -11,7 +11,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
 
-export default function ParentInvoicesPage() {
+function ParentInvoicesPageInner() {
     const searchParams = useSearchParams();
     const { profileId, loading: roleLoading } = useUserRole();
     const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -137,5 +137,19 @@ export default function ParentInvoicesPage() {
                 )}
             </div>
         </RoleGuard>
+    );
+}
+
+export default function ParentInvoicesPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="p-8 flex justify-center">
+                    <Loader2 className="animate-spin text-primary" size={32} />
+                </div>
+            }
+        >
+            <ParentInvoicesPageInner />
+        </Suspense>
     );
 }

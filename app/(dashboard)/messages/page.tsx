@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { collection, query, where, doc, addDoc, onSnapshot, updateDoc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -15,6 +15,20 @@ function getConversationId(uid1: string, uid2: string) {
 }
 
 export default function MessagesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-8 flex justify-center">
+          <Loader2 className="animate-spin text-primary" size={32} />
+        </div>
+      }
+    >
+      <MessagesPageInner />
+    </Suspense>
+  );
+}
+
+function MessagesPageInner() {
   const { profileId, role, loading: roleLoading } = useUserRole();
   const searchParams = useSearchParams();
   const withUserId = searchParams.get("with");

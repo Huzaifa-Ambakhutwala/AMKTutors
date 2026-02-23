@@ -30,7 +30,18 @@ export default function RevenueChart({ data }: { data: RevenueDataPoint[] }) {
         <XAxis dataKey="period" stroke="#6b7280" style={{ fontSize: 12 }} />
         <YAxis stroke="#6b7280" style={{ fontSize: 12 }} tickFormatter={(v) => `$${v}`} />
         <Tooltip
-          formatter={(value: number) => [`$${value.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, "Revenue"]}
+          formatter={(value) => {
+            const n =
+              typeof value === "number"
+                ? value
+                : typeof value === "string"
+                  ? Number(value)
+                  : 0;
+            return [
+              `$${n.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+              "Revenue",
+            ];
+          }}
           contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }}
         />
         <Area
