@@ -117,6 +117,11 @@ export default function NewSessionPage() {
                 createdAt: new Date().toISOString(),
             };
 
+            const primaryParentId =
+                Array.isArray(student.parentIds) && student.parentIds.length > 0
+                    ? student.parentIds[0]
+                    : undefined;
+
             if (isRecurring && recurringDays.length > 0) {
                 const endAfter = Math.min(Math.max(1, recurringEndAfter), 52);
                 const occurrenceDates = getRecurringDates(
@@ -152,7 +157,7 @@ export default function NewSessionPage() {
                                     studentName: basePayload.studentName,
                                     tutorId: basePayload.tutorId,
                                     tutorName: basePayload.tutorName,
-                                    parentId: basePayload.parentId,
+                                    parentId: primaryParentId,
                                     sessionDate: sessionStart.toLocaleDateString(),
                                     sessionTime: sessionStart.toLocaleTimeString(),
                                     portalLink: "/parent",
@@ -184,7 +189,7 @@ export default function NewSessionPage() {
                                 studentName: basePayload.studentName,
                                 tutorId: basePayload.tutorId,
                                 tutorName: basePayload.tutorName,
-                                parentId: basePayload.parentId,
+                                parentId: primaryParentId,
                                 sessionDate: startDateTime.toLocaleDateString(),
                                 sessionTime: startDateTime.toLocaleTimeString(),
                                 portalLink: "/parent",

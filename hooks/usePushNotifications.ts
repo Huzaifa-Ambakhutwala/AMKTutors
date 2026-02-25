@@ -70,8 +70,9 @@ export function usePushNotifications() {
 
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
+        // Cast to any to satisfy slightly narrow TS DOM types; runtime expects a Uint8Array.
         applicationServerKey: vapidKey
-          ? urlBase64ToUint8Array(vapidKey)
+          ? (urlBase64ToUint8Array(vapidKey) as any)
           : undefined,
       });
 
