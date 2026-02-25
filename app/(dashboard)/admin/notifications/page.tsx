@@ -696,6 +696,7 @@ export default function AdminNotificationsPage() {
                       <th className="px-4 py-2">Rule</th>
                       <th className="px-4 py-2">Recipient</th>
                       <th className="px-4 py-2">Channels</th>
+                      <th className="px-4 py-2">Error</th>
                       <th className="px-4 py-2">Status</th>
                     </tr>
                   </thead>
@@ -718,6 +719,12 @@ export default function AdminNotificationsPage() {
                           ]
                             .filter(Boolean)
                             .join(", ") || "—"}
+                        </td>
+                        <td
+                          className="px-4 py-2 text-xs text-gray-500 max-w-[320px] truncate"
+                          title={log.error || ""}
+                        >
+                          {log.error || "—"}
                         </td>
                         <td className="px-4 py-2 text-xs">
                           <span

@@ -133,18 +133,28 @@ export async function dispatchNotificationEvent(
         sms?: boolean;
       } = {};
       let hadError = false;
+      const errorDetails: string[] = [];
 
       // Push
       if (rule.channels.push && prefs.pushEnabled) {
         channelsAttempted.push = true;
         try {
-          await sendPushToUser(recipient.userId, {
+          const res = await sendPushToUser(recipient.userId, {
             title: template.title,
             body: template.body,
             url: payload.portalLink,
           });
+          if (!res.success) {
+            hadError = true;
+            errorDetails.push(
+              `push: ${res.errors?.join("; ") || "unknown error"}`
+            );
+          }
         } catch (e) {
           hadError = true;
+          errorDetails.push(
+            `push: ${e instanceof Error ? e.message : String(e)}`
+          );
         }
       }
 
@@ -163,6 +173,9 @@ export async function dispatchNotificationEvent(
           });
         } catch (e) {
           hadError = true;
+          errorDetails.push(
+            `email: ${e instanceof Error ? e.message : String(e)}`
+          );
         }
       }
 
@@ -180,7 +193,7 @@ export async function dispatchNotificationEvent(
         recipientUserId: recipient.userId,
         channelsAttempted,
         status,
-        error: hadError ? "One or more channels failed" : null,
+        error: hadError ? errorDetails.join(" | ") || "Unknown error" : null,
       });
     }
   }
