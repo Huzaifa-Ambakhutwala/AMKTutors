@@ -167,6 +167,28 @@ export default function NewEvaluationPage() {
             });
 
             syncSessionToCalendar(sessionRef.id, "create");
+            try {
+                await fetch("/api/notifications/events", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        eventType: "SESSION_SCHEDULED",
+                        payload: {
+                            sessionId: sessionRef.id,
+                            studentId: finalParentId,
+                            studentName: studentName.trim(),
+                            tutorId: tutor?.uid || "",
+                            tutorName: tutor?.name || "Unknown",
+                            parentId: finalParentId,
+                            sessionDate: sessionStart.toLocaleDateString(),
+                            sessionTime: sessionStart.toLocaleTimeString(),
+                            portalLink: "/parent",
+                        },
+                    }),
+                });
+            } catch {
+                // ignore
+            }
             router.push("/admin/evaluations");
 
         } catch (e: any) {

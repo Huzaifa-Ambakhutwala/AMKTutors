@@ -4,10 +4,11 @@ import { useState, useEffect } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db, auth, googleProvider } from "@/lib/firebase";
 import { onAuthStateChanged, linkWithPopup, User } from "firebase/auth";
-import { Loader2, Save, Palette, RefreshCw, ChevronRight, Link2, CheckCircle } from "lucide-react";
+import { Loader2, Save, Palette, RefreshCw, ChevronRight, Link2, CheckCircle, Bell } from "lucide-react";
 import RoleGuard from "@/components/RoleGuard";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { toast } from "sonner";
+import NotificationSettingsPanel from "@/components/NotificationSettingsPanel";
 
 interface ColorSettings {
     primary: string;
@@ -225,6 +226,18 @@ export default function SettingsPage() {
                         )}
                     </div>
                 </section>
+
+                {/* Notifications */}
+                <div className="mt-6 mb-6">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Bell className="text-primary" size={20} />
+                        <h2 className="text-lg font-semibold text-gray-900">Admin notifications</h2>
+                    </div>
+                    <p className="text-sm text-gray-500 mb-3">
+                        Control how this admin account receives alerts.
+                    </p>
+                    <NotificationSettingsPanel />
+                </div>
 
                 {/* Theme section - grouped card */}
                 <section className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">

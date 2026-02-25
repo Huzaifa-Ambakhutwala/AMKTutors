@@ -31,6 +31,7 @@ export default function EditSessionPage() {
     const [time, setTime] = useState("");
     const [duration, setDuration] = useState("60");
     const [status, setStatus] = useState<any>('Scheduled');
+    const [initialStatus, setInitialStatus] = useState<any>('Scheduled');
     const [attendance, setAttendance] = useState<any>('Present');
     const [minutesLate, setMinutesLate] = useState(0);
     const [location, setLocation] = useState("");
@@ -60,6 +61,7 @@ export default function EditSessionPage() {
                 setSubject(session.subject);
                 setDuration(session.durationMinutes.toString());
                 setStatus(session.status);
+                setInitialStatus(session.status);
                 setAttendance(session.attendance || 'Present');
                 setMinutesLate(session.minutesLate || 0);
                 setLocation(session.location || "Online");
@@ -107,7 +109,6 @@ export default function EditSessionPage() {
             // Calculate timestamps
             const startDateTime = new Date(`${date}T${time}`);
             const endDateTime = new Date(startDateTime.getTime() + parseInt(duration) * 60000);
-
             await updateDoc(doc(db, "sessions", sessionId), {
                 studentId: student?.id || selectedStudentId, // Keep existing ID if special
                 studentName: student?.name || undefined, // Don't overwrite name if using special ID, or let it merge
@@ -124,6 +125,32 @@ export default function EditSessionPage() {
             });
 
             syncSessionToCalendar(sessionId, "update");
+
+            // Fire cancellation notification if status changed to Cancelled
+            if (initialStatus !== status && status === 'Cancelled') {
+                try {
+                    await fetch("/api/notifications/events", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            eventType: "SESSION_CANCELLED",
+                            payload: {
+                                sessionId,
+                                studentId: student?.id || selectedStudentId,
+                                studentName: student?.name || "",
+                                tutorId: tutor.uid,
+                                tutorName: tutor.name,
+                                parentId: undefined,
+                                sessionDate: startDateTime.toLocaleDateString(),
+                                sessionTime: startDateTime.toLocaleTimeString(),
+                                portalLink: "/parent",
+                            },
+                        }),
+                    });
+                } catch {
+                    // ignore
+                }
+            }
             router.push("/admin/sessions");
         } catch (e) {
             console.error(e);

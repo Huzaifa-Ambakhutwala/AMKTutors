@@ -45,3 +45,52 @@ self.addEventListener("fetch", (event) => {
   );
 });
 
+// -----------------------------
+// Push Notifications
+// -----------------------------
+
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+  let data;
+  try {
+    data = event.data.json();
+  } catch {
+    data = { title: "Notification", body: event.data.text() };
+  }
+
+  const title = data.title || "Notification";
+  const body = data.body || "";
+  const url = data.url || "/";
+
+  const options = {
+    body,
+    icon: "/icon-192x192.png",
+    badge: "/icon-192x192.png",
+    data: { url },
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  const notification = event.notification;
+  const url = notification.data?.url || "/";
+  notification.close();
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ("focus" in client && client.url.includes(location.origin)) {
+          client.focus();
+          client.postMessage({ type: "OPEN_URL", url });
+          return;
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(url);
+      }
+    })
+  );
+});
+
+

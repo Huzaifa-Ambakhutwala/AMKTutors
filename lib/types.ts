@@ -67,6 +67,89 @@ export interface ChatMessage {
   createdAt: string;
 }
 
+// ============================
+// Notifications
+// ============================
+
+export interface UserNotificationSettings {
+  userId: string;
+  pushEnabled: boolean;
+  emailEnabled: boolean;
+  /** Reserved for future SMS support. */
+  smsEnabled: boolean;
+  updatedAt: string;
+}
+
+export interface PushSubscriptionDoc {
+  id: string;
+  userId: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  userAgent?: string | null;
+  createdAt: string;
+  lastUsedAt?: string;
+}
+
+export type NotificationEventType =
+  | "SESSION_SCHEDULED"
+  | "SESSION_CANCELLED"
+  | "SESSION_REMINDER_24H"
+  | "SESSION_REMINDER_1H"
+  | "SESSION_AFTER"
+  | "INVOICE_CREATED"
+  | "TUTOR_ASSIGNED";
+
+export type NotificationAudienceType =
+  | "PARENT_OF_STUDENT"
+  | "TUTOR_ASSIGNED"
+  | "ADMIN_ALL"
+  | "CUSTOM_BY_ROLE";
+
+export interface NotificationRuleChannels {
+  push: boolean;
+  email: boolean;
+  sms: boolean; // exists but not actually sent yet
+}
+
+export interface NotificationRuleTemplate {
+  title: string;
+  body: string;
+  emailSubject: string;
+  emailHtml: string;
+}
+
+export interface NotificationRule {
+  id: string;
+  name: string;
+  enabled: boolean;
+  eventType: NotificationEventType;
+  audienceType: NotificationAudienceType;
+  /** For CUSTOM_BY_ROLE audience, which roles should receive it. */
+  roles?: UserRole[];
+  channels: NotificationRuleChannels;
+  template: NotificationRuleTemplate;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type NotificationLogStatus = "SENT" | "FAILED" | "SKIPPED";
+
+export interface NotificationLog {
+  id: string;
+  eventType: NotificationEventType;
+  ruleId: string;
+  recipientUserId: string;
+  channelsAttempted: {
+    push?: boolean;
+    email?: boolean;
+    sms?: boolean;
+  };
+  status: NotificationLogStatus;
+  error?: string | null;
+  createdAt: string;
+}
+
 export interface Student {
     id: string; // Firestore Doc ID
     name: string;

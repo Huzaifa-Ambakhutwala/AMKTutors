@@ -139,6 +139,29 @@ export default function NewSessionPage() {
                         ...(seriesId ? { recurringSeriesId: seriesId } : {}),
                     });
                     syncSessionToCalendar(ref.id, "create");
+                    // Fire notifications for scheduled session
+                    try {
+                        await fetch("/api/notifications/events", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                eventType: "SESSION_SCHEDULED",
+                                payload: {
+                                    sessionId: ref.id,
+                                    studentId: basePayload.studentId,
+                                    studentName: basePayload.studentName,
+                                    tutorId: basePayload.tutorId,
+                                    tutorName: basePayload.tutorName,
+                                    parentId: basePayload.parentId,
+                                    sessionDate: sessionStart.toLocaleDateString(),
+                                    sessionTime: sessionStart.toLocaleTimeString(),
+                                    portalLink: "/parent",
+                                },
+                            }),
+                        });
+                    } catch {
+                        // best-effort; ignore
+                    }
                 }
             } else {
                 const endDateTime = new Date(startDateTime.getTime() + durationMs);
@@ -149,6 +172,28 @@ export default function NewSessionPage() {
                     ...(seriesId ? { recurringSeriesId: seriesId } : {}),
                 });
                 syncSessionToCalendar(ref.id, "create");
+                try {
+                    await fetch("/api/notifications/events", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            eventType: "SESSION_SCHEDULED",
+                            payload: {
+                                sessionId: ref.id,
+                                studentId: basePayload.studentId,
+                                studentName: basePayload.studentName,
+                                tutorId: basePayload.tutorId,
+                                tutorName: basePayload.tutorName,
+                                parentId: basePayload.parentId,
+                                sessionDate: startDateTime.toLocaleDateString(),
+                                sessionTime: startDateTime.toLocaleTimeString(),
+                                portalLink: "/parent",
+                            },
+                        }),
+                    });
+                } catch {
+                    // ignore
+                }
             }
 
             router.push("/admin/sessions");

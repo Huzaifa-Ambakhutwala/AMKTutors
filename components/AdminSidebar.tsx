@@ -19,6 +19,7 @@ import {
     BarChart3,
     FileText,
     ChevronDown,
+    Bell,
 } from "lucide-react";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
@@ -62,6 +63,7 @@ export default function AdminSidebar({ onClose, className }: AdminSidebarProps) 
 
     const singleLinksAfter = [
         { name: "Billing", href: "/admin/billing", icon: CreditCard },
+        { name: "Notifications", href: "/admin/notifications", icon: Bell },
         { name: "Manage Logins", href: "/admin/logins", icon: Lock },
     ];
 
