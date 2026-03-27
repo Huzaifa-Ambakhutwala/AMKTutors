@@ -159,6 +159,17 @@ export default function ContactForm() {
                     <p className="text-lg text-gray-100">
                         Ready to see the difference personalized tutoring can make? Fill out the form to schedule your free consultation.
                     </p>
+                    <div className="mt-5 flex flex-col items-center gap-3">
+                        <p className="text-lg md:text-xl text-gray-100">
+                            Or call us directly
+                        </p>
+                        <a
+                            href="tel:+12819406452"
+                            className="inline-flex items-center justify-center rounded-xl bg-yellow-300 px-6 py-3 text-lg md:text-xl font-bold text-secondary shadow-lg transition-colors hover:bg-yellow-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200 focus-visible:ring-offset-2 focus-visible:ring-offset-secondary"
+                        >
+                            +12819406452
+                        </a>
+                    </div>
                 </MotionDiv>
 
                 <motion.div
