@@ -7,7 +7,7 @@ import { db } from "@/lib/firebase";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { Session } from "@/lib/types";
-import { Loader2, ArrowLeft, MessageSquare, X, LogOut, CheckCircle } from "lucide-react";
+import { Loader2, ArrowLeft, MessageSquare, LogOut, CheckCircle, MapPin, StickyNote } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ManageSessionModal from "@/components/ManageSessionModal";
@@ -57,6 +57,18 @@ export default function TutorDashboard() {
         if (managingSession?.id === updatedSession.id) setManagingSession(updatedSession);
     };
 
+    const activeSessions = sessions
+        .filter(s => s.status !== "Completed")
+        .sort((a, b) => {
+            const cancelledRank = (x: Session) => (x.status === "Cancelled" ? 1 : 0);
+            const rc = cancelledRank(a) - cancelledRank(b);
+            if (rc !== 0) return rc;
+            return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+        });
+    const completedSessions = sessions
+        .filter(s => s.status === "Completed")
+        .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+
     return (
         <RoleGuard allowedRoles={['TUTOR']}>
             <div className="p-8 relative">
@@ -80,46 +92,135 @@ export default function TutorDashboard() {
 
                 <h2 className="text-xl font-bold mb-4">My Sessions</h2>
                 {loading ? <Loader2 className="animate-spin" /> : (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                        <table className="w-full text-left">
-                            <thead className="bg-gray-50 border-b border-gray-100">
-                                <tr>
-                                    <th className="px-6 py-4 text-gray-700">Student</th>
-                                    <th className="px-6 py-4 text-gray-700">Subject</th>
-                                    <th className="px-6 py-4 text-gray-700">Time</th>
-                                    <th className="px-6 py-4 text-gray-700">Status</th>
-                                    <th className="px-6 py-4 text-gray-700">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {sessions.map(s => (
-                                    <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50">
-                                        <td className="px-6 py-4 font-medium">{s.studentName}</td>
-                                        <td className="px-6 py-4">{s.subject}</td>
-                                        <td className="px-6 py-4">{new Date(s.startTime).toLocaleString()}</td>
-                                        <td className="px-6 py-4">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${s.status === 'Completed' ? 'bg-green-100 text-green-700' :
-                                                s.status === 'Cancelled' ? 'bg-red-100 text-red-700' : 'bg-[#1A2742]/10 text-primary'
-                                                }`}>
-                                                {s.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <button
-                                                onClick={() => setManagingSession(s)}
-                                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors shadow-sm flex items-center gap-2 ${s.status === 'Completed'
-                                                    ? 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
-                                                    : 'bg-green-600 text-white hover:bg-green-700'
-                                                    }`}
-                                            >
-                                                {s.status === 'Completed' ? <MessageSquare size={16} /> : <CheckCircle size={16} />}
-                                                {s.status === 'Completed' ? "Edit Details" : "Mark Complete"}
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                    <div className="space-y-10">
+                        <section>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-3">Upcoming and active</h3>
+                            {activeSessions.length === 0 ? (
+                                <p className="text-gray-500 text-sm">No scheduled sessions right now.</p>
+                            ) : (
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+                                    <table className="w-full text-left min-w-[720px]">
+                                        <thead className="bg-gray-50 border-b border-gray-100">
+                                            <tr>
+                                                <th className="px-4 py-3 text-gray-700 text-sm">Student</th>
+                                                <th className="px-4 py-3 text-gray-700 text-sm">Subject</th>
+                                                <th className="px-4 py-3 text-gray-700 text-sm whitespace-nowrap">Time</th>
+                                                <th className="px-4 py-3 text-gray-700 text-sm">Location</th>
+                                                <th className="px-4 py-3 text-gray-700 text-sm min-w-[180px]">Notes</th>
+                                                <th className="px-4 py-3 text-gray-700 text-sm">Status</th>
+                                                <th className="px-4 py-3 text-gray-700 text-sm">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {activeSessions.map(s => (
+                                                <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50 align-top">
+                                                    <td className="px-4 py-3 font-medium text-sm">{s.studentName}</td>
+                                                    <td className="px-4 py-3 text-sm">{s.subject}</td>
+                                                    <td className="px-4 py-3 text-sm whitespace-nowrap">{new Date(s.startTime).toLocaleString()}</td>
+                                                    <td className="px-4 py-3 text-sm">
+                                                        {s.location ? (
+                                                            <span className="inline-flex items-start gap-1.5 text-gray-800">
+                                                                <MapPin size={14} className="shrink-0 mt-0.5 text-primary" />
+                                                                <span className="whitespace-pre-wrap">{s.location}</span>
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-gray-400">—</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-sm text-gray-700">
+                                                        {s.notes ? (
+                                                            <span className="inline-flex items-start gap-1.5">
+                                                                <StickyNote size={14} className="shrink-0 mt-0.5 text-amber-600" />
+                                                                <span className="line-clamp-3 whitespace-pre-wrap">{s.notes}</span>
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-gray-400">—</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${s.status === "Cancelled" ? "bg-red-100 text-red-700" :
+                                                            s.status === "NoShow" ? "bg-orange-100 text-orange-800" :
+                                                                "bg-[#1A2742]/10 text-primary"
+                                                            }`}>
+                                                            {s.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <button
+                                                            onClick={() => setManagingSession(s)}
+                                                            className="px-4 py-2 rounded-lg text-sm font-bold transition-colors shadow-sm flex items-center gap-2 bg-green-600 text-white hover:bg-green-700"
+                                                        >
+                                                            <CheckCircle size={16} />
+                                                            Mark Complete
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </section>
+
+                        <section>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-3">Completed</h3>
+                            {completedSessions.length === 0 ? (
+                                <p className="text-gray-500 text-sm">No completed sessions yet.</p>
+                            ) : (
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+                                    <table className="w-full text-left min-w-[720px]">
+                                        <thead className="bg-gray-50 border-b border-gray-100">
+                                            <tr>
+                                                <th className="px-4 py-3 text-gray-700 text-sm">Student</th>
+                                                <th className="px-4 py-3 text-gray-700 text-sm">Subject</th>
+                                                <th className="px-4 py-3 text-gray-700 text-sm whitespace-nowrap">Time</th>
+                                                <th className="px-4 py-3 text-gray-700 text-sm">Location</th>
+                                                <th className="px-4 py-3 text-gray-700 text-sm min-w-[180px]">Notes</th>
+                                                <th className="px-4 py-3 text-gray-700 text-sm">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {completedSessions.map(s => (
+                                                <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50 align-top">
+                                                    <td className="px-4 py-3 font-medium text-sm">{s.studentName}</td>
+                                                    <td className="px-4 py-3 text-sm">{s.subject}</td>
+                                                    <td className="px-4 py-3 text-sm whitespace-nowrap">{new Date(s.startTime).toLocaleString()}</td>
+                                                    <td className="px-4 py-3 text-sm">
+                                                        {s.location ? (
+                                                            <span className="inline-flex items-start gap-1.5 text-gray-800">
+                                                                <MapPin size={14} className="shrink-0 mt-0.5 text-primary" />
+                                                                <span className="whitespace-pre-wrap">{s.location}</span>
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-gray-400">—</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-sm text-gray-700">
+                                                        {s.notes ? (
+                                                            <span className="inline-flex items-start gap-1.5">
+                                                                <StickyNote size={14} className="shrink-0 mt-0.5 text-amber-600" />
+                                                                <span className="line-clamp-3 whitespace-pre-wrap">{s.notes}</span>
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-gray-400">—</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <button
+                                                            onClick={() => setManagingSession(s)}
+                                                            className="px-4 py-2 rounded-lg text-sm font-bold transition-colors shadow-sm flex items-center gap-2 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
+                                                        >
+                                                            <MessageSquare size={16} />
+                                                            Edit Details
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </section>
                     </div>
                 )}
 

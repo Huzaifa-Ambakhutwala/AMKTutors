@@ -4,7 +4,7 @@ import { useState } from "react";
 import { doc, updateDoc, Timestamp, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Session } from "@/lib/types";
-import { Loader2, X, CheckCircle, Save, Lock, MessageSquare, BookOpen, Clock } from "lucide-react";
+import { Loader2, X, CheckCircle, Save, Lock, MessageSquare, BookOpen, Clock, MapPin } from "lucide-react";
 import { FormFeedback } from "@/components/FormFeedback";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { toast } from "sonner";
@@ -100,6 +100,16 @@ export default function ManageSessionModal({ session, onClose, onUpdate }: Manag
 
                 <div className="p-6 overflow-y-auto space-y-6">
                     {error && <FormFeedback type="error" message={error} />}
+
+                    {session.location && (
+                        <div className="flex gap-3 p-4 rounded-xl border border-blue-100 bg-blue-50/80 text-sm text-gray-800">
+                            <MapPin size={18} className="shrink-0 text-primary mt-0.5" />
+                            <div>
+                                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Location</p>
+                                <p className="font-medium whitespace-pre-wrap">{session.location}</p>
+                            </div>
+                        </div>
+                    )}
 
                     {/* 1. Attendance */}
                     <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">

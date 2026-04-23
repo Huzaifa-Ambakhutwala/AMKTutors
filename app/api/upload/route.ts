@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getStorage } from "firebase-admin/storage";
-import { adminAuth } from "@/lib/firebase-admin";
+import { adminAuth, getAdminStorage } from "@/lib/firebase-admin";
 
 export async function POST(req: Request) {
   try {
@@ -21,8 +20,7 @@ export async function POST(req: Request) {
     const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
     const path = `files/${pathPrefix}/${Date.now()}_${safeName}`;
 
-    const storage = getStorage();
-    const bucket = storage.bucket();
+    const bucket = getAdminStorage().bucket();
     const bucketFile = bucket.file(path);
     await bucketFile.save(buffer, {
       metadata: { contentType: file.type || "application/octet-stream" },

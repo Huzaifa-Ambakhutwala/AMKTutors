@@ -1,4 +1,5 @@
 import * as admin from 'firebase-admin';
+import 'firebase-admin/storage';
 
 if (!admin.apps.length) {
     try {
