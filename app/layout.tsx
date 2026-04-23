@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Poppins, Open_Sans } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
 import CursorGlow from "@/components/CursorGlow";
@@ -79,7 +80,9 @@ export default function RootLayout({
         className={`${poppins.variable} ${openSans.variable} antialiased bg-gray-50 font-sans`}
         suppressHydrationWarning
       >
-        <script
+        <Script
+          id="theme-colors"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: themeScript }}
         />
         <ThemeProvider>
