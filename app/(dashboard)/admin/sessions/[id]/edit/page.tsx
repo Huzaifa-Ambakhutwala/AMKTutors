@@ -1,22 +1,53 @@
 "use client";
 
-import RoleGuard from "@/components/RoleGuard";
 import { useState, useEffect } from "react";
-import { collection, getDocs, doc, getDoc, updateDoc, query, where } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useRouter, useParams } from "next/navigation";
 import { UserProfile, Student, Session } from "@/lib/types";
-import { Loader2, ArrowLeft, Trash2 } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { syncSessionToCalendar } from "@/lib/calendar-sync-client";
 import { toast } from "sonner";
 
+function applySessionToForm(session: Session, setters: {
+    setDate: (v: string) => void;
+    setTime: (v: string) => void;
+    setSelectedStudentId: (v: string) => void;
+    setSelectedTutorId: (v: string) => void;
+    setStudentDisplayName: (v: string) => void;
+    setTutorDisplayName: (v: string) => void;
+    setSubject: (v: string) => void;
+    setDuration: (v: string) => void;
+    setStatus: (v: Session["status"]) => void;
+    setInitialStatus: (v: Session["status"]) => void;
+    setAttendance: (v: NonNullable<Session["attendance"]>) => void;
+    setMinutesLate: (v: number) => void;
+    setLocation: (v: string) => void;
+}) {
+    const startObj = new Date(session.startTime);
+    setters.setDate(startObj.toISOString().split("T")[0]);
+    setters.setTime(startObj.toLocaleTimeString([], { hour12: false, hour: "2-digit", minute: "2-digit" }));
+    setters.setSelectedStudentId(session.studentId);
+    setters.setSelectedTutorId(session.tutorId);
+    setters.setStudentDisplayName(session.studentName || "");
+    setters.setTutorDisplayName(session.tutorName || "");
+    setters.setSubject(session.subject);
+    setters.setDuration(session.durationMinutes.toString());
+    setters.setStatus(session.status);
+    setters.setInitialStatus(session.status);
+    setters.setAttendance(session.attendance || "Present");
+    setters.setMinutesLate(session.minutesLate || 0);
+    setters.setLocation(session.location || "Online");
+}
+
 export default function EditSessionPage() {
     const router = useRouter();
     const { id } = useParams();
-    const sessionId = id as string;
+    const sessionId = typeof id === "string" ? id : "";
 
     const [loading, setLoading] = useState(true);
+    const [listsLoading, setListsLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
 
     // Data Sources
@@ -26,13 +57,15 @@ export default function EditSessionPage() {
     // Form State
     const [selectedStudentId, setSelectedStudentId] = useState("");
     const [selectedTutorId, setSelectedTutorId] = useState("");
+    const [studentDisplayName, setStudentDisplayName] = useState("");
+    const [tutorDisplayName, setTutorDisplayName] = useState("");
     const [subject, setSubject] = useState("");
     const [date, setDate] = useState("");
     const [time, setTime] = useState("");
     const [duration, setDuration] = useState("60");
-    const [status, setStatus] = useState<any>('Scheduled');
-    const [initialStatus, setInitialStatus] = useState<any>('Scheduled');
-    const [attendance, setAttendance] = useState<any>('Present');
+    const [status, setStatus] = useState<Session["status"]>("Scheduled");
+    const [initialStatus, setInitialStatus] = useState<Session["status"]>("Scheduled");
+    const [attendance, setAttendance] = useState<NonNullable<Session["attendance"]>>("Present");
     const [minutesLate, setMinutesLate] = useState(0);
     const [location, setLocation] = useState("");
 
@@ -40,57 +73,75 @@ export default function EditSessionPage() {
     const selectedStudent = students.find(s => s.id === selectedStudentId);
 
     useEffect(() => {
-        async function fetchData() {
+        if (!sessionId) return;
+
+        let cancelled = false;
+
+        async function loadPageData() {
             try {
-                // 1. Fetch Session
                 const sessDoc = await getDoc(doc(db, "sessions", sessionId));
+                if (cancelled) return;
+
                 if (!sessDoc.exists()) {
                     toast.error("Session not found");
                     router.push("/admin/sessions");
                     return;
                 }
-                const session = sessDoc.data() as Session;
 
-                // Parse date/time
-                const startObj = new Date(session.startTime);
-                setDate(startObj.toISOString().split('T')[0]); // YYYY-MM-DD
-                setTime(startObj.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' })); // HH:MM
+                const session = { id: sessDoc.id, ...sessDoc.data() } as Session;
+                applySessionToForm(session, {
+                    setDate,
+                    setTime,
+                    setSelectedStudentId,
+                    setSelectedTutorId,
+                    setStudentDisplayName,
+                    setTutorDisplayName,
+                    setSubject,
+                    setDuration,
+                    setStatus,
+                    setInitialStatus,
+                    setAttendance,
+                    setMinutesLate,
+                    setLocation,
+                });
+                if (!cancelled) setLoading(false);
 
-                setSelectedStudentId(session.studentId);
-                setSelectedTutorId(session.tutorId);
-                setSubject(session.subject);
-                setDuration(session.durationMinutes.toString());
-                setStatus(session.status);
-                setInitialStatus(session.status);
-                setAttendance(session.attendance || 'Present');
-                setMinutesLate(session.minutesLate || 0);
-                setLocation(session.location || "Online");
+                const [sSnap, uSnap] = await Promise.all([
+                    getDocs(collection(db, "students")),
+                    getDocs(collection(db, "users")),
+                ]);
+                if (cancelled) return;
 
-                // 2. Fetch Lists
-                const sSnap = await getDocs(collection(db, "students"));
                 const allStudents = sSnap.docs.map(d => ({ id: d.id, ...d.data() } as Student));
-                setStudents(allStudents);
+                const activeStudents = allStudents.filter(s => s.status === "Active");
+                const currentStudent = allStudents.find(s => s.id === session.studentId);
+                setStudents(
+                    currentStudent && !activeStudents.some(s => s.id === currentStudent.id)
+                        ? [currentStudent, ...activeStudents]
+                        : activeStudents
+                );
 
-                const uSnap = await getDocs(query(collection(db, "users"), where("role", "in", ["TUTOR", "ADMIN"])));
-                // Allow both TUTOR and ADMIN to be selected as tutors
-                const allTutors = uSnap.docs.map(d => ({ uid: d.id, ...d.data() } as UserProfile)).filter(u => !u.isShadow);
-                setTutors(allTutors);
-
-                // Debugging consistency
-                if (session.studentId && !allStudents.find(s => s.id === session.studentId)) {
-                    console.warn(`Student ID ${session.studentId} not found in students list.`);
-                }
-                if (session.tutorId && !allTutors.find(t => t.uid === session.tutorId)) {
-                    console.warn(`Tutor ID ${session.tutorId} not found in tutors/admins list.`);
-                }
-
+                setTutors(
+                    uSnap.docs
+                        .map(d => ({ uid: d.id, ...d.data() } as UserProfile))
+                        .filter(u => (u.role === "TUTOR" || u.role === "ADMIN") && !u.isShadow)
+                );
             } catch (e) {
                 console.error(e);
+                if (!cancelled) toast.error("Failed to load session");
             } finally {
-                setLoading(false);
+                if (!cancelled) {
+                    setLoading(false);
+                    setListsLoading(false);
+                }
             }
         }
-        fetchData();
+
+        loadPageData();
+
+        return () => {
+            cancelled = true;
+        };
     }, [sessionId, router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -161,8 +212,9 @@ export default function EditSessionPage() {
     };
 
     const inputClass = "w-full px-4 py-3 min-h-[48px] border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary outline-none";
+    const disabledInputClass = "w-full px-4 py-3 min-h-[48px] border border-gray-300 rounded-xl bg-gray-100 text-gray-500";
+
     return (
-        <RoleGuard allowedRoles={['ADMIN']}>
             <div className="w-full max-w-full overflow-x-hidden p-4 md:p-8 max-w-2xl mx-auto pb-24 md:pb-8">
                 <div className="mb-6 md:mb-8 flex items-center gap-4">
                     <Link href="/admin/sessions" className="p-2.5 hover:bg-gray-100 rounded-full transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center">
@@ -182,10 +234,17 @@ export default function EditSessionPage() {
                                 {subject === 'Evaluation' || selectedStudentId?.includes('EVALUATION') ? (
                                     <input
                                         type="text"
-                                        value={students.find(s => s.id === selectedStudentId)?.name || (status === 'Completed' || status === 'Scheduled' ? "Potential Student (Evaluation)" : "")}
+                                        value={studentDisplayName || (status === 'Completed' || status === 'Scheduled' ? "Potential Student (Evaluation)" : "")}
                                         disabled
-                                        className="w-full px-4 py-3 min-h-[48px] border border-gray-300 rounded-xl bg-gray-100 text-gray-500"
+                                        className={disabledInputClass}
                                         placeholder="Student Name"
+                                    />
+                                ) : listsLoading ? (
+                                    <input
+                                        type="text"
+                                        value={studentDisplayName}
+                                        disabled
+                                        className={disabledInputClass}
                                     />
                                 ) : (
                                     <select
@@ -205,17 +264,26 @@ export default function EditSessionPage() {
                             {/* Tutor Selection */}
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Tutor</label>
-                                <select
-                                    required
-                                    value={selectedTutorId}
-                                    onChange={e => setSelectedTutorId(e.target.value)}
-                                    className={inputClass}
-                                >
-                                    <option value="" disabled>Select Tutor...</option>
-                                    {tutors.map(t => (
-                                        <option key={t.uid} value={t.uid}>{t.name}</option>
-                                    ))}
-                                </select>
+                                {listsLoading ? (
+                                    <input
+                                        type="text"
+                                        value={tutorDisplayName}
+                                        disabled
+                                        className={disabledInputClass}
+                                    />
+                                ) : (
+                                    <select
+                                        required
+                                        value={selectedTutorId}
+                                        onChange={e => setSelectedTutorId(e.target.value)}
+                                        className={inputClass}
+                                    >
+                                        <option value="" disabled>Select Tutor...</option>
+                                        {tutors.map(t => (
+                                            <option key={t.uid} value={t.uid}>{t.name}</option>
+                                        ))}
+                                    </select>
+                                )}
                             </div>
 
                             {/* Subject Selection (Dependent on Student) */}
@@ -286,7 +354,7 @@ export default function EditSessionPage() {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                                 <select
                                     value={status}
-                                    onChange={e => setStatus(e.target.value)}
+                                    onChange={e => setStatus(e.target.value as Session["status"])}
                                     className={inputClass}
                                 >
                                     <option value="Scheduled">Scheduled</option>
@@ -300,7 +368,7 @@ export default function EditSessionPage() {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Attendance</label>
                                 <select
                                     value={attendance}
-                                    onChange={e => setAttendance(e.target.value)}
+                                    onChange={e => setAttendance(e.target.value as NonNullable<Session["attendance"]>)}
                                     className={inputClass}
                                 >
                                     <option value="Present">Present</option>
@@ -345,8 +413,8 @@ export default function EditSessionPage() {
                             </Link>
                             <button
                                 type="submit"
-                                disabled={submitting}
-                                className="w-full sm:w-auto px-6 py-3 min-h-[48px] bg-primary text-white rounded-xl font-medium hover:bg-primary/90 flex items-center justify-center gap-2"
+                                disabled={submitting || listsLoading}
+                                className="w-full sm:w-auto px-6 py-3 min-h-[48px] bg-primary text-white rounded-xl font-medium hover:bg-primary/90 flex items-center justify-center gap-2 disabled:opacity-60"
                             >
                                 {submitting && <Loader2 className="animate-spin" size={18} />}
                                 Save Changes
@@ -355,6 +423,5 @@ export default function EditSessionPage() {
                     </form>
                 )}
             </div>
-        </RoleGuard>
     );
 }
