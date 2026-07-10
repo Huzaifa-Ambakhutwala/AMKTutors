@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { doc, getDoc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { DEFAULT_THEME_COLORS, LOCAL_STORAGE_KEY } from "@/lib/theme-constants";
 
@@ -84,33 +84,6 @@ export function useThemeColors() {
         };
 
         loadColors();
-
-        // Listen for real-time updates
-        const unsubscribe = onSnapshot(
-            doc(db, "settings", "theme_colors"),
-            (docSnap) => {
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    const updatedColors: ThemeColors = {
-                        primary: data.primary || defaultColors.primary,
-                        secondary: data.secondary || defaultColors.secondary,
-                        accent: data.accent || defaultColors.accent,
-                        yellow: data.yellow || defaultColors.yellow,
-                        yellowDark: data.yellowDark || defaultColors.yellowDark,
-                    };
-                    setColors(updatedColors);
-                    applyColors(updatedColors);
-                    if (typeof window !== "undefined") {
-                        window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedColors));
-                    }
-                }
-            },
-            (error) => {
-                console.error("Error listening to theme colors:", error);
-            }
-        );
-
-        return () => unsubscribe();
     }, []);
 
     return { colors, loading };

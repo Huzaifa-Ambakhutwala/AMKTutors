@@ -1,61 +1,81 @@
 "use client";
 
 import RoleGuard from "@/components/RoleGuard";
-import { useEffect, useState } from "react";
-import { collection, query, where, getDocs, onSnapshot } from "firebase/firestore";
+import { useEffect, useState, useCallback } from "react";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { Session } from "@/lib/types";
-import { Loader2, ArrowLeft, MessageSquare, X, LogOut, Calendar, FileText, Clock } from "lucide-react";
+import { fetchSessionsForStudentIds } from "@/lib/sessions-query";
+import { Loader2, ArrowLeft, MessageSquare, X, LogOut, Calendar, FileText, Clock, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import SessionFeedback from "@/components/SessionFeedback";
 
 export default function ParentDashboard() {
-    const { user, profileId, loading: roleLoading } = useUserRole();
+    const { profileId, loading: roleLoading } = useUserRole();
     const { logout } = useAuth();
     const router = useRouter();
     const [sessions, setSessions] = useState<Session[]>([]);
     const [loading, setLoading] = useState(true);
     const [studentIds, setStudentIds] = useState<string[]>([]);
     const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+    const [refreshing, setRefreshing] = useState(false);
 
-    // Load student IDs for this parent (one-time when profileId is ready)
+    const loadStudentIds = useCallback(async () => {
+        if (!profileId) return [];
+        const snap = await getDocs(
+            query(collection(db, "students"), where("parentIds", "array-contains", profileId))
+        );
+        return snap.docs.map((d) => d.id);
+    }, [profileId]);
+
+    const loadSessions = useCallback(async (ids: string[], showFullLoader = true) => {
+        if (showFullLoader) setLoading(true);
+        else setRefreshing(true);
+        try {
+            const data = await fetchSessionsForStudentIds(ids);
+            setSessions(data.map((s) => ({ ...s, internalNotes: null })));
+        } catch (e) {
+            console.error("Error fetching sessions:", e);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    }, []);
+
     useEffect(() => {
         if (!profileId || roleLoading) return;
-        getDocs(query(collection(db, "students"), where("parentIds", "array-contains", profileId)))
-            .then((snap) => {
-                setStudentIds(snap.docs.map(d => d.id));
-            })
-            .catch((e) => console.error("Error fetching students:", e));
-    }, [profileId, roleLoading]);
 
-    // Real-time sessions: subscribe to all sessions and filter by studentIds client-side
-    useEffect(() => {
-        if (!user || !profileId || studentIds.length === 0) {
-            if (studentIds.length === 0 && profileId) {
-                setSessions([]);
-                setLoading(false);
+        let cancelled = false;
+
+        (async () => {
+            try {
+                const ids = await loadStudentIds();
+                if (cancelled) return;
+                setStudentIds(ids);
+                if (ids.length === 0) {
+                    setSessions([]);
+                    setLoading(false);
+                    return;
+                }
+                await loadSessions(ids);
+            } catch (e) {
+                console.error("Error fetching students:", e);
+                if (!cancelled) setLoading(false);
             }
-            return;
-        }
-        setLoading(true);
-        const unsub = onSnapshot(collection(db, "sessions"), (snap) => {
-            const studentIdSet = new Set(studentIds);
-            const allSessions = snap.docs
-                .map(d => ({ id: d.id, ...d.data() } as Session))
-                .filter(s => studentIdSet.has(s.studentId));
-            const safeList = allSessions.map(s => ({ ...s, internalNotes: null }));
-            safeList.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
-            setSessions(safeList);
-            setLoading(false);
-        }, (err) => {
-            console.error("Error subscribing to sessions:", err);
-            setLoading(false);
-        });
-        return () => unsub();
-    }, [user, profileId, studentIds.join(",")]);
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [profileId, roleLoading, loadStudentIds, loadSessions]);
+
+    const handleRefresh = async () => {
+        if (studentIds.length === 0) return;
+        await loadSessions(studentIds, false);
+    };
 
     const handleLogout = async () => {
         await logout();
@@ -155,7 +175,18 @@ export default function ParentDashboard() {
                     </div>
                 )}
 
-                <h2 className="text-xl font-bold mb-4">All Sessions</h2>
+                <h2 className="text-xl font-bold mb-4 flex items-center justify-between gap-3">
+                    <span>All Sessions</span>
+                    <button
+                        type="button"
+                        onClick={handleRefresh}
+                        disabled={loading || refreshing || studentIds.length === 0}
+                        className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-primary px-3 py-2 rounded-lg hover:bg-gray-100 disabled:opacity-50"
+                    >
+                        <RotateCcw size={16} className={refreshing ? "animate-spin" : ""} />
+                        Refresh
+                    </button>
+                </h2>
                 {loading ? (
                     <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary" size={32} /></div>
                 ) : sessions.length === 0 ? (

@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import RoleGuard from "@/components/RoleGuard";
-import { collection, query, where, onSnapshot, doc, getDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { Session } from "@/lib/types";
-import { Loader2, ArrowLeft, MessageSquare, LogOut, CheckCircle, MapPin, StickyNote } from "lucide-react";
+import { fetchSessionsForTutor } from "@/lib/sessions-query";
+import { Loader2, ArrowLeft, MessageSquare, LogOut, CheckCircle, MapPin, StickyNote, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ManageSessionModal from "@/components/ManageSessionModal";
@@ -19,33 +20,35 @@ export default function TutorDashboard() {
     const [sessions, setSessions] = useState<Session[]>([]);
     const [loading, setLoading] = useState(true);
     const [managingSession, setManagingSession] = useState<Session | null>(null);
+    const [refreshing, setRefreshing] = useState(false);
 
-    useEffect(() => {
-        if (!user || !profileId) return;
-        let unsub: (() => void) | null = null;
-        getDoc(doc(db, "users", profileId)).then((userDoc) => {
+    const loadSessions = useCallback(async (showFullLoader = true) => {
+        if (!profileId) return;
+        if (showFullLoader) setLoading(true);
+        else setRefreshing(true);
+        try {
+            const userDoc = await getDoc(doc(db, "users", profileId));
             let logicalTutorId = profileId;
             if (userDoc.exists()) {
                 const data = userDoc.data() as { pointer?: string };
                 if (data.pointer) logicalTutorId = data.pointer;
             }
-            const q = query(collection(db, "sessions"), where("tutorId", "==", logicalTutorId));
-            unsub = onSnapshot(q, (snap) => {
-                const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as Session));
-                setSessions(list);
-                setLoading(false);
-            }, (err) => {
-                console.error(err);
-                setLoading(false);
-            });
-        }).catch((e) => {
+            const list = await fetchSessionsForTutor(logicalTutorId);
+            setSessions(list);
+        } catch (e) {
             console.error(e);
+        } finally {
             setLoading(false);
-        });
-        return () => {
-            if (unsub) unsub();
-        };
-    }, [user, profileId]);
+            setRefreshing(false);
+        }
+    }, [profileId]);
+
+    useEffect(() => {
+        if (!user || !profileId) return;
+        loadSessions();
+    }, [user, profileId, loadSessions]);
+
+    const handleRefresh = () => loadSessions(false);
 
     const handleLogout = async () => {
         await logout();
@@ -90,7 +93,18 @@ export default function TutorDashboard() {
                     </div>
                 </div>
 
-                <h2 className="text-xl font-bold mb-4">My Sessions</h2>
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold">My Sessions</h2>
+                    <button
+                        type="button"
+                        onClick={handleRefresh}
+                        disabled={loading || refreshing}
+                        className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-primary px-3 py-2 rounded-lg hover:bg-gray-100 disabled:opacity-50"
+                    >
+                        <RotateCcw size={16} className={refreshing ? "animate-spin" : ""} />
+                        Refresh
+                    </button>
+                </div>
                 {loading ? <Loader2 className="animate-spin" /> : (
                     <div className="space-y-10">
                         <section>

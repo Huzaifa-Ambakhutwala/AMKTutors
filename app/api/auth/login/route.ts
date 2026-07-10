@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminAuth, adminDb } from "@/lib/firebase-admin";
+import { adminDb } from "@/lib/firebase-admin";
+import {
+  getUserProfileDocByAuthUid,
+  isLoginRole,
+  mapAuthServiceError,
+  redirectPathForRole,
+} from "@/lib/auth-server";
 import {
   createSession,
   getSessionCookieOptions,
@@ -107,26 +113,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: message }, { status: 401 });
     }
 
-    const idToken = data.idToken;
-    if (!idToken) {
+    const uid = data.localId as string | undefined;
+    if (!data.idToken || !uid) {
       return NextResponse.json({ error: "Invalid response from auth" }, { status: 500 });
     }
 
-    const decoded = await adminAuth.verifyIdToken(idToken);
-    const uid = decoded.uid;
-
-    // Fetch user profile for role
-    const userDoc = await adminDb.collection("users").doc(uid).get();
-    if (!userDoc.exists) {
+    const userDoc = await getUserProfileDocByAuthUid(uid);
+    if (!userDoc) {
       return NextResponse.json(
-        { error: "User profile not found" },
+        { error: "User profile not found. Please use your invite link or contact an administrator." },
         { status: 403 }
       );
     }
 
     const profile = userDoc.data();
     const role = profile?.role as string;
-    if (!["ADMIN", "TUTOR", "PARENT"].includes(role)) {
+    if (!isLoginRole(role)) {
       return NextResponse.json(
         { error: "Account is not approved for login" },
         { status: 403 }
@@ -136,7 +138,7 @@ export async function POST(request: NextRequest) {
     const sessionId = await createSession(
       {
         uid,
-        email: profile?.email ?? decoded.email ?? email,
+        email: profile?.email ?? email,
         role: role as "ADMIN" | "TUTOR" | "PARENT",
         name: profile?.name,
       },
@@ -147,12 +149,11 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({
       user: {
         uid,
-        email: profile?.email ?? decoded.email ?? email,
+        email: profile?.email ?? email,
         role,
         name: profile?.name,
       },
-      redirectTo:
-        role === "ADMIN" ? "/admin" : role === "TUTOR" ? "/tutor" : "/parent",
+      redirectTo: redirectPathForRole(role),
     });
 
     response.cookies.set(SESSION_COOKIE_NAME, sessionId, cookieOptions);
@@ -160,9 +161,10 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (e) {
     console.error("Login error:", e);
+    const mapped = mapAuthServiceError(e);
     return NextResponse.json(
-      { error: "An error occurred during login" },
-      { status: 500 }
+      { error: mapped.error, code: mapped.code },
+      { status: mapped.status }
     );
   }
 }

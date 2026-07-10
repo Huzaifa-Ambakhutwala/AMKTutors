@@ -15,7 +15,7 @@ function LoginForm() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [rememberMe, setRememberMe] = useState(true);
-    const { user, loading: authLoading } = useAuth();
+    const { user, loading: authLoading, refetch } = useAuth();
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -72,6 +72,7 @@ function LoginForm() {
                 return;
             }
 
+            await refetch();
             const target = returnUrl && returnUrl.startsWith("/") ? decodeURIComponent(returnUrl) : (data.redirectTo || "/admin");
             router.push(target);
         } catch (err: any) {
@@ -88,8 +89,9 @@ function LoginForm() {
         setLinkModal(null);
         try {
             const result = await signInWithPopup(auth, googleProvider);
-            const idToken = await result.user.getIdToken();
+            const idToken = await result.user.getIdToken(true);
             const data = await createAppSessionFromIdToken(idToken, rememberMe);
+            await refetch();
             const target = returnUrl && returnUrl.startsWith("/") ? decodeURIComponent(returnUrl) : (data.redirectTo || "/admin");
             router.push(target);
         } catch (err: any) {
@@ -110,6 +112,8 @@ function LoginForm() {
                 setError("This Google account is already linked to another user.");
             } else if (err?.code === "PENDING") {
                 setError(err.message ?? "Account is pending approval. Please contact an administrator.");
+            } else if (err?.code === "FIRESTORE_QUOTA_EXCEEDED") {
+                setError(err.message ?? "Database quota exceeded. Check Firebase billing or try again later.");
             } else if (err?.code === "NOT_IN_DB") {
                 setError(err.message ?? "No account found for this email. Please contact an administrator or use an invite link.");
             } else {
@@ -130,6 +134,7 @@ function LoginForm() {
             await linkWithCredential(userCred.user, linkModal.credential);
             const idToken = await userCred.user.getIdToken(true);
             const data = await createAppSessionFromIdToken(idToken, rememberMe);
+            await refetch();
             setLinkModal(null);
             const target = returnUrl && returnUrl.startsWith("/") ? decodeURIComponent(returnUrl) : (data.redirectTo || "/admin");
             router.push(target);

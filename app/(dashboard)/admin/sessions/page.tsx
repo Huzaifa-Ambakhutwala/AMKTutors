@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { collection, getDocs, onSnapshot, deleteDoc, doc } from "firebase/firestore";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Session } from "@/lib/types";
+import {
+  fetchSessionsByDateRange,
+  getSessionsDateRange,
+  type AdminSessionsViewMode,
+} from "@/lib/sessions-query";
 import { Loader2, Calendar, Clock, RotateCcw, Edit, Trash2, Eye, Plus, CalendarDays } from "lucide-react";
 import Link from "next/link";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -12,7 +17,7 @@ import { syncSessionToCalendar } from "@/lib/calendar-sync-client";
 import { toast } from "sonner";
 import SearchFilterBar from "@/components/SearchFilterBar";
 
-type ViewMode = "today" | "week" | "all";
+type ViewMode = AdminSessionsViewMode;
 
 function groupSessionsByDate(sessions: Session[]): { date: string; label: string; isToday: boolean; sessions: Session[] }[] {
     const map = new Map<string, Session[]>();
@@ -32,28 +37,6 @@ function groupSessionsByDate(sessions: Session[]): { date: string; label: string
     }));
 }
 
-function filterSessionsByView(sessions: Session[], viewMode: ViewMode): Session[] {
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const endOfToday = new Date(startOfToday);
-    endOfToday.setDate(endOfToday.getDate() + 1);
-    const endOfWeek = new Date(startOfToday);
-    endOfWeek.setDate(endOfWeek.getDate() + 7);
-    if (viewMode === "today") {
-        return sessions.filter(s => {
-            const t = new Date(s.startTime).getTime();
-            return t >= startOfToday.getTime() && t < endOfToday.getTime();
-        });
-    }
-    if (viewMode === "week") {
-        return sessions.filter(s => {
-            const t = new Date(s.startTime).getTime();
-            return t >= startOfToday.getTime() && t < endOfWeek.getTime();
-        });
-    }
-    return sessions;
-}
-
 function formatTime(iso: string) {
     return new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
@@ -71,18 +54,18 @@ export default function SessionsListPage() {
     const [viewMode, setViewMode] = useState<ViewMode>("today");
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState<Session["status"] | "">("");
+    const [refreshing, setRefreshing] = useState(false);
     const todaySectionRef = useRef<HTMLDivElement>(null);
     const isMobile = useIsMobile();
 
-    const byView = filterSessionsByView(sessions, viewMode);
     const bySearch = searchTerm.trim()
-        ? byView.filter(
+        ? sessions.filter(
             s =>
                 s.studentName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 s.tutorName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 s.subject?.toLowerCase().includes(searchTerm.toLowerCase())
         )
-        : byView;
+        : sessions;
     const filteredSessions = statusFilter
         ? bySearch.filter(s => s.status === statusFilter)
         : bySearch;
@@ -105,24 +88,29 @@ export default function SessionsListPage() {
         }
     };
 
-    const fetchSessions = () => {
-        setLoading(true);
-        const unsub = onSnapshot(collection(db, "sessions"), (snapshot) => {
-            const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Session));
-            data.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+    const loadSessions = useCallback(async (mode: ViewMode, showFullLoader = true) => {
+        if (showFullLoader) setLoading(true);
+        else setRefreshing(true);
+        try {
+            const { start, end } = getSessionsDateRange(mode);
+            const data = await fetchSessionsByDateRange(start, end);
             setSessions(data);
+        } catch (e) {
+            console.error(e);
+            toast.error("Failed to load sessions");
+        } finally {
             setLoading(false);
-        }, (err) => {
-            console.error(err);
-            setLoading(false);
-        });
-        return unsub;
-    };
+            setRefreshing(false);
+        }
+    }, []);
 
     useEffect(() => {
-        const unsub = fetchSessions();
-        return () => unsub();
-    }, []);
+        loadSessions(viewMode);
+    }, [viewMode, loadSessions]);
+
+    const handleRefresh = () => {
+        loadSessions(viewMode, false);
+    };
 
     return (
         <div className="w-full max-w-full overflow-x-hidden">
@@ -130,12 +118,15 @@ export default function SessionsListPage() {
                 <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
                     <div className="flex items-center gap-3">
                         <h1 className="text-2xl md:text-3xl font-bold font-heading">Sessions</h1>
-                        <span
-                            className="p-2.5 rounded-xl min-h-[48px] min-w-[48px] flex items-center justify-center text-gray-400"
-                            title="Live updating"
+                        <button
+                            type="button"
+                            onClick={handleRefresh}
+                            disabled={loading || refreshing}
+                            className="p-2.5 rounded-xl min-h-[48px] min-w-[48px] flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-primary transition-colors disabled:opacity-50"
+                            title="Refresh sessions"
                         >
-                            <RotateCcw size={20} />
-                        </span>
+                            <RotateCcw size={20} className={refreshing ? "animate-spin" : ""} />
+                        </button>
                     </div>
                     <Link
                         href="/admin/sessions/new"

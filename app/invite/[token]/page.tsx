@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { collection, query, where, getDocs, updateDoc, doc, setDoc } from "firebase/firestore";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { db, auth } from "@/lib/firebase"; // Ensure auth is exported from here
+import { createAppSessionFromIdToken } from "@/lib/auth-session-client";
 import { UserProfile } from "@/lib/types";
 import { Loader2, AlertCircle, CheckCircle, Eye, EyeOff } from "lucide-react";
 
@@ -112,11 +113,12 @@ export default function InvitePage() {
                 });
             }
 
-            // 4. Redirect based on role
-            if (userDoc.role === 'ADMIN') router.push('/admin');
-            else if (userDoc.role === 'TUTOR') router.push('/tutor');
-            else if (userDoc.role === 'PARENT') router.push('/parent');
-            else router.push('/login'); // Fallback
+            const idToken = await credential.user.getIdToken(true);
+            const session = await createAppSessionFromIdToken(idToken, true);
+            const target =
+                session.redirectTo ||
+                (userDoc.role === "ADMIN" ? "/admin" : userDoc.role === "TUTOR" ? "/tutor" : "/parent");
+            router.push(target);
 
         } catch (e: any) {
             console.error(e);

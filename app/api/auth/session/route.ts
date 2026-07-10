@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
+import { isLoginRole, mapAuthServiceError, redirectPathForRole } from "@/lib/auth-server";
 import {
   createSession,
   getSessionCookieOptions,
   SESSION_COOKIE_NAME,
 } from "@/lib/session";
-
-const ALLOWED_ROLES = ["ADMIN", "TUTOR", "PARENT"] as const;
 
 /**
  * Create app session from Firebase ID token (e.g. after Google Sign-In or account linking).
@@ -118,7 +117,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (role !== "ADMIN" && role !== "TUTOR" && role !== "PARENT") {
+    if (!isLoginRole(role)) {
       return NextResponse.json(
         {
           error: "Account is pending approval. Please contact an administrator.",
@@ -132,7 +131,7 @@ export async function POST(request: NextRequest) {
       {
         uid,
         email: (profile?.email as string) ?? email,
-        role: role as "ADMIN" | "TUTOR" | "PARENT",
+        role,
         name: (profile?.name as string) ?? name ?? undefined,
       },
       { rememberMe: !!rememberMe }
@@ -146,17 +145,17 @@ export async function POST(request: NextRequest) {
         role,
         name: (profile?.name as string) ?? name,
       },
-      redirectTo:
-        role === "ADMIN" ? "/admin" : role === "TUTOR" ? "/tutor" : "/parent",
+      redirectTo: redirectPathForRole(role),
     });
 
     response.cookies.set(SESSION_COOKIE_NAME, sessionId, cookieOptions);
     return response;
   } catch (e) {
     console.error("Session create error:", e);
+    const mapped = mapAuthServiceError(e);
     return NextResponse.json(
-      { error: "Invalid or expired token" },
-      { status: 401 }
+      { error: mapped.error, code: mapped.code },
+      { status: mapped.status }
     );
   }
 }
