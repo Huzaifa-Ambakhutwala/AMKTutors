@@ -8,6 +8,8 @@ import { UserProfile, Student, Session } from "@/lib/types";
 import { Loader2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { syncSessionToCalendar } from "@/lib/calendar-sync-client";
+import { withSessionTimestamps } from "@/lib/session-meta";
+import { touchMonthlySessionStats } from "@/lib/stats-monthly";
 import { toast } from "sonner";
 
 function applySessionToForm(session: Session, setters: {
@@ -68,6 +70,7 @@ export default function EditSessionPage() {
     const [attendance, setAttendance] = useState<NonNullable<Session["attendance"]>>("Present");
     const [minutesLate, setMinutesLate] = useState(0);
     const [location, setLocation] = useState("");
+    const [initialSession, setInitialSession] = useState<Session | null>(null);
 
     // Derived Data
     const selectedStudent = students.find(s => s.id === selectedStudentId);
@@ -89,6 +92,7 @@ export default function EditSessionPage() {
                 }
 
                 const session = { id: sessDoc.id, ...sessDoc.data() } as Session;
+                setInitialSession(session);
                 applySessionToForm(session, {
                     setDate,
                     setTime,
@@ -160,9 +164,9 @@ export default function EditSessionPage() {
             // Calculate timestamps
             const startDateTime = new Date(`${date}T${time}`);
             const endDateTime = new Date(startDateTime.getTime() + parseInt(duration) * 60000);
-            await updateDoc(doc(db, "sessions", sessionId), {
-                studentId: student?.id || selectedStudentId, // Keep existing ID if special
-                studentName: student?.name || undefined, // Don't overwrite name if using special ID, or let it merge
+            const updates = withSessionTimestamps({
+                studentId: student?.id || selectedStudentId,
+                studentName: student?.name || undefined,
                 tutorId: tutor.uid,
                 tutorName: tutor.name,
                 subject,
@@ -174,6 +178,15 @@ export default function EditSessionPage() {
                 minutesLate: attendance === 'Late' ? minutesLate : 0,
                 location
             });
+            await updateDoc(doc(db, "sessions", sessionId), updates);
+
+            if (initialSession) {
+                void touchMonthlySessionStats(
+                    { startTime: updates.startTime, status: updates.status as Session["status"] },
+                    "update",
+                    { startTime: initialSession.startTime, status: initialSession.status }
+                );
+            }
 
             syncSessionToCalendar(sessionId, "update");
 

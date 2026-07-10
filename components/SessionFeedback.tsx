@@ -7,6 +7,7 @@ import { db } from "@/lib/firebase";
 import { Loader2, Save, Lock, MessageSquare } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { toast } from "sonner";
+import { withSessionTimestamps } from "@/lib/session-meta";
 
 interface SessionFeedbackProps {
     session: Session;
@@ -60,7 +61,10 @@ export default function SessionFeedback({ session, onUpdate, userRole }: Session
             }
 
             if (Object.keys(updates).length > 0) {
-                await updateDoc(doc(db, "sessions", session.id), updates);
+                await updateDoc(
+                    doc(db, "sessions", session.id),
+                    withSessionTimestamps(updates)
+                );
 
                 // Construct updated session object for local UI update
                 const updatedSession = { ...session, ...updates };

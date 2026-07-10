@@ -6,6 +6,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Download, FileText, Calendar } from "lucide-react";
 import { Invoice, PayStub, Session, Student } from "@/lib/types";
+import { fetchSessionsByDateRange } from "@/lib/sessions-query";
 import { toast } from "sonner";
 
 type ReportType = "sessions" | "invoices" | "paystubs" | "students";
@@ -28,13 +29,17 @@ export default function AdminReportsPage() {
     async function load() {
       try {
         setLoading(true);
-        const [sessSnap, invSnap, paySnap, studSnap] = await Promise.all([
-          getDocs(collection(db, "sessions")),
+        const from = new Date(dateFrom);
+        const to = new Date(dateTo);
+        to.setHours(23, 59, 59, 999);
+
+        const [sessData, invSnap, paySnap, studSnap] = await Promise.all([
+          fetchSessionsByDateRange(from.toISOString(), to.toISOString()),
           getDocs(collection(db, "invoices")),
           getDocs(collection(db, "payStubs")),
           getDocs(collection(db, "students")),
         ]);
-        setSessions(sessSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Session)));
+        setSessions(sessData);
         setInvoices(invSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Invoice)));
         setPayStubs(paySnap.docs.map((d) => ({ id: d.id, ...d.data() } as PayStub)));
         setStudents(studSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Student)));
@@ -46,7 +51,7 @@ export default function AdminReportsPage() {
       }
     }
     load();
-  }, []);
+  }, [dateFrom, dateTo]);
 
   const filtered = useMemo(() => {
     const from = new Date(dateFrom);

@@ -12,6 +12,12 @@ import {
   Download,
 } from "lucide-react";
 import { Invoice, PayStub, Session, Student } from "@/lib/types";
+import { fetchSessionsByDateRange } from "@/lib/sessions-query";
+import {
+  fetchMonthlyStats,
+  monthKeysInRange,
+  type MonthlyStatsDoc,
+} from "@/lib/stats-monthly";
 import RevenueChart from "@/components/analytics/RevenueChart";
 import type { RevenueDataPoint } from "@/components/analytics/RevenueChart";
 import SessionVolumeChart from "@/components/analytics/SessionVolumeChart";
@@ -30,20 +36,39 @@ export default function AdminAnalyticsPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [payStubs, setPayStubs] = useState<PayStub[]>([]);
   const [evaluations, setEvaluations] = useState<{ convertedToStudent?: boolean }[]>([]);
+  const [monthlyStats, setMonthlyStats] = useState<Record<string, MonthlyStatsDoc>>({});
 
   useEffect(() => {
     async function load() {
       try {
         setLoading(true);
-        const [invSnap, sessSnap, studSnap, paySnap, evalSnap] = await Promise.all([
+        const endDate = new Date();
+        const startDate = new Date();
+        if (period === "7d") startDate.setDate(endDate.getDate() - 7);
+        else if (period === "30d") startDate.setDate(endDate.getDate() - 30);
+        else if (period === "90d") startDate.setDate(endDate.getDate() - 90);
+        else startDate.setFullYear(endDate.getFullYear() - 1);
+        startDate.setHours(0, 0, 0, 0);
+        const rangeEnd = new Date(endDate);
+        rangeEnd.setHours(23, 59, 59, 999);
+        const monthKeys = monthKeysInRange(startDate, rangeEnd);
+
+        const sessionPromise =
+          period === "12m"
+            ? Promise.resolve([] as Session[])
+            : fetchSessionsByDateRange(startDate.toISOString(), rangeEnd.toISOString());
+
+        const [invSnap, sessData, studSnap, paySnap, evalSnap, statsData] = await Promise.all([
           getDocs(collection(db, "invoices")),
-          getDocs(collection(db, "sessions")),
+          sessionPromise,
           getDocs(collection(db, "students")),
           getDocs(collection(db, "payStubs")),
           getDocs(collection(db, "evaluations")),
+          fetchMonthlyStats(monthKeys),
         ]);
         setInvoices(invSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Invoice)));
-        setSessions(sessSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Session)));
+        setSessions(sessData);
+        setMonthlyStats(statsData);
         setStudents(studSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Student)));
         setPayStubs(paySnap.docs.map((d) => ({ id: d.id, ...d.data() } as PayStub)));
         setEvaluations(evalSnap.docs.map((d) => d.data()));
@@ -55,7 +80,7 @@ export default function AdminAnalyticsPage() {
       }
     }
     load();
-  }, []);
+  }, [period]);
 
   const { start, end } = useMemo(() => {
     const endDate = new Date();
@@ -106,10 +131,16 @@ export default function AdminAnalyticsPage() {
           return inv.status === "Paid" && d >= cursor && d < periodEnd;
         })
         .reduce((s, inv) => s + inv.totalAmount, 0);
-      const sessCount = sessions.filter((s) => {
-        const d = new Date(s.startTime);
-        return d >= cursor && d < periodEnd;
-      }).length;
+      const sessCount =
+        period === "12m"
+          ? (() => {
+              const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`;
+              return monthlyStats[key]?.sessionCount ?? 0;
+            })()
+          : sessions.filter((s) => {
+              const d = new Date(s.startTime);
+              return d >= cursor && d < periodEnd;
+            }).length;
       points.push({
         period: cursor.toLocaleDateString("en-US", step === "month" ? { month: "short", year: "2-digit" } : { month: "short", day: "numeric" }),
         revenue: Math.round(rev * 100) / 100,
@@ -119,23 +150,22 @@ export default function AdminAnalyticsPage() {
       else cursor.setDate(cursor.getDate() + 1);
     }
     return points;
-  }, [invoices, sessions, start, end, period]);
+  }, [invoices, sessions, start, end, period, monthlyStats]);
 
   const sessionVolumeData: SessionVolumePoint[] = useMemo(() => {
     if (period === "12m") {
-      const byMonth: Record<string, number> = {};
-      let cursor = new Date(start);
-      while (cursor <= end) {
-        const key = cursor.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
-        byMonth[key] = 0;
-        cursor.setMonth(cursor.getMonth() + 1);
-      }
-      filteredSessions.forEach((s) => {
-        const d = new Date(s.startTime);
-        const key = d.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
-        if (byMonth[key] !== undefined) byMonth[key]++;
+      const keys = monthKeysInRange(start, end);
+      return keys.map((key) => {
+        const [year, month] = key.split("-").map(Number);
+        const label = new Date(year, month - 1, 1).toLocaleDateString("en-US", {
+          month: "short",
+          year: "2-digit",
+        });
+        return {
+          label,
+          sessions: monthlyStats[key]?.sessionCount ?? 0,
+        };
       });
-      return Object.entries(byMonth).map(([label, sessions]) => ({ label, sessions }));
     }
     const days = Math.min(14, Math.ceil((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)));
     const dayLabels: SessionVolumePoint[] = [];
@@ -154,7 +184,7 @@ export default function AdminAnalyticsPage() {
       });
     }
     return dayLabels;
-  }, [filteredSessions, start, end, period]);
+  }, [filteredSessions, start, end, period, monthlyStats]);
 
   const tutorPerformance = useMemo(() => {
     const byTutor: Record<string, { name: string; sessions: number; completed: number }> = {};

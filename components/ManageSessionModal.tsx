@@ -8,6 +8,8 @@ import { Loader2, X, CheckCircle, Save, Lock, MessageSquare, BookOpen, Clock, Ma
 import { FormFeedback } from "@/components/FormFeedback";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { toast } from "sonner";
+import { withSessionTimestamps } from "@/lib/session-meta";
+import { touchMonthlySessionStats } from "@/lib/stats-monthly";
 
 interface ManageSessionModalProps {
     session: Session;
@@ -37,29 +39,34 @@ export default function ManageSessionModal({ session, onClose, onUpdate }: Manag
             const sessionRef = doc(db, "sessions", session.id);
             const timestamp = new Date().toISOString();
 
-            const updates: any = {
+            const updates = withSessionTimestamps({
                 attendance,
                 minutesLate: attendance === 'Late' ? minutesLate : 0,
                 notes,
                 homework,
-            };
-
-            // Only update status if explicitly completing now
-            if (!isCompleted) {
-                updates.status = 'Completed';
-            }
-
-            // Internal Notes (Preserve metadata structure)
-            if (internalNote !== (session.internalNotes?.text || "")) {
-                updates.internalNotes = {
-                    text: internalNote,
-                    updatedByUid: user.uid,
-                    updatedByName: userProfile?.name || "Tutor",
-                    updatedAt: timestamp
-                };
-            }
+                ...(!isCompleted ? { status: 'Completed' as const } : {}),
+                ...(internalNote !== (session.internalNotes?.text || "")
+                    ? {
+                        internalNotes: {
+                            text: internalNote,
+                            updatedByUid: user.uid,
+                            updatedByName: userProfile?.name || "Tutor",
+                            updatedAt: timestamp,
+                        },
+                    }
+                    : {}),
+            });
 
             await updateDoc(sessionRef, updates);
+
+            void touchMonthlySessionStats(
+                {
+                    startTime: session.startTime,
+                    status: (updates.status as Session["status"]) ?? session.status,
+                },
+                "update",
+                { startTime: session.startTime, status: session.status }
+            );
 
             // Optimistic Update
             onUpdate({

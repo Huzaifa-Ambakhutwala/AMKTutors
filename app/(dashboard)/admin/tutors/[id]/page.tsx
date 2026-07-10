@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { doc, getDoc, collection, getDocs } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { UserProfile, Student, Session } from "@/lib/types";
+import { fetchSessionsForTutor, getStudentHistoryDateRange } from "@/lib/sessions-query";
 import { Loader2, ArrowLeft, Mail, BookOpen, Clock, Link as LinkIcon, Check, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -62,19 +63,17 @@ export default function TutorDetailPage() {
 
                 // 2. Fetch Assigned Students
                 // Optimization: query(collection(db, "students"), where("tutorIds", "array-contains", tutorId))
-                const allStudentsSnap = await getDocs(collection(db, "students"));
-                const assignedStudents = allStudentsSnap.docs
-                    .map(d => ({ id: d.id, ...d.data() } as Student))
-                    .filter(s => s.tutorIds && s.tutorIds.includes(tutorId));
+                const studentsSnap = await getDocs(
+                    query(collection(db, "students"), where("tutorIds", "array-contains", tutorId))
+                );
+                const assignedStudents = studentsSnap.docs.map(
+                    (d) => ({ id: d.id, ...d.data() } as Student)
+                );
 
                 setStudents(assignedStudents);
 
-                // 3. Fetch Sessions for this Tutor
-                // Optimization: query(collection(db, "sessions"), where("tutorId", "==", tutorId))
-                const allSessionsSnap = await getDocs(collection(db, "sessions"));
-                const tutorSessions = allSessionsSnap.docs
-                    .map(d => ({ id: d.id, ...d.data() } as Session))
-                    .filter(s => s.tutorId === tutorId);
+                const historyRange = getStudentHistoryDateRange();
+                const tutorSessions = await fetchSessionsForTutor(tutorId, historyRange);
 
                 setSessions(categorizeSessions(tutorSessions));
 

@@ -10,6 +10,9 @@ import Link from "next/link";
 import { normalizeOptionalString } from "@/lib/utils";
 import { FormFeedback, InlineError } from "@/components/FormFeedback";
 import { syncSessionToCalendar } from "@/lib/calendar-sync-client";
+import { withSessionTimestamps } from "@/lib/session-meta";
+import { touchMonthlySessionStats } from "@/lib/stats-monthly";
+import type { Session } from "@/lib/types";
 
 export default function EditEvaluationPage() {
     const router = useRouter();
@@ -153,10 +156,20 @@ export default function EditEvaluationPage() {
             const sessionsSnap = await getDocs(sessionsQ);
             if (!sessionsSnap.empty) {
                 const sessionDoc = sessionsSnap.docs[0];
-                await updateDoc(sessionDoc.ref, {
-                    status: status,
-                    cost: charge ? parseFloat(charge) : 0
-                });
+                const previous = sessionDoc.data() as Session;
+                const nextStatus = status as Session["status"];
+                await updateDoc(
+                    sessionDoc.ref,
+                    withSessionTimestamps({
+                        status: nextStatus,
+                        cost: charge ? parseFloat(charge) : 0,
+                    })
+                );
+                void touchMonthlySessionStats(
+                    { startTime: previous.startTime, status: nextStatus },
+                    "update",
+                    { startTime: previous.startTime, status: previous.status }
+                );
                 syncSessionToCalendar(sessionDoc.id, "update");
             }
 

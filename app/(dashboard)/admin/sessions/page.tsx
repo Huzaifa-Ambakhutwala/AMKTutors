@@ -9,6 +9,12 @@ import {
   getSessionsDateRange,
   type AdminSessionsViewMode,
 } from "@/lib/sessions-query";
+import {
+  syncSessionsWithCache,
+  refreshSessionsCache,
+  type SessionCacheScope,
+} from "@/lib/sessions-cache";
+import { touchMonthlySessionStats } from "@/lib/stats-monthly";
 import { Loader2, Calendar, Clock, RotateCcw, Edit, Trash2, Eye, Plus, CalendarDays } from "lucide-react";
 import Link from "next/link";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -52,6 +58,10 @@ export default function SessionsListPage() {
     const [sessions, setSessions] = useState<Session[]>([]);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<ViewMode>("today");
+    const [historyMonth, setHistoryMonth] = useState(() => {
+        const now = new Date();
+        return { year: now.getFullYear(), month: now.getMonth() };
+    });
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState<Session["status"] | "">("");
     const [refreshing, setRefreshing] = useState(false);
@@ -78,9 +88,16 @@ export default function SessionsListPage() {
 
     const handleDelete = async (id: string) => {
         if (!confirm("Are you sure you want to delete this session?")) return;
+        const session = sessions.find((s) => s.id === id);
         try {
             await syncSessionToCalendar(id, "delete");
             await deleteDoc(doc(db, "sessions", id));
+            if (session) {
+                void touchMonthlySessionStats(
+                    { startTime: session.startTime, status: session.status },
+                    "delete"
+                );
+            }
             setSessions(sessions.filter(s => s.id !== id));
         } catch (e) {
             console.error(e);
@@ -88,12 +105,28 @@ export default function SessionsListPage() {
         }
     };
 
-    const loadSessions = useCallback(async (mode: ViewMode, showFullLoader = true) => {
+    const loadSessions = useCallback(async (mode: ViewMode, showFullLoader = true, forceRefresh = false) => {
         if (showFullLoader) setLoading(true);
         else setRefreshing(true);
         try {
-            const { start, end } = getSessionsDateRange(mode);
-            const data = await fetchSessionsByDateRange(start, end);
+            const { start, end } = getSessionsDateRange(
+                mode,
+                mode === "history" ? historyMonth : undefined
+            );
+            const scope: SessionCacheScope =
+                mode === "history"
+                    ? `admin:history:${historyMonth.year}-${historyMonth.month}`
+                    : `admin:${mode}`;
+            const cacheOptions = {
+                scope,
+                rangeStart: start,
+                rangeEnd: end,
+                fetchFresh: () => fetchSessionsByDateRange(start, end),
+                onUpdated: (merged: Session[]) => setSessions(merged),
+            };
+            const data = forceRefresh
+                ? await refreshSessionsCache(cacheOptions)
+                : (await syncSessionsWithCache(cacheOptions)).sessions;
             setSessions(data);
         } catch (e) {
             console.error(e);
@@ -102,14 +135,14 @@ export default function SessionsListPage() {
             setLoading(false);
             setRefreshing(false);
         }
-    }, []);
+    }, [historyMonth]);
 
     useEffect(() => {
         loadSessions(viewMode);
-    }, [viewMode, loadSessions]);
+    }, [viewMode, historyMonth, loadSessions]);
 
     const handleRefresh = () => {
-        loadSessions(viewMode, false);
+        loadSessions(viewMode, false, true);
     };
 
     return (
@@ -165,7 +198,7 @@ export default function SessionsListPage() {
                     <span className="text-sm font-medium text-gray-500 mr-1 flex items-center gap-1">
                         <CalendarDays size={16} /> View:
                     </span>
-                    {(["today", "week", "all"] as ViewMode[]).map(mode => (
+                    {(["today", "week", "history"] as ViewMode[]).map(mode => (
                         <button
                             key={mode}
                             onClick={() => setViewMode(mode)}
@@ -175,9 +208,20 @@ export default function SessionsListPage() {
                                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                             }`}
                         >
-                            {mode === "today" ? "Today" : mode === "week" ? "This week" : "All"}
+                            {mode === "today" ? "Today" : mode === "week" ? "This week" : "History"}
                         </button>
                     ))}
+                    {viewMode === "history" && (
+                        <input
+                            type="month"
+                            value={`${historyMonth.year}-${String(historyMonth.month + 1).padStart(2, "0")}`}
+                            onChange={(e) => {
+                                const [y, m] = e.target.value.split("-").map(Number);
+                                if (y && m) setHistoryMonth({ year: y, month: m - 1 });
+                            }}
+                            className="px-3 py-2 rounded-xl text-sm border border-gray-200 bg-white min-h-[44px]"
+                        />
+                    )}
                     <button
                         onClick={goToToday}
                         className="px-4 py-2 rounded-xl text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors min-h-[44px]"
@@ -196,7 +240,7 @@ export default function SessionsListPage() {
                     {grouped.length === 0 ? (
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
                             <p className="text-gray-500">
-                                {viewMode === "today" ? "No sessions today." : viewMode === "week" ? "No sessions this week." : "No sessions found."}
+                                {viewMode === "today" ? "No sessions today." : viewMode === "week" ? "No sessions this week." : "No sessions in this month."}
                             </p>
                         </div>
                     ) : (
@@ -257,7 +301,7 @@ export default function SessionsListPage() {
                     {grouped.length === 0 ? (
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
                             <p className="text-gray-500">
-                                {viewMode === "today" ? "No sessions today." : viewMode === "week" ? "No sessions this week." : "No sessions found."}
+                                {viewMode === "today" ? "No sessions today." : viewMode === "week" ? "No sessions this week." : "No sessions in this month."}
                             </p>
                         </div>
                     ) : (

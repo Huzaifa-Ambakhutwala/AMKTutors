@@ -215,6 +215,9 @@ export interface Session {
     // Recurring: optional link to group instances created from one "recurring" creation
     recurringSeriesId?: string | null;
 
+    createdAt?: string;
+    updatedAt?: string;
+
     // Optional cached tutor calendar color (used when enriching for calendar/events)
     tutorCalendarColorId?: string | null;
     tutorCalendarColorBg?: string | null;

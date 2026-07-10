@@ -2,11 +2,13 @@
 
 import RoleGuard from "@/components/RoleGuard";
 import { useEffect, useState } from "react";
-import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { DollarSign, BookOpen, Users, TrendingUp, Calendar, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import Link from "next/link";
-import { Invoice, PayStub, Session, Student, UserProfile } from "@/lib/types";
+import { Invoice, PayStub, Session, Student } from "@/lib/types";
+import { fetchSessionsByDateRange, getDashboardSessionsDateRange } from "@/lib/sessions-query";
+import { fetchMonthlyStats, monthKeyFromIso } from "@/lib/stats-monthly";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 export default function AdminDashboard() {
@@ -31,22 +33,27 @@ export default function AdminDashboard() {
                 setLoading(true);
                 
                 // Fetch all necessary data
-                const [invoicesSnap, sessionsSnap, studentsSnap, payStubsSnap, evaluationsSnap] = await Promise.all([
+                const dashboardRange = getDashboardSessionsDateRange();
+                const now = new Date();
+                const currentMonthKey = monthKeyFromIso(now.toISOString());
+                const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                const lastMonthKey = monthKeyFromIso(lastMonthDate.toISOString());
+
+                const [invoicesSnap, sessions, studentsSnap, payStubsSnap, evaluationsSnap, monthlyStats] = await Promise.all([
                     getDocs(collection(db, "invoices")),
-                    getDocs(collection(db, "sessions")),
+                    fetchSessionsByDateRange(dashboardRange.start, dashboardRange.end),
                     getDocs(collection(db, "students")),
                     getDocs(collection(db, "payStubs")),
-                    getDocs(collection(db, "evaluations"))
+                    getDocs(collection(db, "evaluations")),
+                    fetchMonthlyStats([currentMonthKey, lastMonthKey]),
                 ]);
 
                 const invoices = invoicesSnap.docs.map(d => ({ id: d.id, ...d.data() } as Invoice));
-                const sessions = sessionsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Session));
                 const students = studentsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Student));
                 const payStubs = payStubsSnap.docs.map(d => ({ id: d.id, ...d.data() } as PayStub));
                 const evaluations = evaluationsSnap.docs.map(d => d.data());
 
                 // Calculate Monthly Revenue
-                const now = new Date();
                 const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
                 const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
                 const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
@@ -66,17 +73,18 @@ export default function AdminDashboard() {
                     ? ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 
                     : 0;
 
-                // Calculate Total Sessions
-                const currentMonthSessions = sessions.filter(s => {
-                    const startTime = new Date(s.startTime);
-                    return startTime >= currentMonthStart;
-                });
-                const lastMonthSessions = sessions.filter(s => {
-                    const startTime = new Date(s.startTime);
-                    return startTime >= lastMonthStart && startTime <= lastMonthEnd;
-                });
-                const sessionsChange = lastMonthSessions.length > 0
-                    ? ((currentMonthSessions.length - lastMonthSessions.length) / lastMonthSessions.length) * 100
+                // Calculate Total Sessions (prefer monthly aggregates; fall back to range query)
+                const currentMonthSessionCount =
+                    monthlyStats[currentMonthKey]?.sessionCount ??
+                    sessions.filter((s) => new Date(s.startTime) >= currentMonthStart).length;
+                const lastMonthSessionCount =
+                    monthlyStats[lastMonthKey]?.sessionCount ??
+                    sessions.filter((s) => {
+                        const startTime = new Date(s.startTime);
+                        return startTime >= lastMonthStart && startTime <= lastMonthEnd;
+                    }).length;
+                const sessionsChange = lastMonthSessionCount > 0
+                    ? ((currentMonthSessionCount - lastMonthSessionCount) / lastMonthSessionCount) * 100
                     : 0;
 
                 // Calculate Active Students
@@ -125,7 +133,7 @@ export default function AdminDashboard() {
                 setStats({
                     monthlyRevenue: currentMonthRevenue,
                     monthlyRevenueChange: revenueChange,
-                    totalSessions: sessions.length,
+                    totalSessions: currentMonthSessionCount,
                     totalSessionsChange: sessionsChange,
                     activeStudents: activeStudents.length,
                     activeStudentsChange: studentsChange,

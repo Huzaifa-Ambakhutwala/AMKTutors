@@ -1,6 +1,10 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import {
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+} from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -16,7 +20,16 @@ const firebaseConfig = {
 // Initialize Firebase (Singleton pattern)
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
-const db = getFirestore(app);
+const db = (() => {
+  if (typeof window === "undefined") {
+    return getFirestore(app);
+  }
+  try {
+    return initializeFirestore(app, { localCache: persistentLocalCache() });
+  } catch {
+    return getFirestore(app);
+  }
+})();
 const storage = getStorage(app);
 
 const googleProvider = new GoogleAuthProvider();

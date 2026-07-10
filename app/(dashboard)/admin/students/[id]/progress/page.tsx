@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { doc, getDoc, collection, getDocs, addDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import {
   Student,
@@ -10,6 +10,7 @@ import {
   ProgressMilestone,
   AssessmentScore,
 } from "@/lib/types";
+import { fetchSessionsForStudent, getStudentHistoryDateRange } from "@/lib/sessions-query";
 import { Loader2, ArrowLeft, Target, Award, BarChart2, Plus } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -39,14 +40,13 @@ export default function StudentProgressPage() {
         }
         setStudent({ id: studentDoc.id, ...studentDoc.data() } as Student);
 
-        const [sessSnap, progressSnap] = await Promise.all([
-          getDocs(collection(db, "sessions")),
+        const historyRange = getStudentHistoryDateRange();
+        const [studentSessions, progressSnap] = await Promise.all([
+          fetchSessionsForStudent(studentId, historyRange),
           getDocs(collection(db, "students", studentId, "progress")),
         ]);
-        const allSessions = sessSnap.docs
-          .map((d) => ({ id: d.id, ...d.data() } as Session))
-          .filter((s) => s.studentId === studentId && s.status === "Completed");
-        setSessions(allSessions);
+        const completedSessions = studentSessions.filter((s) => s.status === "Completed");
+        setSessions(completedSessions);
 
         const goalsList: ProgressGoal[] = [];
         const milestonesList: ProgressMilestone[] = [];

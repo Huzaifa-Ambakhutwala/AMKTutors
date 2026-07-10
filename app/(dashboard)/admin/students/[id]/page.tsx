@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { doc, getDoc, collection, getDocs } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { UserProfile, Student, Session } from "@/lib/types";
+import { fetchSessionsForStudent, getStudentHistoryDateRange } from "@/lib/sessions-query";
 import { Loader2, ArrowLeft, GraduationCap, School, User, Calendar } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -68,12 +69,8 @@ export default function StudentDetailPage() {
                     setTutors(tutorDocs.map(d => d.data() as UserProfile).filter(Boolean));
                 }
 
-                // 3. Fetch Sessions
-                // Optimization: query(collection(db, "sessions"), where("studentId", "==", studentId))
-                const allSessionsSnap = await getDocs(collection(db, "sessions"));
-                const studentSessions = allSessionsSnap.docs
-                    .map(d => ({ id: d.id, ...d.data() } as Session))
-                    .filter(s => s.studentId === studentId);
+                const historyRange = getStudentHistoryDateRange();
+                const studentSessions = await fetchSessionsForStudent(studentId, historyRange);
 
                 setSessions(categorizeSessions(studentSessions));
 

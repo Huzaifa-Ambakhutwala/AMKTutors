@@ -193,6 +193,12 @@ service cloud.firestore {
     match /loginAttempts/{id} {
       allow read, write: if false;
     }
+
+    // 13. Monthly session aggregates (admin dashboard / analytics)
+    match /monthlyStats/{monthKey} {
+      allow read: if isAdmin();
+      allow write: if isAdmin() || isTutor();
+    }
     
     // Default Deny
     match /{document=**} {

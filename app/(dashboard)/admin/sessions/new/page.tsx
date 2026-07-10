@@ -9,6 +9,8 @@ import { UserProfile, Student } from "@/lib/types";
 import { Loader2, ArrowLeft, Calendar } from "lucide-react";
 import Link from "next/link";
 import { syncSessionToCalendar } from "@/lib/calendar-sync-client";
+import { withSessionTimestamps } from "@/lib/session-meta";
+import { touchMonthlySessionStats } from "@/lib/stats-monthly";
 import { toast } from "sonner";
 
 export default function NewSessionPage() {
@@ -104,7 +106,7 @@ export default function NewSessionPage() {
             const durationMs = parseInt(duration) * 60000;
             const seriesId = isRecurring ? "rec-" + Date.now() : null;
 
-            const basePayload = {
+            const basePayload = withSessionTimestamps({
                 studentId: student.id,
                 studentName: student.name,
                 tutorId: tutor.uid,
@@ -114,8 +116,7 @@ export default function NewSessionPage() {
                 status,
                 location,
                 attendance: "Present" as const,
-                createdAt: new Date().toISOString(),
-            };
+            }, { isCreate: true });
 
             const primaryParentId =
                 Array.isArray(student.parentIds) && student.parentIds.length > 0
@@ -143,6 +144,10 @@ export default function NewSessionPage() {
                         endTime: sessionEnd.toISOString(),
                         ...(seriesId ? { recurringSeriesId: seriesId } : {}),
                     });
+                    void touchMonthlySessionStats(
+                        { startTime: sessionStart.toISOString(), status },
+                        "create"
+                      );
                     syncSessionToCalendar(ref.id, "create");
                     // Fire notifications for scheduled session
                     try {
@@ -176,6 +181,10 @@ export default function NewSessionPage() {
                     endTime: endDateTime.toISOString(),
                     ...(seriesId ? { recurringSeriesId: seriesId } : {}),
                 });
+                void touchMonthlySessionStats(
+                    { startTime: startDateTime.toISOString(), status },
+                    "create"
+                );
                 syncSessionToCalendar(ref.id, "create");
                 try {
                     await fetch("/api/notifications/events", {

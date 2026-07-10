@@ -7,7 +7,12 @@ import { db } from "@/lib/firebase";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { Session } from "@/lib/types";
-import { fetchSessionsForStudentIds } from "@/lib/sessions-query";
+import { fetchSessionsForStudentIds, getActiveSessionsDateRange } from "@/lib/sessions-query";
+import {
+  syncSessionsWithCache,
+  refreshSessionsCache,
+  type SessionCacheScope,
+} from "@/lib/sessions-cache";
 import { Loader2, ArrowLeft, MessageSquare, X, LogOut, Calendar, FileText, Clock, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -31,11 +36,23 @@ export default function ParentDashboard() {
         return snap.docs.map((d) => d.id);
     }, [profileId]);
 
-    const loadSessions = useCallback(async (ids: string[], showFullLoader = true) => {
+    const loadSessions = useCallback(async (ids: string[], parentId: string, showFullLoader = true, forceRefresh = false) => {
         if (showFullLoader) setLoading(true);
         else setRefreshing(true);
         try {
-            const data = await fetchSessionsForStudentIds(ids);
+            const { start, end } = getActiveSessionsDateRange();
+            const scope: SessionCacheScope = `parent:${parentId}:active`;
+            const cacheOptions = {
+                scope,
+                rangeStart: start,
+                rangeEnd: end,
+                fetchFresh: () => fetchSessionsForStudentIds(ids),
+                onUpdated: (merged: Session[]) =>
+                    setSessions(merged.map((s) => ({ ...s, internalNotes: null }))),
+            };
+            const data = forceRefresh
+                ? await refreshSessionsCache(cacheOptions)
+                : (await syncSessionsWithCache(cacheOptions)).sessions;
             setSessions(data.map((s) => ({ ...s, internalNotes: null })));
         } catch (e) {
             console.error("Error fetching sessions:", e);
@@ -60,7 +77,7 @@ export default function ParentDashboard() {
                     setLoading(false);
                     return;
                 }
-                await loadSessions(ids);
+                await loadSessions(ids, profileId);
             } catch (e) {
                 console.error("Error fetching students:", e);
                 if (!cancelled) setLoading(false);
@@ -73,8 +90,8 @@ export default function ParentDashboard() {
     }, [profileId, roleLoading, loadStudentIds, loadSessions]);
 
     const handleRefresh = async () => {
-        if (studentIds.length === 0) return;
-        await loadSessions(studentIds, false);
+        if (studentIds.length === 0 || !profileId) return;
+        await loadSessions(studentIds, profileId, false, true);
     };
 
     const handleLogout = async () => {

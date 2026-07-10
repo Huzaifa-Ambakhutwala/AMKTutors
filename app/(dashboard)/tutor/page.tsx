@@ -7,7 +7,12 @@ import { db } from "@/lib/firebase";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { Session } from "@/lib/types";
-import { fetchSessionsForTutor } from "@/lib/sessions-query";
+import { fetchSessionsForTutor, getActiveSessionsDateRange } from "@/lib/sessions-query";
+import {
+  syncSessionsWithCache,
+  refreshSessionsCache,
+  type SessionCacheScope,
+} from "@/lib/sessions-cache";
 import { Loader2, ArrowLeft, MessageSquare, LogOut, CheckCircle, MapPin, StickyNote, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -22,7 +27,7 @@ export default function TutorDashboard() {
     const [managingSession, setManagingSession] = useState<Session | null>(null);
     const [refreshing, setRefreshing] = useState(false);
 
-    const loadSessions = useCallback(async (showFullLoader = true) => {
+    const loadSessions = useCallback(async (showFullLoader = true, forceRefresh = false) => {
         if (!profileId) return;
         if (showFullLoader) setLoading(true);
         else setRefreshing(true);
@@ -33,7 +38,18 @@ export default function TutorDashboard() {
                 const data = userDoc.data() as { pointer?: string };
                 if (data.pointer) logicalTutorId = data.pointer;
             }
-            const list = await fetchSessionsForTutor(logicalTutorId);
+            const { start, end } = getActiveSessionsDateRange();
+            const scope: SessionCacheScope = `tutor:${logicalTutorId}:active`;
+            const cacheOptions = {
+                scope,
+                rangeStart: start,
+                rangeEnd: end,
+                fetchFresh: () => fetchSessionsForTutor(logicalTutorId),
+                onUpdated: (merged: Session[]) => setSessions(merged),
+            };
+            const list = forceRefresh
+                ? await refreshSessionsCache(cacheOptions)
+                : (await syncSessionsWithCache(cacheOptions)).sessions;
             setSessions(list);
         } catch (e) {
             console.error(e);
@@ -48,7 +64,7 @@ export default function TutorDashboard() {
         loadSessions();
     }, [user, profileId, loadSessions]);
 
-    const handleRefresh = () => loadSessions(false);
+    const handleRefresh = () => loadSessions(false, true);
 
     const handleLogout = async () => {
         await logout();

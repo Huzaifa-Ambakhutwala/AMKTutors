@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { doc, getDoc, collection, getDocs } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { UserProfile, Student, Session } from "@/lib/types";
+import { fetchSessionsForStudentIds, getStudentHistoryDateRange } from "@/lib/sessions-query";
 import { Loader2, ArrowLeft, Mail, Phone, MapPin, Link as LinkIcon, Check, MessageSquare } from "lucide-react";
 import { getInviteLink } from "@/lib/utils";
 import Link from "next/link";
@@ -63,20 +64,18 @@ export default function ParentDetailPage() {
                 // 2. Fetch Children (Students linked to this parent)
                 // Optimization: Use Query with index: query(collection(db, "students"), where("parentIds", "array-contains", parentId))
                 // For MVP/No-Index Fallback: Fetch all and filter
-                const allStudentsSnap = await getDocs(collection(db, "students"));
-                const linkedStudents = allStudentsSnap.docs
-                    .map(d => ({ id: d.id, ...d.data() } as Student))
-                    .filter(s => s.parentIds && s.parentIds.includes(parentId));
+                const studentsSnap = await getDocs(
+                    query(collection(db, "students"), where("parentIds", "array-contains", parentId))
+                );
+                const linkedStudents = studentsSnap.docs.map(
+                    (d) => ({ id: d.id, ...d.data() } as Student)
+                );
 
                 setStudents(linkedStudents);
 
-                // 3. Fetch Sessions for these students
-                const allSessionsSnap = await getDocs(collection(db, "sessions"));
-                const studentIds = linkedStudents.map(s => s.id);
-
-                const linkedSessions = allSessionsSnap.docs
-                    .map(d => ({ id: d.id, ...d.data() } as Session))
-                    .filter(s => studentIds.includes(s.studentId));
+                const studentIds = linkedStudents.map((s) => s.id);
+                const historyRange = getStudentHistoryDateRange();
+                const linkedSessions = await fetchSessionsForStudentIds(studentIds, historyRange);
 
                 setSessions(categorizeSessions(linkedSessions));
 

@@ -11,6 +11,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { normalizeOptionalString } from "@/lib/utils";
 import { FormFeedback, InlineError } from "@/components/FormFeedback";
 import { syncSessionToCalendar } from "@/lib/calendar-sync-client";
+import { withSessionTimestamps } from "@/lib/session-meta";
+import { touchMonthlySessionStats } from "@/lib/stats-monthly";
 
 export default function NewEvaluationPage() {
     const router = useRouter();
@@ -145,7 +147,7 @@ export default function NewEvaluationPage() {
             const sessionStart = new Date(`${date}T12:00:00`);
             const sessionEnd = new Date(sessionStart.getTime() + 60 * 60000);
 
-            const sessionRef = await addDoc(collection(db, "sessions"), {
+            const sessionRef = await addDoc(collection(db, "sessions"), withSessionTimestamps({
                 studentId: parentMode === 'existing' ? "EVALUATION-PLACEHOLDER" : "NEW-EVALUATION",
                 studentName: studentName.trim(),
                 tutorId: tutor?.uid || "",
@@ -154,17 +156,18 @@ export default function NewEvaluationPage() {
                 startTime: sessionStart.toISOString(),
                 endTime: sessionEnd.toISOString(),
                 durationMinutes: 60,
-                status: 'Completed', // Default to Completed so it's billable
+                status: 'Completed',
                 location: "Online",
                 attendance: 'Present',
-                createdAt: new Date().toISOString(),
-
-                // Fields for Billing linking
                 parentId: finalParentId,
                 evaluationId: id,
-                // We use 'cost' to override the calculated rate in billing
                 cost: charge ? parseFloat(charge) : 0
-            });
+            }, { isCreate: true }));
+
+            void touchMonthlySessionStats(
+                { startTime: sessionStart.toISOString(), status: "Completed" },
+                "create"
+            );
 
             syncSessionToCalendar(sessionRef.id, "create");
             try {
