@@ -10,6 +10,7 @@ import Link from "next/link";
 import { syncSessionToCalendar } from "@/lib/calendar-sync-client";
 import { withSessionTimestamps } from "@/lib/session-meta";
 import { touchMonthlySessionStats } from "@/lib/stats-monthly";
+import SessionDeleteActions from "@/components/SessionDeleteActions";
 import { toast } from "sonner";
 
 function applySessionToForm(session: Session, setters: {
@@ -420,18 +421,23 @@ export default function EditSessionPage() {
 
                         </div>
 
-                        <div className="pt-6 flex flex-col-reverse sm:flex-row justify-end gap-3 sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur py-4 border-t border-gray-100 -mx-4 px-4 md:mx-0 md:px-0 safe-area-pb">
-                            <Link href="/admin/sessions" className="px-4 py-3 min-h-[48px] border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 flex items-center justify-center">
-                                Cancel
-                            </Link>
-                            <button
-                                type="submit"
-                                disabled={submitting || listsLoading}
-                                className="w-full sm:w-auto px-6 py-3 min-h-[48px] bg-primary text-white rounded-xl font-medium hover:bg-primary/90 flex items-center justify-center gap-2 disabled:opacity-60"
-                            >
-                                {submitting && <Loader2 className="animate-spin" size={18} />}
-                                Save Changes
-                            </button>
+                        <div className="pt-6 space-y-4 sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur py-4 border-t border-gray-100 -mx-4 px-4 md:mx-0 md:px-0 safe-area-pb">
+                            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">
+                                <Link href="/admin/sessions" className="px-4 py-3 min-h-[48px] border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 flex items-center justify-center">
+                                    Cancel
+                                </Link>
+                                <button
+                                    type="submit"
+                                    disabled={submitting || listsLoading}
+                                    className="w-full sm:w-auto px-6 py-3 min-h-[48px] bg-primary text-white rounded-xl font-medium hover:bg-primary/90 flex items-center justify-center gap-2 disabled:opacity-60"
+                                >
+                                    {submitting && <Loader2 className="animate-spin" size={18} />}
+                                    Save Changes
+                                </button>
+                            </div>
+                            {initialSession && (
+                                <SessionDeleteActions session={initialSession} layout="stack" />
+                            )}
                         </div>
                     </form>
                 )}

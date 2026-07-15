@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import RoleGuard from "@/components/RoleGuard";
 import SessionFeedback from "@/components/SessionFeedback";
+import SessionDeleteActions from "@/components/SessionDeleteActions";
 import { toast } from "sonner";
 
 export default function SessionDetailPage() {
@@ -70,15 +71,23 @@ export default function SessionDetailPage() {
                                         Attendance: {session.attendance}
                                     </span>
                                 )}
+                                {session.recurringSeriesId && (
+                                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                        Recurring series
+                                    </span>
+                                )}
                             </div>
                         </div>
 
-                        <Link
-                            href={`/admin/sessions/${session.id}/edit`}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
-                        >
-                            <Edit size={16} /> Edit Session
-                        </Link>
+                        <div className="flex flex-col gap-3 md:items-end">
+                            <Link
+                                href={`/admin/sessions/${session.id}/edit`}
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+                            >
+                                <Edit size={16} /> Edit Session
+                            </Link>
+                            <SessionDeleteActions session={session} layout="row" />
+                        </div>
                     </div>
                 </div>
 

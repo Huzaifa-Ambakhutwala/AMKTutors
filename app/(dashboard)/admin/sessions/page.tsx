@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { deleteDoc, doc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { Session } from "@/lib/types";
 import {
   fetchSessionsByDateRange,
@@ -12,15 +10,13 @@ import {
 import {
   syncSessionsWithCache,
   refreshSessionsCache,
-  removeSessionFromAllCaches,
   type SessionCacheScope,
 } from "@/lib/sessions-cache";
-import { touchMonthlySessionStats } from "@/lib/stats-monthly";
+import { deleteOneSession } from "@/lib/session-delete";
 import { Loader2, Calendar, Clock, RotateCcw, Edit, Trash2, Eye, Plus, CalendarDays } from "lucide-react";
 import Link from "next/link";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import FloatingActionButton from "@/components/FloatingActionButton";
-import { syncSessionToCalendar } from "@/lib/calendar-sync-client";
 import { toast } from "sonner";
 import SearchFilterBar from "@/components/SearchFilterBar";
 
@@ -55,6 +51,22 @@ function statusClass(s: Session) {
     return "bg-[#1A2742]/10 text-primary border-[#1A2742]/20";
 }
 
+function formatPickedDateLabel(dateStr: string) {
+    return new Date(`${dateStr}T12:00:00`).toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+    });
+}
+
+function emptySessionsMessage(viewMode: ViewMode, pickedDate: string) {
+    if (viewMode === "today") return "No sessions today.";
+    if (viewMode === "week") return "No sessions this week.";
+    if (viewMode === "date") return `No sessions on ${formatPickedDateLabel(pickedDate)}.`;
+    return "No sessions in this month.";
+}
+
 export default function SessionsListPage() {
     const [sessions, setSessions] = useState<Session[]>([]);
     const [loading, setLoading] = useState(true);
@@ -62,6 +74,10 @@ export default function SessionsListPage() {
     const [historyMonth, setHistoryMonth] = useState(() => {
         const now = new Date();
         return { year: now.getFullYear(), month: now.getMonth() };
+    });
+    const [pickedDate, setPickedDate] = useState(() => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     });
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState<Session["status"] | "">("");
@@ -83,24 +99,20 @@ export default function SessionsListPage() {
     const grouped = groupSessionsByDate(filteredSessions);
 
     const goToToday = () => {
+        const now = new Date();
+        setPickedDate(
+            `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
+        );
         setViewMode("today");
         todaySectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     };
 
-    const handleDelete = async (id: string) => {
+    const handleDelete = async (session: Session) => {
         if (!confirm("Are you sure you want to delete this session?")) return;
-        const session = sessions.find((s) => s.id === id);
         try {
-            await syncSessionToCalendar(id, "delete");
-            await deleteDoc(doc(db, "sessions", id));
-            void removeSessionFromAllCaches(id);
-            if (session) {
-                void touchMonthlySessionStats(
-                    { startTime: session.startTime, status: session.status },
-                    "delete"
-                );
-            }
-            setSessions(sessions.filter(s => s.id !== id));
+            await deleteOneSession(session);
+            setSessions(sessions.filter((s) => s.id !== session.id));
+            toast.success("Session deleted");
         } catch (e) {
             console.error(e);
             toast.error("Error deleting session");
@@ -111,14 +123,16 @@ export default function SessionsListPage() {
         if (showFullLoader) setLoading(true);
         else setRefreshing(true);
         try {
-            const { start, end } = getSessionsDateRange(
-                mode,
-                mode === "history" ? historyMonth : undefined
-            );
+            const { start, end } = getSessionsDateRange(mode, {
+                historyMonth: mode === "history" ? historyMonth : undefined,
+                pickedDate: mode === "date" ? pickedDate : undefined,
+            });
             const scope: SessionCacheScope =
                 mode === "history"
                     ? `admin:history:${historyMonth.year}-${historyMonth.month}`
-                    : `admin:${mode}`;
+                    : mode === "date"
+                      ? `admin:date:${pickedDate}`
+                      : `admin:${mode}`;
             const cacheOptions = {
                 scope,
                 rangeStart: start,
@@ -137,11 +151,11 @@ export default function SessionsListPage() {
             setLoading(false);
             setRefreshing(false);
         }
-    }, [historyMonth]);
+    }, [historyMonth, pickedDate]);
 
     useEffect(() => {
         loadSessions(viewMode);
-    }, [viewMode, historyMonth, loadSessions]);
+    }, [viewMode, historyMonth, pickedDate, loadSessions]);
 
     const handleRefresh = () => {
         loadSessions(viewMode, false, true);
@@ -195,7 +209,7 @@ export default function SessionsListPage() {
                         </select>
                     </div>
                 </div>
-                {/* Day-based view: Today | This week | All */}
+                {/* Day-based view: Today | This week | History | Pick date */}
                 <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-medium text-gray-500 mr-1 flex items-center gap-1">
                         <CalendarDays size={16} /> View:
@@ -224,6 +238,27 @@ export default function SessionsListPage() {
                             className="px-3 py-2 rounded-xl text-sm border border-gray-200 bg-white min-h-[44px]"
                         />
                     )}
+                    <label className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm border min-h-[44px] bg-white border-gray-200">
+                        <Calendar size={16} className="text-gray-500 shrink-0" />
+                        <span className="text-gray-600 font-medium">Date:</span>
+                        <input
+                            type="date"
+                            value={pickedDate}
+                            onChange={(e) => {
+                                if (!e.target.value) return;
+                                setPickedDate(e.target.value);
+                                setViewMode("date");
+                            }}
+                            className={`border-0 bg-transparent text-sm outline-none min-w-[9rem] ${
+                                viewMode === "date" ? "text-primary font-semibold" : "text-gray-800"
+                            }`}
+                        />
+                    </label>
+                    {viewMode === "date" && (
+                        <span className="text-sm text-gray-500 hidden sm:inline">
+                            Showing {formatPickedDateLabel(pickedDate)}
+                        </span>
+                    )}
                     <button
                         onClick={goToToday}
                         className="px-4 py-2 rounded-xl text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors min-h-[44px]"
@@ -242,7 +277,7 @@ export default function SessionsListPage() {
                     {grouped.length === 0 ? (
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
                             <p className="text-gray-500">
-                                {viewMode === "today" ? "No sessions today." : viewMode === "week" ? "No sessions this week." : "No sessions in this month."}
+                                {emptySessionsMessage(viewMode, pickedDate)}
                             </p>
                         </div>
                     ) : (
@@ -285,7 +320,7 @@ export default function SessionsListPage() {
                                                     <Edit size={18} /> Edit
                                                 </Link>
                                                 <button
-                                                    onClick={() => handleDelete(s.id)}
+                                                    onClick={() => handleDelete(s)}
                                                     className="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-3 rounded-xl min-h-[48px] min-w-[48px] flex items-center justify-center"
                                                 >
                                                     <Trash2 size={18} />
@@ -303,7 +338,7 @@ export default function SessionsListPage() {
                     {grouped.length === 0 ? (
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
                             <p className="text-gray-500">
-                                {viewMode === "today" ? "No sessions today." : viewMode === "week" ? "No sessions this week." : "No sessions in this month."}
+                                {emptySessionsMessage(viewMode, pickedDate)}
                             </p>
                         </div>
                     ) : (
@@ -354,7 +389,7 @@ export default function SessionsListPage() {
                                                             <Link href={`/admin/sessions/${s.id}/edit`} className="text-gray-500 hover:text-orange-500" title="Edit">
                                                                 <Edit size={18} />
                                                             </Link>
-                                                            <button onClick={() => handleDelete(s.id)} className="text-gray-500 hover:text-red-500" title="Delete">
+                                                            <button onClick={() => handleDelete(s)} className="text-gray-500 hover:text-red-500" title="Delete">
                                                                 <Trash2 size={18} />
                                                             </button>
                                                         </td>

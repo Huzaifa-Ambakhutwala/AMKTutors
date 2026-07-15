@@ -22,7 +22,7 @@ export const HISTORY_PAGE_SIZE = 20;
 export const ACTIVE_SESSIONS_LOOKBACK_DAYS = 30;
 export const ACTIVE_SESSIONS_LOOKAHEAD_DAYS = 90;
 
-export type AdminSessionsViewMode = "today" | "week" | "history";
+export type AdminSessionsViewMode = "today" | "week" | "history" | "date";
 
 export function getActiveSessionsDateRange(): { start: string; end: string } {
   const now = new Date();
@@ -34,9 +34,19 @@ export function getActiveSessionsDateRange(): { start: string; end: string } {
   return { start: start.toISOString(), end: end.toISOString() };
 }
 
+export function getDayDateRange(dateStr: string): { start: string; end: string } {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const start = new Date(y, m - 1, d);
+  const end = new Date(y, m - 1, d + 1);
+  return { start: start.toISOString(), end: end.toISOString() };
+}
+
 export function getSessionsDateRange(
   viewMode: AdminSessionsViewMode,
-  historyMonth?: { year: number; month: number }
+  options?: {
+    historyMonth?: { year: number; month: number };
+    pickedDate?: string;
+  }
 ): { start: string; end: string } {
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -53,6 +63,11 @@ export function getSessionsDateRange(
     return { start: startOfToday.toISOString(), end: end.toISOString() };
   }
 
+  if (viewMode === "date" && options?.pickedDate) {
+    return getDayDateRange(options.pickedDate);
+  }
+
+  const historyMonth = options?.historyMonth;
   const year = historyMonth?.year ?? now.getFullYear();
   const month = historyMonth?.month ?? now.getMonth();
   return getMonthDateRange(year, month);
