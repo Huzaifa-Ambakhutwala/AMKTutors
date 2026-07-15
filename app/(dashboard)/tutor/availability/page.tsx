@@ -2,11 +2,13 @@
 
 import RoleGuard from "@/components/RoleGuard";
 import { useEffect, useState } from "react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useQueryClient } from "@tanstack/react-query";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useProfile, resolveLogicalUserId } from "@/hooks/useProfile";
+import { useTutorAvailability } from "@/hooks/useTutorAvailability";
 import {
-  TutorAvailability,
   RecurringAvailabilitySlot,
   AvailabilityBlock,
 } from "@/lib/types";
@@ -17,37 +19,31 @@ import { toast } from "sonner";
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function TutorAvailabilityPage() {
-  const { user, profileId } = useUserRole();
-  const [loading, setLoading] = useState(true);
+  const { profileId } = useUserRole();
+  const queryClient = useQueryClient();
+  const { data: profile, isLoading: profileLoading } = useProfile(profileId);
+  const logicalTutorId =
+    profileId && !profileLoading
+      ? resolveLogicalUserId(profileId, profile ?? null)
+      : null;
+
+  const { data: availability, isLoading: availabilityLoading } =
+    useTutorAvailability(logicalTutorId);
+
   const [saving, setSaving] = useState(false);
-  const [logicalTutorId, setLogicalTutorId] = useState<string | null>(null);
+  const [formReady, setFormReady] = useState(false);
   const [recurring, setRecurring] = useState<RecurringAvailabilitySlot[]>([]);
   const [blocks, setBlocks] = useState<AvailabilityBlock[]>([]);
 
   useEffect(() => {
-    if (!user || !profileId) return;
-    getDoc(doc(db, "users", profileId)).then((userDoc) => {
-      let tid = profileId;
-      if (userDoc.exists() && (userDoc.data() as { pointer?: string }).pointer) {
-        tid = (userDoc.data() as { pointer: string }).pointer;
-      }
-      setLogicalTutorId(tid);
-    });
-  }, [user, profileId]);
+    if (availability && !formReady) {
+      setRecurring(availability.recurring);
+      setBlocks(availability.blocks);
+      setFormReady(true);
+    }
+  }, [availability, formReady]);
 
-  useEffect(() => {
-    if (!logicalTutorId) return;
-    getDoc(doc(db, "availability", logicalTutorId))
-      .then((snap) => {
-        if (snap.exists()) {
-          const data = snap.data() as TutorAvailability;
-          setRecurring(data.recurring || []);
-          setBlocks(data.blocks || []);
-        }
-      })
-      .catch((e) => console.error(e))
-      .finally(() => setLoading(false));
-  }, [logicalTutorId]);
+  const loading = profileLoading || availabilityLoading || !formReady || !logicalTutorId;
 
   const addRecurring = () => {
     setRecurring((prev) => [
@@ -121,6 +117,7 @@ export default function TutorAvailabilityPage() {
         },
         { merge: true }
       );
+      queryClient.setQueryData(["availability", logicalTutorId], { recurring, blocks });
       toast.success("Availability saved.");
     } catch (e) {
       console.error(e);
@@ -130,7 +127,7 @@ export default function TutorAvailabilityPage() {
     }
   };
 
-  if (loading || !logicalTutorId) {
+  if (loading) {
     return (
       <RoleGuard allowedRoles={["TUTOR"]}>
         <div className="p-8 flex justify-center">

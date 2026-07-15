@@ -6,6 +6,9 @@ Measured with `FirestoreReadCounter` in development (`lib/firestore-debug.ts` tr
 |-------|--------------------:|-----------------:|-------|
 | `/login` | 0 | 0 | Cookie API only; Firebase Auth is not a Firestore read |
 | `/tutor` | 2–27 | 0 | 1 profile (`useProfile`) + up to 25 upcoming sessions |
+| `/tutor` (history tab) | +20/page | 0 | React Query infinite cache, 5min stale; only when tab opened |
+| `/tutor/availability` | 1–2 | 0 | Reuses cached `useProfile` (0–1) + 1 availability doc (5min stale) |
+| `/tutor/notifications` | 0 | 0 | API only |
 | `/parent` | 2–28 | 0 | 1 students query + up to 25 upcoming sessions |
 | `/admin` | 5–15 | 0 | Count aggregations + week sessions + ≤100 paid invoices sample |
 | `/admin/sessions` (today) | 1–15 | 0 | IndexedDB + today range query |
@@ -23,6 +26,17 @@ Measured with `FirestoreReadCounter` in development (`lib/firestore-debug.ts` tr
 4. **Dashboard** — `getCountFromServer` for students/evaluations; `monthlyStats` for session counts; week-only session fetch for chart.
 5. **Login** — `withFirestoreTimeout` on Firebase sign-in; quota/timeout errors surfaced.
 6. **Cache** — IndexedDB session cache + Firestore `persistentLocalCache` + React Query stale times.
+7. **Tutor portal follow-ups** — availability uses shared `useProfile`; tutor history cached via `useInfiniteQuery`; delta sync scoped by `tutorId` / `studentIds` (admin scopes use bounded `fetchFresh` instead of global `updatedAt` scan).
+
+## Delta sync behavior
+
+Background cache refresh in [`lib/sessions-cache.ts`](lib/sessions-cache.ts):
+
+- **Tutor upcoming** (`tutor:{id}:upcoming`): only sessions with matching `tutorId` and `updatedAt > lastSyncAt`.
+- **Parent upcoming** (`parent:{id}:upcoming`): only sessions for the parent's `studentIds` with `updatedAt > lastSyncAt`.
+- **Admin scopes** (`admin:today`, etc.): no global scan — re-runs the bounded date-range `fetchFresh` query instead.
+
+This prevents a tutor revisit from billing reads for unrelated session updates elsewhere in the system.
 
 ## Success criteria
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { doc, updateDoc, Timestamp, getDoc } from "firebase/firestore";
+import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Session } from "@/lib/types";
 import { Loader2, X, CheckCircle, Save, Lock, MessageSquare, BookOpen, Clock, MapPin } from "lucide-react";

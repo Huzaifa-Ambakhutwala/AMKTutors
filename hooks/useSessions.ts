@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { safeFirestore } from "@/lib/firestore-safe";
@@ -8,6 +8,7 @@ import { wrapFirestoreResult } from "@/lib/firestore-debug";
 import {
   fetchUpcomingSessionsForTutor,
   fetchUpcomingSessionsForStudentIds,
+  fetchPastSessionsPageForTutor,
   getUpcomingFromIso,
   UPCOMING_SESSIONS_LIMIT,
 } from "@/lib/sessions-query";
@@ -15,6 +16,7 @@ import {
   syncSessionsWithCache,
   refreshSessionsCache,
   type SessionCacheScope,
+  type SessionDeltaFilter,
 } from "@/lib/sessions-cache";
 import type { Session } from "@/lib/types";
 
@@ -40,7 +42,8 @@ export function useParentStudentIds(parentId: string | null | undefined) {
 async function loadUpcomingWithCache(
   scope: SessionCacheScope,
   fetchFresh: () => Promise<Session[]>,
-  forceRefresh: boolean
+  forceRefresh: boolean,
+  deltaFilter?: SessionDeltaFilter
 ): Promise<Session[]> {
   const rangeEnd = new Date();
   rangeEnd.setFullYear(rangeEnd.getFullYear() + 2);
@@ -49,6 +52,7 @@ async function loadUpcomingWithCache(
     rangeStart: getUpcomingFromIso(),
     rangeEnd: rangeEnd.toISOString(),
     fetchFresh,
+    deltaFilter,
   };
   if (forceRefresh) return refreshSessionsCache(cacheOptions);
   return (await syncSessionsWithCache(cacheOptions)).sessions;
@@ -63,9 +67,12 @@ export function useTutorUpcomingSessions(
     queryFn: () => {
       if (!tutorId) return Promise.resolve([]);
       const scope: SessionCacheScope = `tutor:${tutorId}:upcoming`;
-      return loadUpcomingWithCache(scope, () =>
-        fetchUpcomingSessionsForTutor(tutorId, UPCOMING_SESSIONS_LIMIT)
-      , false);
+      return loadUpcomingWithCache(
+        scope,
+        () => fetchUpcomingSessionsForTutor(tutorId, UPCOMING_SESSIONS_LIMIT),
+        false,
+        { tutorId }
+      );
     },
     enabled: !!tutorId && (options?.enabled ?? true),
     staleTime: 2 * 60 * 1000,
@@ -82,9 +89,12 @@ export function useParentUpcomingSessions(
     queryFn: () => {
       if (!parentId || studentIds.length === 0) return Promise.resolve([]);
       const scope: SessionCacheScope = `parent:${parentId}:upcoming`;
-      return loadUpcomingWithCache(scope, () =>
-        fetchUpcomingSessionsForStudentIds(studentIds, UPCOMING_SESSIONS_LIMIT)
-      , false);
+      return loadUpcomingWithCache(
+        scope,
+        () => fetchUpcomingSessionsForStudentIds(studentIds, UPCOMING_SESSIONS_LIMIT),
+        false,
+        { studentIds }
+      );
     },
     enabled: !!parentId && studentIds.length > 0 && (options?.enabled ?? true),
     staleTime: 2 * 60 * 1000,
@@ -99,7 +109,8 @@ export async function refreshTutorUpcoming(
   const sessions = await loadUpcomingWithCache(
     scope,
     () => fetchUpcomingSessionsForTutor(tutorId, UPCOMING_SESSIONS_LIMIT),
-    true
+    true,
+    { tutorId }
   );
   queryClient.setQueryData(["sessions", "upcoming", "tutor", tutorId], sessions);
   return sessions;
@@ -114,11 +125,38 @@ export async function refreshParentUpcoming(
   const sessions = await loadUpcomingWithCache(
     scope,
     () => fetchUpcomingSessionsForStudentIds(studentIds, UPCOMING_SESSIONS_LIMIT),
-    true
+    true,
+    { studentIds }
   );
   queryClient.setQueryData(
     ["sessions", "upcoming", "parent", parentId, studentIds],
     sessions
   );
   return sessions;
+}
+
+export function useTutorHistorySessions(
+  tutorId: string | null | undefined,
+  options?: { enabled?: boolean }
+) {
+  return useInfiniteQuery({
+    queryKey: ["sessions", "history", "tutor", tutorId],
+    queryFn: ({ pageParam }) =>
+      fetchPastSessionsPageForTutor(tutorId!, {
+        beforeStartTime: pageParam,
+      }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    enabled: !!tutorId && (options?.enabled ?? true),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export async function refreshTutorHistory(
+  tutorId: string,
+  queryClient: import("@tanstack/react-query").QueryClient
+) {
+  await queryClient.invalidateQueries({
+    queryKey: ["sessions", "history", "tutor", tutorId],
+  });
 }

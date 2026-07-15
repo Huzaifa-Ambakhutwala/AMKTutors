@@ -119,14 +119,49 @@ function mergeSessions(existing: Session[], incoming: Session[]): Session[] {
   );
 }
 
-async function fetchUpdatedSince(since: string): Promise<Session[]> {
-  const q = query(
-    collection(db, "sessions"),
-    where("updatedAt", ">", since),
-    orderBy("updatedAt")
-  );
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Session));
+export type SessionDeltaFilter = {
+  tutorId?: string;
+  studentIds?: string[];
+};
+
+async function fetchUpdatedSince(
+  since: string,
+  filter?: SessionDeltaFilter
+): Promise<Session[]> {
+  if (filter?.tutorId) {
+    const q = query(
+      collection(db, "sessions"),
+      where("tutorId", "==", filter.tutorId),
+      where("updatedAt", ">", since),
+      orderBy("updatedAt")
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Session));
+  }
+
+  if (filter?.studentIds && filter.studentIds.length > 0) {
+    const IN_LIMIT = 30;
+    const chunks: string[][] = [];
+    for (let i = 0; i < filter.studentIds.length; i += IN_LIMIT) {
+      chunks.push(filter.studentIds.slice(i, i + IN_LIMIT));
+    }
+    const byId = new Map<string, Session>();
+    for (const chunk of chunks) {
+      const q = query(
+        collection(db, "sessions"),
+        where("studentId", "in", chunk),
+        where("updatedAt", ">", since),
+        orderBy("updatedAt")
+      );
+      const snap = await getDocs(q);
+      for (const d of snap.docs) {
+        byId.set(d.id, { id: d.id, ...d.data() } as Session);
+      }
+    }
+    return [...byId.values()];
+  }
+
+  return [];
 }
 
 export type SyncSessionsOptions = {
@@ -135,6 +170,8 @@ export type SyncSessionsOptions = {
   rangeEnd: string;
   fetchFresh: () => Promise<Session[]>;
   onUpdated?: (sessions: Session[]) => void;
+  /** Scope background delta sync to tutor/parent; admin uses fetchFresh instead. */
+  deltaFilter?: SessionDeltaFilter;
 };
 
 export async function syncSessionsWithCache(
@@ -151,7 +188,11 @@ export async function syncSessionsWithCache(
       try {
         let delta: Session[] = [];
         try {
-          delta = await fetchUpdatedSince(cached.lastSyncAt);
+          if (options.deltaFilter) {
+            delta = await fetchUpdatedSince(cached.lastSyncAt, options.deltaFilter);
+          } else {
+            delta = await options.fetchFresh();
+          }
         } catch {
           delta = await options.fetchFresh();
         }

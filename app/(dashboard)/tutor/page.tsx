@@ -8,13 +8,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProfile, resolveLogicalUserId } from "@/hooks/useProfile";
 import {
   useTutorUpcomingSessions,
+  useTutorHistorySessions,
   refreshTutorUpcoming,
+  refreshTutorHistory,
 } from "@/hooks/useSessions";
 import { Session } from "@/lib/types";
-import {
-  fetchPastSessionsPageForTutor,
-  HISTORY_PAGE_SIZE,
-} from "@/lib/sessions-query";
+import { HISTORY_PAGE_SIZE } from "@/lib/sessions-query";
 import FirestoreErrorBanner from "@/components/FirestoreErrorBanner";
 import {
   Loader2,
@@ -51,47 +50,29 @@ export default function TutorDashboard() {
   } = useTutorUpcomingSessions(logicalTutorId, { enabled: !!user && !!logicalTutorId });
 
   const [tab, setTab] = useState<Tab>("upcoming");
-  const [historySessions, setHistorySessions] = useState<Session[]>([]);
-  const [historyCursor, setHistoryCursor] = useState<string | null>(null);
-  const [historyLoading, setHistoryLoading] = useState(false);
-  const [historyError, setHistoryError] = useState<unknown>(null);
-  const [historyLoaded, setHistoryLoaded] = useState(false);
+
+  const {
+    data: historyData,
+    fetchNextPage,
+    hasNextPage,
+    isLoading: historyLoading,
+    isFetchingNextPage,
+    error: historyError,
+    refetch: refetchHistory,
+  } = useTutorHistorySessions(logicalTutorId, {
+    enabled: !!user && !!logicalTutorId && tab === "history",
+  });
+
+  const historySessions =
+    historyData?.pages.flatMap((page) => page.sessions) ?? [];
+
   const [managingSession, setManagingSession] = useState<Session | null>(null);
-
-  const loadHistory = async (append = false) => {
-    if (!logicalTutorId) return;
-    setHistoryLoading(true);
-    setHistoryError(null);
-    try {
-      const { sessions, nextCursor } = await fetchPastSessionsPageForTutor(
-        logicalTutorId,
-        {
-          beforeStartTime: append ? historyCursor ?? undefined : undefined,
-        }
-      );
-      setHistorySessions((prev) => (append ? [...prev, ...sessions] : sessions));
-      setHistoryCursor(nextCursor);
-      setHistoryLoaded(true);
-    } catch (e) {
-      setHistoryError(e);
-    } finally {
-      setHistoryLoading(false);
-    }
-  };
-
-  const handleTabChange = (next: Tab) => {
-    setTab(next);
-    if (next === "history" && !historyLoaded) {
-      void loadHistory(false);
-    }
-  };
 
   const handleRefresh = async () => {
     if (!logicalTutorId) return;
     await refreshTutorUpcoming(logicalTutorId, queryClient);
     if (tab === "history") {
-      setHistoryCursor(null);
-      await loadHistory(false);
+      await refreshTutorHistory(logicalTutorId, queryClient);
     }
   };
 
@@ -106,9 +87,23 @@ export default function TutorDashboard() {
       (prev) =>
         (prev ?? []).map((s) => (s.id === updatedSession.id ? updatedSession : s))
     );
-    setHistorySessions((prev) =>
-      prev.map((s) => (s.id === updatedSession.id ? updatedSession : s))
-    );
+    if (logicalTutorId) {
+      queryClient.setQueryData(
+        ["sessions", "history", "tutor", logicalTutorId],
+        (old: { pages: { sessions: Session[]; nextCursor: string | null }[]; pageParams: unknown[] } | undefined) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              sessions: page.sessions.map((s) =>
+                s.id === updatedSession.id ? updatedSession : s
+              ),
+            })),
+          };
+        }
+      );
+    }
     if (managingSession?.id === updatedSession.id) setManagingSession(updatedSession);
   };
 
@@ -126,6 +121,7 @@ export default function TutorDashboard() {
     .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
 
   const displayError = tab === "upcoming" ? upcomingError : historyError;
+  const historyLoaded = (historyData?.pages.length ?? 0) > 0;
 
   return (
     <RoleGuard allowedRoles={["TUTOR"]}>
@@ -156,14 +152,14 @@ export default function TutorDashboard() {
 
         <FirestoreErrorBanner
           error={displayError}
-          onRetry={() => (tab === "upcoming" ? refetch() : loadHistory(false))}
+          onRetry={() => (tab === "upcoming" ? refetch() : refetchHistory())}
         />
 
         <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => handleTabChange("upcoming")}
+              onClick={() => setTab("upcoming")}
               className={`px-4 py-2 rounded-lg text-sm font-medium ${
                 tab === "upcoming"
                   ? "bg-primary text-white"
@@ -174,7 +170,7 @@ export default function TutorDashboard() {
             </button>
             <button
               type="button"
-              onClick={() => handleTabChange("history")}
+              onClick={() => setTab("history")}
               className={`px-4 py-2 rounded-lg text-sm font-medium ${
                 tab === "history"
                   ? "bg-primary text-white"
@@ -187,7 +183,7 @@ export default function TutorDashboard() {
           <button
             type="button"
             onClick={() => void handleRefresh()}
-            disabled={isLoading || isFetching || historyLoading}
+            disabled={isLoading || isFetching || historyLoading || isFetchingNextPage}
             className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-primary px-3 py-2 rounded-lg hover:bg-gray-100 disabled:opacity-50"
           >
             <RotateCcw size={16} className={isFetching ? "animate-spin" : ""} />
@@ -226,14 +222,14 @@ export default function TutorDashboard() {
               onManage={setManagingSession}
               primaryAction="edit"
             />
-            {historyCursor && (
+            {hasNextPage && (
               <button
                 type="button"
-                onClick={() => void loadHistory(true)}
-                disabled={historyLoading}
+                onClick={() => void fetchNextPage()}
+                disabled={isFetchingNextPage}
                 className="mt-4 px-4 py-2 text-sm font-medium rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50"
               >
-                {historyLoading ? "Loading…" : `Load more (${HISTORY_PAGE_SIZE})`}
+                {isFetchingNextPage ? "Loading…" : `Load more (${HISTORY_PAGE_SIZE})`}
               </button>
             )}
           </div>
