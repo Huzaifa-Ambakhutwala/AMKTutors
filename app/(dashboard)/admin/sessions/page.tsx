@@ -12,6 +12,7 @@ import {
 import {
   syncSessionsWithCache,
   refreshSessionsCache,
+  removeSessionFromAllCaches,
   type SessionCacheScope,
 } from "@/lib/sessions-cache";
 import { touchMonthlySessionStats } from "@/lib/stats-monthly";
@@ -92,6 +93,7 @@ export default function SessionsListPage() {
         try {
             await syncSessionToCalendar(id, "delete");
             await deleteDoc(doc(db, "sessions", id));
+            void removeSessionFromAllCaches(id);
             if (session) {
                 void touchMonthlySessionStats(
                     { startTime: session.startTime, status: session.status },

@@ -74,6 +74,40 @@ async function writeScope(entry: CachedScope): Promise<void> {
   }
 }
 
+/** Remove a session from a cached scope (call after Firestore delete). */
+export async function removeSessionFromCache(
+  scope: SessionCacheScope,
+  sessionId: string
+): Promise<void> {
+  const cached = await readScope(scope);
+  if (!cached) return;
+  const sessions = cached.sessions.filter((s) => s.id !== sessionId);
+  if (sessions.length === cached.sessions.length) return;
+  await writeScope({ ...cached, sessions });
+}
+
+/** Remove a session from every cached scope (best-effort). */
+export async function removeSessionFromAllCaches(sessionId: string): Promise<void> {
+  try {
+    const database = await openDb();
+    const scopes = await new Promise<CachedScope[]>((resolve, reject) => {
+      const tx = database.transaction(STORE_NAME, "readonly");
+      const store = tx.objectStore(STORE_NAME);
+      const req = store.getAll();
+      req.onsuccess = () => resolve((req.result as CachedScope[]) ?? []);
+      req.onerror = () => reject(req.error);
+    });
+    for (const cached of scopes) {
+      const sessions = cached.sessions.filter((s) => s.id !== sessionId);
+      if (sessions.length !== cached.sessions.length) {
+        await writeScope({ ...cached, sessions });
+      }
+    }
+  } catch {
+    // ignore
+  }
+}
+
 function mergeSessions(existing: Session[], incoming: Session[]): Session[] {
   const byId = new Map<string, Session>();
   for (const s of existing) byId.set(s.id, s);
