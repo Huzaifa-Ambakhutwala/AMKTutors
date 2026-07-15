@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import RoleGuard from "@/components/RoleGuard";
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Session } from "@/lib/types";
 import { Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, User, GraduationCap, Clock } from "lucide-react";
@@ -81,7 +81,12 @@ export default function AdminCalendarPage() {
     useEffect(() => {
         async function fetchTutorColors() {
             try {
-                const snap = await getDocs(collection(db, "users"));
+                const snap = await getDocs(
+                    query(
+                        collection(db, "users"),
+                        where("role", "in", ["TUTOR", "ADMIN"])
+                    )
+                );
                 const map: Record<string, { bg: string | null; id: string | null }> = {};
                 snap.forEach(docSnap => {
                     const data = docSnap.data() as any;

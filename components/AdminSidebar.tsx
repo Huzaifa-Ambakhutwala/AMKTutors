@@ -10,7 +10,6 @@ import {
     School,
     Calendar,
     CalendarDays,
-    CreditCard,
     Lock,
     LogOut,
     Home,
@@ -62,7 +61,6 @@ export default function AdminSidebar({ onClose, className }: AdminSidebarProps) 
     ];
 
     const singleLinksAfter = [
-        { name: "Billing", href: "/admin/billing", icon: CreditCard },
         { name: "Notifications", href: "/admin/notifications", icon: Bell },
         { name: "Manage Logins", href: "/admin/logins", icon: Lock },
     ];

@@ -6,19 +6,21 @@ import { db } from "@/lib/firebase";
 import { Session } from "@/lib/types";
 import { Loader2, X, CheckCircle, Save, Lock, MessageSquare, BookOpen, Clock, MapPin } from "lucide-react";
 import { FormFeedback } from "@/components/FormFeedback";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { auth } from "@/lib/firebase";
+import { UserProfile } from "@/lib/types";
 import { toast } from "sonner";
 import { withSessionTimestamps } from "@/lib/session-meta";
 import { touchMonthlySessionStats } from "@/lib/stats-monthly";
 
 interface ManageSessionModalProps {
     session: Session;
+    userProfile: UserProfile;
     onClose: () => void;
     onUpdate: (updatedSession: Session) => void;
 }
 
-export default function ManageSessionModal({ session, onClose, onUpdate }: ManageSessionModalProps) {
-    const { user, userProfile } = useCurrentUser();
+export default function ManageSessionModal({ session, userProfile, onClose, onUpdate }: ManageSessionModalProps) {
+    const user = auth.currentUser;
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 

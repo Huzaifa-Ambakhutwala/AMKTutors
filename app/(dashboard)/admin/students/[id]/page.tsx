@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 import { doc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { UserProfile, Student, Session } from "@/lib/types";
-import { fetchSessionsForStudent, getStudentHistoryDateRange } from "@/lib/sessions-query";
+import {
+  fetchUpcomingSessionsForStudent,
+  fetchPastSessionsPageForStudent,
+  HISTORY_PAGE_SIZE,
+} from "@/lib/sessions-query";
 import { Loader2, ArrowLeft, GraduationCap, School, User, Calendar } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -45,6 +49,9 @@ export default function StudentDetailPage() {
     const [parents, setParents] = useState<UserProfile[]>([]);
     const [tutors, setTutors] = useState<UserProfile[]>([]);
     const [sessions, setSessions] = useState<{ upcoming: Session[], today: Session[], past: Session[] }>({ upcoming: [], today: [], past: [] });
+    const [historyCursor, setHistoryCursor] = useState<string | null>(null);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const [historyHasMore, setHistoryHasMore] = useState(false);
 
     useEffect(() => {
         async function fetchData() {
@@ -69,10 +76,8 @@ export default function StudentDetailPage() {
                     setTutors(tutorDocs.map(d => d.data() as UserProfile).filter(Boolean));
                 }
 
-                const historyRange = getStudentHistoryDateRange();
-                const studentSessions = await fetchSessionsForStudent(studentId, historyRange);
-
-                setSessions(categorizeSessions(studentSessions));
+                const upcomingSessions = await fetchUpcomingSessionsForStudent(studentId);
+                setSessions(categorizeSessions(upcomingSessions));
 
             } catch (e) {
                 console.error("Error fetching details:", e);
@@ -82,6 +87,26 @@ export default function StudentDetailPage() {
         }
         fetchData();
     }, [studentId]);
+
+    const loadHistory = async (append = false) => {
+        setHistoryLoading(true);
+        try {
+            const { sessions: pastPage, nextCursor } = await fetchPastSessionsPageForStudent(
+                studentId,
+                { beforeStartTime: append ? historyCursor ?? undefined : undefined }
+            );
+            setHistoryCursor(nextCursor);
+            setHistoryHasMore(!!nextCursor);
+            setSessions((prev) => ({
+                ...prev,
+                past: append ? [...prev.past, ...pastPage] : pastPage,
+            }));
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setHistoryLoading(false);
+        }
+    };
 
     if (loading) return <div className="p-12 flex justify-center"><Loader2 className="animate-spin" /></div>;
     if (!student) return <div className="p-12 text-center text-red-500">Student not found</div>;
@@ -198,10 +223,31 @@ export default function StudentDetailPage() {
                         <h3 className="text-lg font-bold mb-3 text-gray-700 flex items-center gap-2">
                             <span className="w-2 h-2 rounded-full bg-gray-400"></span> Past Sessions
                         </h3>
-                        {sessions.past.length === 0 ? (
-                            <p className="text-gray-500 text-sm italic">No past sessions.</p>
+                        {sessions.past.length === 0 && !historyLoading ? (
+                            <div className="space-y-3">
+                                <p className="text-gray-500 text-sm italic">Past sessions load on demand.</p>
+                                <button
+                                    type="button"
+                                    onClick={() => void loadHistory(false)}
+                                    className="px-4 py-2 text-sm font-medium rounded-lg border border-gray-200 hover:bg-gray-50"
+                                >
+                                    Load history
+                                </button>
+                            </div>
                         ) : (
-                            <SessionList sessions={sessions.past} />
+                            <>
+                                <SessionList sessions={sessions.past} />
+                                {historyHasMore && (
+                                    <button
+                                        type="button"
+                                        onClick={() => void loadHistory(true)}
+                                        disabled={historyLoading}
+                                        className="mt-3 px-4 py-2 text-sm font-medium rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50"
+                                    >
+                                        {historyLoading ? "Loading…" : `Load more (${HISTORY_PAGE_SIZE})`}
+                                    </button>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>

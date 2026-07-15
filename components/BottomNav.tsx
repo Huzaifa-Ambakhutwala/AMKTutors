@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, GraduationCap, Calendar, CreditCard, Settings } from "lucide-react";
+import { LayoutDashboard, GraduationCap, CalendarDays, Calendar, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/students", label: "Students", icon: GraduationCap },
-  { href: "/admin/calendar", label: "Calendar", icon: Calendar },
-  { href: "/admin/billing", label: "Billing", icon: CreditCard },
+  { href: "/admin/calendar", label: "Calendar", icon: CalendarDays },
+  { href: "/admin/sessions", label: "Sessions", icon: Calendar },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 

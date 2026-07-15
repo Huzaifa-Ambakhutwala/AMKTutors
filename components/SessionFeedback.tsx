@@ -5,18 +5,19 @@ import { UserProfile, Session } from "@/lib/types"; // Import UserProfile
 import { doc, updateDoc, serverTimestamp } from "firebase/firestore"; // Import serverTimestamp
 import { db } from "@/lib/firebase";
 import { Loader2, Save, Lock, MessageSquare } from "lucide-react";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { auth } from "@/lib/firebase";
 import { toast } from "sonner";
 import { withSessionTimestamps } from "@/lib/session-meta";
 
 interface SessionFeedbackProps {
     session: Session;
     onUpdate?: (updatedSession: Session) => void;
-    userRole: 'ADMIN' | 'TUTOR' | 'PARENT'; // Explicitly pass role for clarity
+    userRole: 'ADMIN' | 'TUTOR' | 'PARENT';
+    userProfile?: UserProfile | null;
 }
 
-export default function SessionFeedback({ session, onUpdate, userRole }: SessionFeedbackProps) {
-    const { user, userProfile } = useCurrentUser(); // Get full profile for name
+export default function SessionFeedback({ session, onUpdate, userRole, userProfile }: SessionFeedbackProps) {
+    const user = auth.currentUser;
     const [loading, setLoading] = useState(false);
 
     // Local state for inputs

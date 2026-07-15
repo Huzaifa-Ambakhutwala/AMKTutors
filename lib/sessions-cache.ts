@@ -16,7 +16,9 @@ const STORE_NAME = "scopes";
 export type SessionCacheScope =
   | `admin:${string}`
   | `tutor:${string}:active`
-  | `parent:${string}:active`;
+  | `tutor:${string}:upcoming`
+  | `parent:${string}:active`
+  | `parent:${string}:upcoming`;
 
 type CachedScope = {
   scope: SessionCacheScope;

@@ -3,6 +3,8 @@ import { Poppins, Open_Sans } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
+import QueryProvider from "@/providers/QueryProvider";
+import FirestoreReadCounter from "@/components/FirestoreReadCounter";
 import CursorGlow from "@/components/CursorGlow";
 import { Toaster } from "@/components/Toaster";
 import { DEFAULT_THEME_COLORS, LOCAL_STORAGE_KEY } from "@/lib/theme-constants";
@@ -85,12 +87,15 @@ export default function RootLayout({
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: themeScript }}
         />
-        <ThemeProvider>
-          <CursorGlow glowSize={400} glowIntensity={0.4} glowColor="rgba(255, 255, 255, 0.6)" />
-          <ServiceWorkerRegister />
-          <Toaster />
-          {children}
-        </ThemeProvider>
+        <QueryProvider>
+          <ThemeProvider>
+            <CursorGlow glowSize={400} glowIntensity={0.4} glowColor="rgba(255, 255, 255, 0.6)" />
+            <ServiceWorkerRegister />
+            <Toaster />
+            {children}
+            <FirestoreReadCounter />
+          </ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   );

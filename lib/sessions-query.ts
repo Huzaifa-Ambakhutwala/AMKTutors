@@ -4,14 +4,20 @@ import {
   query,
   where,
   orderBy,
+  limit,
   type QueryConstraint,
   type QueryDocumentSnapshot,
   type DocumentData,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Session } from "@/lib/types";
+import { safeFirestore } from "@/lib/firestore-safe";
+import { wrapFirestoreResult } from "@/lib/firestore-debug";
 
 const IN_QUERY_LIMIT = 30;
+
+export const UPCOMING_SESSIONS_LIMIT = 25;
+export const HISTORY_PAGE_SIZE = 20;
 
 export const ACTIVE_SESSIONS_LOOKBACK_DAYS = 30;
 export const ACTIVE_SESSIONS_LOOKAHEAD_DAYS = 90;
@@ -132,7 +138,8 @@ export async function fetchSessionsByDateRange(
   }
 
   const q = query(collection(db, "sessions"), ...constraints);
-  const snap = await getDocs(q);
+  const snap = await safeFirestore(() => getDocs(q));
+  wrapFirestoreResult(snap, snap.size);
 
   let sessions = mapSessionDocs(snap.docs);
 
@@ -216,4 +223,175 @@ export async function fetchSessionsForStudent(
     ? { start: options.start, end: options.end }
     : getActiveSessionsDateRange();
   return fetchSessionsByDateRange(range.start, range.end, { studentId });
+}
+
+export function getUpcomingFromIso(): string {
+  return new Date().toISOString();
+}
+
+/** Upcoming sessions for a tutor (default dashboard load). */
+export async function fetchUpcomingSessionsForTutor(
+  tutorId: string,
+  limitCount = UPCOMING_SESSIONS_LIMIT
+): Promise<Session[]> {
+  const now = getUpcomingFromIso();
+  const q = query(
+    collection(db, "sessions"),
+    where("tutorId", "==", tutorId),
+    where("startTime", ">=", now),
+    orderBy("startTime", "asc"),
+    limit(limitCount)
+  );
+  const snap = await safeFirestore(() => getDocs(q));
+  wrapFirestoreResult(snap, snap.size);
+  return mapSessionDocs(snap.docs);
+}
+
+/** Paginated past sessions for a tutor (history tab). */
+export async function fetchPastSessionsPageForTutor(
+  tutorId: string,
+  options: { pageSize?: number; beforeStartTime?: string } = {}
+): Promise<{ sessions: Session[]; nextCursor: string | null }> {
+  const pageSize = options.pageSize ?? HISTORY_PAGE_SIZE;
+  const upper = options.beforeStartTime ?? getUpcomingFromIso();
+  const q = query(
+    collection(db, "sessions"),
+    where("tutorId", "==", tutorId),
+    where("startTime", "<", upper),
+    orderBy("startTime", "desc"),
+    limit(pageSize)
+  );
+  const snap = await safeFirestore(() => getDocs(q));
+  wrapFirestoreResult(snap, snap.size);
+  const sessions = mapSessionDocs(snap.docs).sort(
+    (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+  );
+  const nextCursor =
+    sessions.length === pageSize
+      ? sessions[sessions.length - 1].startTime
+      : null;
+  return { sessions, nextCursor };
+}
+
+/** Upcoming sessions for a parent's students. */
+export async function fetchUpcomingSessionsForStudentIds(
+  studentIds: string[],
+  limitCount = UPCOMING_SESSIONS_LIMIT
+): Promise<Session[]> {
+  if (studentIds.length === 0) return [];
+  const now = getUpcomingFromIso();
+
+  const snapshots = await Promise.all(
+    chunk(studentIds, IN_QUERY_LIMIT).map((ids) =>
+      safeFirestore(() =>
+        getDocs(
+          query(
+            collection(db, "sessions"),
+            where("studentId", "in", ids),
+            where("startTime", ">=", now),
+            orderBy("startTime", "asc"),
+            limit(limitCount)
+          )
+        )
+      )
+    )
+  );
+
+  let readCount = 0;
+  const merged: Session[] = [];
+  for (const snap of snapshots) {
+    readCount += snap.size;
+    for (const d of snap.docs) {
+      merged.push({ id: d.id, ...d.data() } as Session);
+    }
+  }
+  wrapFirestoreResult(merged, readCount);
+
+  return mergeSessionsById(merged)
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+    .slice(0, limitCount);
+}
+
+/** Paginated past sessions for a parent's students. */
+export async function fetchPastSessionsPageForStudentIds(
+  studentIds: string[],
+  options: { pageSize?: number; beforeStartTime?: string } = {}
+): Promise<{ sessions: Session[]; nextCursor: string | null }> {
+  if (studentIds.length === 0) return { sessions: [], nextCursor: null };
+  const pageSize = options.pageSize ?? HISTORY_PAGE_SIZE;
+  const upper = options.beforeStartTime ?? getUpcomingFromIso();
+
+  const snapshots = await Promise.all(
+    chunk(studentIds, IN_QUERY_LIMIT).map((ids) =>
+      safeFirestore(() =>
+        getDocs(
+          query(
+            collection(db, "sessions"),
+            where("studentId", "in", ids),
+            where("startTime", "<", upper),
+            orderBy("startTime", "desc"),
+            limit(pageSize)
+          )
+        )
+      )
+    )
+  );
+
+  let readCount = 0;
+  const merged: Session[] = [];
+  for (const snap of snapshots) {
+    readCount += snap.size;
+    for (const d of snap.docs) {
+      merged.push({ id: d.id, ...d.data() } as Session);
+    }
+  }
+  wrapFirestoreResult(merged, readCount);
+
+  const sessions = mergeSessionsById(merged)
+    .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+    .slice(0, pageSize);
+  const nextCursor =
+    sessions.length === pageSize ? sessions[sessions.length - 1].startTime : null;
+  return { sessions, nextCursor };
+}
+
+/** Upcoming sessions for a single student (admin detail). */
+export async function fetchUpcomingSessionsForStudent(
+  studentId: string,
+  limitCount = UPCOMING_SESSIONS_LIMIT
+): Promise<Session[]> {
+  const now = getUpcomingFromIso();
+  const q = query(
+    collection(db, "sessions"),
+    where("studentId", "==", studentId),
+    where("startTime", ">=", now),
+    orderBy("startTime", "asc"),
+    limit(limitCount)
+  );
+  const snap = await safeFirestore(() => getDocs(q));
+  wrapFirestoreResult(snap, snap.size);
+  return mapSessionDocs(snap.docs);
+}
+
+export async function fetchPastSessionsPageForStudent(
+  studentId: string,
+  options: { pageSize?: number; beforeStartTime?: string } = {}
+): Promise<{ sessions: Session[]; nextCursor: string | null }> {
+  const pageSize = options.pageSize ?? HISTORY_PAGE_SIZE;
+  const upper = options.beforeStartTime ?? getUpcomingFromIso();
+  const q = query(
+    collection(db, "sessions"),
+    where("studentId", "==", studentId),
+    where("startTime", "<", upper),
+    orderBy("startTime", "desc"),
+    limit(pageSize)
+  );
+  const snap = await safeFirestore(() => getDocs(q));
+  wrapFirestoreResult(snap, snap.size);
+  const sessions = mapSessionDocs(snap.docs).sort(
+    (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+  );
+  const nextCursor =
+    sessions.length === pageSize ? sessions[sessions.length - 1].startTime : null;
+  return { sessions, nextCursor };
 }

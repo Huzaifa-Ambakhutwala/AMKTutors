@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { signInWithEmailAndPassword, signInWithPopup, linkWithCredential, OAuthCredential } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
+import { withFirestoreTimeout, firestoreErrorMessage } from "@/lib/firestore-safe";
 import { createAppSessionFromIdToken } from "@/lib/auth-session-client";
 
 function LoginForm() {
@@ -65,10 +66,18 @@ function LoginForm() {
 
             // Sign in the Firebase client so Firestore requests are authenticated (required for production)
             try {
-                await signInWithEmailAndPassword(auth, email.trim(), password);
+                await withFirestoreTimeout(
+                    signInWithEmailAndPassword(auth, email.trim(), password),
+                    15000
+                );
             } catch (firebaseErr: unknown) {
                 console.error("Firebase client sign-in:", firebaseErr);
-                setError("Login succeeded but could not connect to data. Please refresh and try again.");
+                const err = firebaseErr as { name?: string; code?: string; message?: string };
+                if (err?.name === "FirestoreSafeError" || err?.code === "FIRESTORE_QUOTA_EXCEEDED") {
+                    setError(firestoreErrorMessage(firebaseErr));
+                } else {
+                    setError("Login succeeded but could not connect to data. Please refresh and try again.");
+                }
                 return;
             }
 
@@ -88,9 +97,12 @@ function LoginForm() {
         setError("");
         setLinkModal(null);
         try {
-            const result = await signInWithPopup(auth, googleProvider);
+            const result = await withFirestoreTimeout(signInWithPopup(auth, googleProvider), 60000);
             const idToken = await result.user.getIdToken(true);
-            const data = await createAppSessionFromIdToken(idToken, rememberMe);
+            const data = await withFirestoreTimeout(
+                createAppSessionFromIdToken(idToken, rememberMe),
+                15000
+            );
             await refetch();
             const target = returnUrl && returnUrl.startsWith("/") ? decodeURIComponent(returnUrl) : (data.redirectTo || "/admin");
             router.push(target);
@@ -114,6 +126,8 @@ function LoginForm() {
                 setError(err.message ?? "Account is pending approval. Please contact an administrator.");
             } else if (err?.code === "FIRESTORE_QUOTA_EXCEEDED") {
                 setError(err.message ?? "Database quota exceeded. Check Firebase billing or try again later.");
+            } else if (err?.name === "FirestoreSafeError") {
+                setError(firestoreErrorMessage(err));
             } else if (err?.code === "NOT_IN_DB") {
                 setError(err.message ?? "No account found for this email. Please contact an administrator or use an invite link.");
             } else {

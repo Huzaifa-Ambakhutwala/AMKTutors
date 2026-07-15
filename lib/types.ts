@@ -22,6 +22,8 @@ export interface UserProfile {
     inviteExpiresAt?: string | null; // ISO String
     registeredAt?: string | null; // ISO String
     isShadow?: boolean;
+    /** When set, this profile doc points at another user id (e.g. tutor login alias). */
+    pointer?: string;
 
     // Google Calendar / Calendar color
     calendarColorId?: string | null;   // Google Calendar event colorId (e.g. "1".."11")

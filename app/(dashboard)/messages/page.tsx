@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { collection, query, where, doc, addDoc, onSnapshot, updateDoc, getDoc, setDoc } from "firebase/firestore";
+import { collection, query, where, doc, addDoc, onSnapshot, updateDoc, getDoc, setDoc, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Conversation, ChatMessage } from "@/lib/types";
@@ -77,7 +77,7 @@ function MessagesPageInner() {
     }
     const ref = collection(db, "conversations", selectedId, "messages");
     const unsub = onSnapshot(
-      query(ref),
+      query(ref, orderBy("createdAt", "desc"), limit(50)),
       (snap) => {
         const list = snap.docs.map((d) => ({ id: d.id, ...d.data() } as ChatMessage));
         list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
