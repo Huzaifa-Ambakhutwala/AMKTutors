@@ -5,7 +5,7 @@ import RoleGuard from "@/components/RoleGuard";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
-import { useProfile, resolveLogicalUserId } from "@/hooks/useProfile";
+import { useProfile, useLogicalUserId } from "@/hooks/useProfile";
 import {
   useTutorUpcomingSessions,
   useTutorHistorySessions,
@@ -36,10 +36,8 @@ export default function TutorDashboard() {
   const { logout } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { data: profile } = useProfile(profileId);
-  const logicalTutorId = profileId
-    ? resolveLogicalUserId(profileId, profile ?? null)
-    : null;
+  const { logicalUserId: logicalTutorId, profile, profileLoading } =
+    useLogicalUserId(profileId);
 
   const {
     data: upcomingSessions = [],
@@ -47,7 +45,9 @@ export default function TutorDashboard() {
     isFetching,
     error: upcomingError,
     refetch,
-  } = useTutorUpcomingSessions(logicalTutorId, { enabled: !!user && !!logicalTutorId });
+  } = useTutorUpcomingSessions(logicalTutorId, {
+    enabled: !!user && !!logicalTutorId,
+  });
 
   const [tab, setTab] = useState<Tab>("upcoming");
 
@@ -191,7 +191,7 @@ export default function TutorDashboard() {
           </button>
         </div>
 
-        {tab === "upcoming" && isLoading ? (
+        {tab === "upcoming" && (profileLoading || isLoading) ? (
           <Loader2 className="animate-spin" />
         ) : tab === "upcoming" ? (
           <div className="space-y-10">

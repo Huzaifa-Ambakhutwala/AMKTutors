@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import {
+  ensureAuthShadowUser,
   getUserProfileDocByAuthUid,
   isLoginRole,
   mapAuthServiceError,
@@ -134,6 +135,10 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
+
+    // Invite/email accounts store the real profile under a different doc id.
+    // Rules + client queries need users/{authUid} with pointer → logical id.
+    await ensureAuthShadowUser(uid, userDoc);
 
     const sessionId = await createSession(
       {

@@ -5,7 +5,7 @@ import RoleGuard from "@/components/RoleGuard";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
-import { useProfile } from "@/hooks/useProfile";
+import { useLogicalUserId } from "@/hooks/useProfile";
 import {
   useParentStudentIds,
   useParentUpcomingSessions,
@@ -37,13 +37,14 @@ export default function ParentDashboard() {
   const { logout } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { data: profile } = useProfile(profileId);
+  const { logicalUserId: logicalParentId, profile, profileLoading } =
+    useLogicalUserId(profileId);
 
   const {
     data: studentIds = [],
     isLoading: studentsLoading,
     error: studentsError,
-  } = useParentStudentIds(profileId);
+  } = useParentStudentIds(logicalParentId);
 
   const {
     data: upcomingRaw = [],
@@ -51,8 +52,8 @@ export default function ParentDashboard() {
     isFetching,
     error: sessionsError,
     refetch,
-  } = useParentUpcomingSessions(profileId, studentIds, {
-    enabled: !roleLoading && studentIds.length > 0,
+  } = useParentUpcomingSessions(logicalParentId, studentIds, {
+    enabled: !roleLoading && !!logicalParentId && studentIds.length > 0,
   });
 
   const upcomingSessions = upcomingRaw.map((s) => ({ ...s, internalNotes: null }));
@@ -65,7 +66,11 @@ export default function ParentDashboard() {
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
 
-  const loading = roleLoading || studentsLoading || (studentIds.length > 0 && sessionsLoading);
+  const loading =
+    roleLoading ||
+    profileLoading ||
+    studentsLoading ||
+    (studentIds.length > 0 && sessionsLoading);
 
   const loadHistory = async (append = false) => {
     if (studentIds.length === 0) return;
@@ -93,8 +98,8 @@ export default function ParentDashboard() {
   };
 
   const handleRefresh = async () => {
-    if (!profileId || studentIds.length === 0) return;
-    await refreshParentUpcoming(profileId, studentIds, queryClient);
+    if (!logicalParentId || studentIds.length === 0) return;
+    await refreshParentUpcoming(logicalParentId, studentIds, queryClient);
     if (tab === "history") {
       setHistoryCursor(null);
       await loadHistory(false);

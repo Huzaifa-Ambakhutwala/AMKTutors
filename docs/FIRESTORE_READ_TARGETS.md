@@ -27,6 +27,15 @@ Measured with `FirestoreReadCounter` in development (`lib/firestore-debug.ts` tr
 5. **Login** — `withFirestoreTimeout` on Firebase sign-in; quota/timeout errors surfaced.
 6. **Cache** — IndexedDB session cache + Firestore `persistentLocalCache` + React Query stale times.
 7. **Tutor portal follow-ups** — availability uses shared `useProfile`; tutor history cached via `useInfiniteQuery`; delta sync scoped by `tutorId` / `studentIds` (admin scopes use bounded `fetchFresh` instead of global `updatedAt` scan).
+8. **Tutor permission / index fixes** — wait for profile `pointer` before querying sessions (`useLogicalUserId`); email/Google login ensures shadow `users/{authUid}` docs; composite indexes in `firestore.indexes.json`.
+
+## Deploy indexes
+
+```bash
+firebase deploy --only firestore:indexes
+```
+
+Or open the “create index” link from the tutor error banner once; indexes take a few minutes to build.
 
 ## Delta sync behavior
 

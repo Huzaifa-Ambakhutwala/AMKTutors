@@ -6,7 +6,7 @@ import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUserRole } from "@/hooks/useUserRole";
-import { useProfile, resolveLogicalUserId } from "@/hooks/useProfile";
+import { useLogicalUserId } from "@/hooks/useProfile";
 import { useTutorAvailability } from "@/hooks/useTutorAvailability";
 import {
   RecurringAvailabilitySlot,
@@ -21,11 +21,8 @@ const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 export default function TutorAvailabilityPage() {
   const { profileId } = useUserRole();
   const queryClient = useQueryClient();
-  const { data: profile, isLoading: profileLoading } = useProfile(profileId);
-  const logicalTutorId =
-    profileId && !profileLoading
-      ? resolveLogicalUserId(profileId, profile ?? null)
-      : null;
+  const { logicalUserId: logicalTutorId, profileLoading } =
+    useLogicalUserId(profileId);
 
   const { data: availability, isLoading: availabilityLoading } =
     useTutorAvailability(logicalTutorId);

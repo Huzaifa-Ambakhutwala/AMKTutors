@@ -127,6 +127,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // If this Auth UID maps to a logical profile (authUid field) without a shadow,
+    // create/repair the shadow so rules and client queries stay in sync.
+    if (!profile?.pointer) {
+      const linked = await adminDb
+        .collection("users")
+        .where("authUid", "==", uid)
+        .limit(1)
+        .get();
+      if (!linked.empty && linked.docs[0].id !== uid) {
+        await adminDb.collection("users").doc(uid).set(
+          {
+            uid,
+            email: (profile?.email as string) ?? email ?? null,
+            emailLower: email ? email.toLowerCase() : null,
+            name: (profile?.name as string) ?? name ?? null,
+            role,
+            pointer: linked.docs[0].id,
+            isShadow: true,
+          },
+          { merge: true }
+        );
+      }
+    }
+
     const sessionId = await createSession(
       {
         uid,

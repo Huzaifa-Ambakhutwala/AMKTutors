@@ -24,7 +24,18 @@ export function mapFirestoreError(error: unknown): FirestoreSafeError {
       "Database quota exceeded. Please try again later or contact support."
     );
   }
-  if (code === "permission-denied" || /permission/i.test(message)) {
+  if (
+    code === "failed-precondition" ||
+    /requires an index/i.test(message)
+  ) {
+    return new FirestoreSafeError(
+      "unknown",
+      message.includes("http")
+        ? message
+        : "This query needs a Firestore index. Open the Firebase console link from the browser network tab, or ask an admin to deploy firestore.indexes.json."
+    );
+  }
+  if (code === "permission-denied" || /insufficient permissions/i.test(message)) {
     return new FirestoreSafeError("permission", "You do not have permission to load this data.");
   }
   if (
